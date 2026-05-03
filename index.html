@@ -236,6 +236,7 @@ let dragId = null;
 let CACHE = {users:[],klien:[],pekerjaan:[],absensi:[],docs:[],comments:[],timelogs:[]};
 let rowsPerPageKlien = 10, rowsPerPagePek = 10;
 let pageKlien = 1, pagePek = 1;
+let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 
 // ===== UTILS =====
 const isAdmin    = () => currentUser && currentUser.role === 'admin';
@@ -592,7 +593,7 @@ async function dropKanban(e,status){
   dragId=null;
 }
 function renderCalendar(list){
-  const now=new Date(); const y=now.getFullYear(),m=now.getMonth();
+  const y=calYear, m=calMonth;
   const days=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
   const months=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
   let cells='';
@@ -602,8 +603,39 @@ function renderCalendar(list){
     const evs=list.filter(p=>(p.deadline&&p.deadline.startsWith(ds))||(p.tanggal&&p.tanggal.startsWith(ds)));
     cells+=`<div class="calCell${ds===todayStr()?' today':''}"><div class="calDate">${d}</div>${evs.map(p=>`<div class="calEvent${p.prioritas==='Urgent'?' urgent':''}" onclick="openDetail('${p.id}')">${p.judul}</div>`).join('')}</div>`;
   }
-  return`<div class="calWrap"><div style="font-weight:700;color:var(--text);margin-bottom:10px">${months[m]} ${y}</div>
-    <div class="calGrid">${days.map(d=>`<div class="calHead">${d}</div>`).join('')}${cells}</div></div>`;
+  const isCurrentMonth = y===new Date().getFullYear()&&m===new Date().getMonth();
+  return`<div class="calWrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <button onclick="prevMonth()" style="padding:6px 14px;border:1.5px solid var(--gray2);border-radius:7px;background:#fff;cursor:pointer;font-size:.84rem;font-weight:600">‹ Sebelumnya</button>
+      <div style="text-align:center">
+        <span style="font-weight:700;color:var(--text);font-size:.95rem">${months[m]} ${y}</span>
+        ${!isCurrentMonth?`<br><button onclick="backToCurrentMonth()" style="font-size:.74rem;color:var(--blue);background:none;border:none;cursor:pointer;margin-top:2px">● Kembali ke bulan ini</button>`:''}
+      </div>
+      <button onclick="nextMonth()" style="padding:6px 14px;border:1.5px solid var(--gray2);border-radius:7px;background:#fff;cursor:pointer;font-size:.84rem;font-weight:600">Berikutnya ›</button>
+    </div>
+    <div class="calGrid">${days.map(d=>`<div class="calHead">${d}</div>`).join('')}${cells}</div>
+  </div>`;
+}
+
+function prevMonth(){
+  calMonth--;
+  if(calMonth<0){calMonth=11;calYear--;}
+  showPage('pekerjaan');
+  setTimeout(()=>setView('calendar'),10);
+}
+
+function nextMonth(){
+  calMonth++;
+  if(calMonth>11){calMonth=0;calYear++;}
+  showPage('pekerjaan');
+  setTimeout(()=>setView('calendar'),10);
+}
+
+function backToCurrentMonth(){
+  calYear=new Date().getFullYear();
+  calMonth=new Date().getMonth();
+  showPage('pekerjaan');
+  setTimeout(()=>setView('calendar'),10);
 }
 
 function modalPek(id=''){
@@ -672,6 +704,7 @@ async function openDetail(pId){
   const a=p.asisten_id?CACHE.users.find(u=>u.id===p.asisten_id):null;
   const creator=CACHE.users.find(u=>u.id===p.created_by);
   const subs=CACHE.pekerjaan.filter(x=>x.parent_id===pId);
+  const relDocs=CACHE.docs.filter(d=>d.pek_id===pId);
   const comments=CACHE.comments.filter(c=>c.pek_id===pId);
   const timelogs=CACHE.timelogs.filter(t=>t.pek_id===pId);
   const totalT=timelogs.reduce((s,t)=>s+(t.durasi||0),0);
@@ -737,6 +770,21 @@ async function openDetail(pId){
         <input id="newCmt" placeholder="Tulis komentar..." onkeydown="if(event.key==='Enter')addComment('${pId}')"/>
         <button class="btnPrimary" style="font-size:.8rem;padding:7px 12px" onclick="addComment('${pId}')">Kirim</button>
       </div>
+    </div>
+
+    <div class="detailSection">
+      <h5>📎 Dokumen Terkait (${relDocs.length})</h5>
+      ${relDocs.length?relDocs.map(d=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--gray);border-radius:7px;margin-bottom:6px;font-size:.82rem">
+          <div>
+            <b>${d.judul||'Tanpa Judul'}</b>
+            ${d.nama_file?`<br><span style="color:var(--sub);font-size:.75rem">📄 ${d.nama_file}</span>`:''}
+          </div>
+          ${d.link_dokumen?`<a href="${d.link_dokumen}" target="_blank" style="color:var(--blue);font-weight:600;font-size:.8rem;text-decoration:none;white-space:nowrap;margin-left:10px">🔗 Buka</a>`:''}
+        </div>`).join(''):`<p style="color:var(--sub);font-size:.82rem">Belum ada dokumen terlampir</p>`}
+      <button class="btnSm btnGray" style="margin-top:6px;font-size:.78rem" onclick="newDocFromPek('${pId}')">+ Lampirkan Dokumen</button>
+    </div>
+
     </div>`;
   document.getElementById('detailPanel').classList.add('open');
   if(timerPekId===pId){
@@ -801,51 +849,96 @@ async function stopTimer(){
 // ===== DOCS =====
 let currentDocId=null;
 function renderDocs(){
+  const pekOpts=CACHE.pekerjaan.filter(p=>!p.parent_id).map(p=>{
+    const k=CACHE.klien.find(k=>k.id===p.klien_id);
+    return`<option value="${p.id}">${p.judul}${k?' — '+k.nama:''}`;
+  }).join('');
   return`<div style="position:relative;z-index:1">
     <div class="section">
       <div class="secHead"><h4>📝 Dokumen & Catatan</h4><button class="btnPrimary" onclick="newDoc()">+ Baru</button></div>
-      <div class="docList" id="docListEl">
-        ${CACHE.docs.length?CACHE.docs.map(d=>`<div class="docCard" onclick="openDoc('${d.id}')">
-          <div class="docIcon">📄</div><h6>${d.judul||'Tanpa Judul'}</h6>
-          <p>${fmtDateL(d.updated_at)}</p>
-          ${d.klien_id?`<p style="margin-top:3px;color:var(--blue);font-size:.72rem">${(CACHE.klien.find(k=>k.id===d.klien_id)||{}).nama||''}</p>`:''}
-          <button class="btnSm btnDanger" style="margin-top:8px" onclick="event.stopPropagation();delDoc('${d.id}')">🗑️ Hapus</button>
-        </div>`).join(''):'<p style="color:var(--sub)">Belum ada dokumen</p>'}
+      <div id="docListEl">
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Judul</th><th>Nama File</th><th>Pekerjaan Terkait</th><th>Klien</th><th>Link</th><th>Tgl Update</th><th>Aksi</th></tr></thead>
+          <tbody>
+          ${CACHE.docs.length?CACHE.docs.map(d=>{
+            const p=CACHE.pekerjaan.find(x=>x.id===d.pek_id);
+            const k=p?CACHE.klien.find(x=>x.id===p.klien_id):d.klien_id?CACHE.klien.find(x=>x.id===d.klien_id):null;
+            return`<tr>
+              <td><b>${d.judul||'Tanpa Judul'}</b></td>
+              <td>${d.nama_file||'-'}</td>
+              <td>${p?p.judul:'-'}</td>
+              <td>${k?k.nama:'-'}</td>
+              <td>${d.link_dokumen?`<a href="${d.link_dokumen}" target="_blank" style="color:var(--blue);font-size:.8rem;text-decoration:none">🔗 Buka File</a>`:'-'}</td>
+              <td>${fmtDateL(d.updated_at)}</td>
+              <td>
+                <button class="btnSm btnEdit" onclick="openDoc('${d.id}')">✏️</button>
+                <button class="btnSm btnDanger" onclick="delDoc('${d.id}')">🗑️</button>
+              </td>
+            </tr>`;
+          }).join(''):`<tr><td colspan="7" style="text-align:center;color:var(--sub);padding:20px">Belum ada dokumen</td></tr>`}
+          </tbody>
+        </table>
+        </div>
       </div>
     </div>
     <div class="docEditor hidden" id="docEditorEl">
       <div class="secHead">
         <div class="flex">
           <button class="btnSm btnGray" onclick="backDocs()">← Kembali</button>
-          <select id="docKlien" style="padding:6px 9px;border:1.5px solid var(--gray2);border-radius:6px;font-size:.8rem">
-            <option value="">-- Tanpa Klien --</option>
-            ${CACHE.klien.map(k=>`<option value="${k.id}">${k.nama}</option>`).join('')}
-          </select>
         </div>
         <button class="btnPrimary" onclick="saveDoc()">💾 Simpan</button>
       </div>
-      <input class="docTitle" id="docTitleEl" placeholder="Judul dokumen..."/>
-      <textarea class="docBody" id="docBodyEl" placeholder="Mulai menulis..."></textarea>
+      <div class="formGrid" style="margin-bottom:14px">
+        <div class="formGroup full"><label>Judul Dokumen</label><input id="docTitleEl" placeholder="Judul dokumen..."/></div>
+        <div class="formGroup"><label>Nama File</label><input id="docNamaFile" placeholder="Contoh: Laporan Keuangan Q1.pdf"/></div>
+        <div class="formGroup"><label>Link Dokumen (Google Drive / Dropbox / dll)</label><input id="docLink" placeholder="https://drive.google.com/..."/></div>
+        <div class="formGroup"><label>Pekerjaan Terkait</label>
+          <select id="docPekId"><option value="">-- Tanpa Pekerjaan --</option>${pekOpts}</select></div>
+        <div class="formGroup"><label>Klien (jika tanpa pekerjaan)</label>
+          <select id="docKlien"><option value="">-- Tanpa Klien --</option>
+          ${CACHE.klien.map(k=>`<option value="${k.id}">${k.nama}</option>`).join('')}</select></div>
+        <div class="formGroup full"><label>Catatan / Isi Dokumen</label>
+          <textarea id="docBodyEl" placeholder="Tulis catatan atau deskripsi dokumen..." style="min-height:120px"></textarea></div>
+      </div>
     </div>
   </div>`;
 }
-function newDoc(){currentDocId=null;showDocEditor({judul:'',body:'',klien_id:''});}
-function openDoc(id){const d=CACHE.docs.find(x=>x.id===id);if(!d)return;currentDocId=id;showDocEditor(d);}
+function newDoc(){currentDocId=null;showDocEditor({judul:'',body:'',klien_id:'',pek_id:'',nama_file:'',link_dokumen:''});}
+function openDoc(id){
+  const d=CACHE.docs.find(x=>x.id===id);
+  if(!d)return;
+  currentDocId=id;
+  showDocEditor(d);
+}
 function showDocEditor(d){
   document.getElementById('docListEl').classList.add('hidden');
   document.getElementById('docEditorEl').classList.remove('hidden');
   document.getElementById('docTitleEl').value=d.judul||'';
   document.getElementById('docBodyEl').value=d.body||'';
-  setTimeout(()=>{const s=document.getElementById('docKlien');if(s)s.value=d.klien_id||'';},50);
+  document.getElementById('docNamaFile').value=d.nama_file||'';
+  document.getElementById('docLink').value=d.link_dokumen||'';
+  setTimeout(()=>{
+    const sk=document.getElementById('docKlien');if(sk)sk.value=d.klien_id||'';
+    const sp=document.getElementById('docPekId');if(sp)sp.value=d.pek_id||'';
+  },50);
 }
-function backDocs(){document.getElementById('docListEl').classList.remove('hidden');document.getElementById('docEditorEl').classList.add('hidden');currentDocId=null;}
+function backDocs(){
+  document.getElementById('docListEl').classList.remove('hidden');
+  document.getElementById('docEditorEl').classList.add('hidden');
+  currentDocId=null;
+}
 async function saveDoc(){
   const judul=document.getElementById('docTitleEl').value;
   const body=document.getElementById('docBodyEl').value;
   const klienId=document.getElementById('docKlien').value||null;
+  const pekId=document.getElementById('docPekId').value||null;
+  const nama_file=document.getElementById('docNamaFile').value;
+  const link_dokumen=document.getElementById('docLink').value;
   const updated_at=todayStr();
-  if(currentDocId) await sb.from('docs').update({judul,body,klien_id:klienId,updated_at}).eq('id',currentDocId);
-  else{ const {data}=await sb.from('docs').insert({judul,body,klien_id:klienId,updated_at}).select(); if(data)currentDocId=data[0].id; }
+  const data={judul,body,klien_id:klienId,pek_id:pekId,nama_file,link_dokumen,updated_at};
+  if(currentDocId) await sb.from('docs').update(data).eq('id',currentDocId);
+  else{ const {data:res}=await sb.from('docs').insert(data).select(); if(res)currentDocId=res[0].id; }
   await loadAll(); toast('✅ Dokumen tersimpan!');
 }
 async function delDoc(id){
@@ -860,9 +953,9 @@ function renderAbsensi(){
   CACHE.absensi.forEach(a=>{if(!byDate[a.tanggal])byDate[a.tanggal]=[];byDate[a.tanggal].push(a);});
   const dates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
   const html=dates.map(d=>{
-    const rows=byDate[d].map(a=>`<tr><td>${a.nama}</td><td>${a.jam}</td><td><span class="badge b-green">Masuk</span></td></tr>`).join('');
-    return`<div style="margin-bottom:14px"><div style="font-weight:700;color:var(--text);margin-bottom:6px;font-size:.85rem">📅 ${fmtDateL(d)}</div>
-      <table><thead><tr><th>Nama</th><th>Jam</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    const rows=byDate[d].map(a=>`<tr><td style="width:60%">${a.nama}</td><td style="width:20%;white-space:nowrap">${a.jam}</td><td style="width:20%;white-space:nowrap"><span class="badge b-green">Masuk</span></td></tr>`).join('');
+        return`<div style="margin-bottom:14px"><div style="font-weight:700;color:var(--text);margin-bottom:6px;font-size:.85rem">📅 ${fmtDateL(d)}</div>
+          <table style="table-layout:fixed;width:100%"><thead><tr><th style="width:60%">Nama</th><th style="width:20%">Jam</th><th style="width:20%">Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }).join('')||'<p style="color:var(--sub);text-align:center">Belum ada data</p>';
   return`<div class="section" style="position:relative;z-index:1">
     <div class="secHead"><h4>Riwayat Absensi</h4>
@@ -939,11 +1032,220 @@ async function delUser(id){
 // ===== MANUAL =====
 function renderManual(){
   return`<div style="position:relative;z-index:1">
-  <div class="section">
-    <div class="secHead"><h4>📖 Manual Pengguna SiKerja Pro</h4></div>
-    <iframe src="manual.html" style="width:100%;height:80vh;border:none;border-radius:8px"></iframe>
+
+  <!-- HEADER -->
+  <div style="background:var(--grad);border-radius:14px;padding:24px 28px;margin-bottom:16px;color:#fff">
+    <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:4px">📖 Manual Pengguna SiKerja Pro</h2>
+    <p style="font-size:.85rem;opacity:.85">Sistem Manajemen Pekerjaan & Produktivitas Tim Akuntansi</p>
+    <span style="display:inline-block;background:rgba(255,255,255,.25);padding:3px 12px;border-radius:20px;font-size:.75rem;font-weight:600;margin-top:8px">Versi 1.0</span>
   </div>
+
+  <!-- 1. LOGIN -->
+  <div class="section">
+    <div class="secHead"><h4>1️⃣ Login</h4></div>
+    <ol style="padding-left:18px;font-size:.84rem;line-height:2">
+      <li>Buka aplikasi SiKerja Pro di browser</li>
+      <li>Pilih nama Anda dari dropdown <b>"Pilih User"</b></li>
+      <li>Masukkan PIN jika ada — kosongkan jika tidak memakai PIN</li>
+      <li>Klik tombol <b>"Masuk →"</b></li>
+      <li>Sistem otomatis mencatat absensi masuk Anda hari ini</li>
+    </ol>
+    <div style="background:#fef3c7;border-left:4px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:.82rem;color:#92400e">
+      ⚠️ Jika dropdown kosong atau muncul pesan error, hubungi Admin untuk memastikan data user sudah tersedia.
+    </div>
+  </div>
+
+  <!-- 2. DASHBOARD -->
+  <div class="section">
+    <div class="secHead"><h4>2️⃣ Dashboard</h4></div>
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:12px">Halaman utama yang menampilkan ringkasan kondisi pekerjaan tim hari ini.</p>
+    <table>
+      <thead><tr><th>Kartu</th><th>Keterangan</th></tr></thead>
+      <tbody>
+        <tr><td>🏢 Total Klien</td><td>Jumlah perusahaan klien yang terdaftar</td></tr>
+        <tr><td>📋 Total Pekerjaan</td><td>Jumlah seluruh pekerjaan</td></tr>
+        <tr><td>🔴 Urgent</td><td>Pekerjaan prioritas Urgent yang belum selesai</td></tr>
+        <tr><td>✅ Selesai</td><td>Jumlah pekerjaan yang sudah diselesaikan</td></tr>
+        <tr><td>⏱️ Waktu Kerja</td><td>Total waktu kerja Anda hari ini</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:.83rem;margin-top:10px">Dashboard juga menampilkan <b>Absensi Hari Ini</b>, daftar <b>Pekerjaan Urgent</b>, dan pekerjaan dengan <b>Deadline 7 Hari</b> ke depan.</p>
+  </div>
+
+  <!-- 3. KLIEN -->
+  <div class="section">
+    <div class="secHead"><h4>3️⃣ Klien <span class="badge" style="background:#ede9fe;color:#7c3aed;font-size:.72rem">Admin Only</span></h4></div>
+    <div style="background:#fee2e2;border-left:4px solid #ef4444;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:#991b1b">
+      ⛔ Menu ini hanya dapat diakses dan dilihat oleh Admin.
+    </div>
+    <h5 style="font-size:.84rem;font-weight:700;margin-bottom:8px">Menambah Klien Baru</h5>
+    <ol style="padding-left:18px;font-size:.84rem;line-height:2">
+      <li>Klik tombol <b>"+ Tambah Klien"</b></li>
+      <li>Isi form: Nama Perusahaan (wajib), NPWP, Bidang Usaha, PIC, No. Kontak, Catatan</li>
+      <li>Klik <b>"💾 Simpan"</b></li>
+    </ol>
+    <table style="margin-top:10px">
+      <thead><tr><th>Fitur</th><th>Cara Penggunaan</th></tr></thead>
+      <tbody>
+        <tr><td>🔍 Cari Klien</td><td>Ketik nama, NPWP, atau PIC di kolom pencarian</td></tr>
+        <tr><td>✏️ Edit Klien</td><td>Klik tombol ✏️ pada baris klien yang ingin diubah</td></tr>
+        <tr><td>🗑️ Hapus Klien</td><td>Klik tombol 🗑️ pada baris klien</td></tr>
+        <tr><td>📄 Jumlah Baris</td><td>Pilih 10 / 15 / 20 baris di bagian bawah tabel</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 4. PEKERJAAN -->
+  <div class="section">
+    <div class="secHead"><h4>4️⃣ Pekerjaan</h4></div>
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:12px">Halaman untuk mencatat log pekerjaan yang sudah dilakukan dan merencanakan pekerjaan mendatang.</p>
+    <h5 style="font-size:.84rem;font-weight:700;margin-bottom:8px">Menambah Pekerjaan</h5>
+    <ol style="padding-left:18px;font-size:.84rem;line-height:2">
+      <li>Klik tombol <b>"+ Tambah"</b></li>
+      <li>Isi <b>Judul</b> dan pilih <b>Klien</b> — keduanya wajib diisi</li>
+      <li>Isi Kategori, Penanggung Jawab, Asisten, Status, Prioritas, Tanggal, Deadline, dan Catatan</li>
+      <li>Klik <b>"💾 Simpan"</b></li>
+    </ol>
+    <h5 style="font-size:.84rem;font-weight:700;margin:12px 0 8px">Pilihan Tampilan</h5>
+    <table>
+      <thead><tr><th>Tampilan</th><th>Fungsi</th></tr></thead>
+      <tbody>
+        <tr><td>☰ List</td><td>Tabel detail semua pekerjaan</td></tr>
+        <tr><td>⊞ Board</td><td>Kanban — drag & drop antar kolom status</td></tr>
+        <tr><td>📅 Kalender</td><td>Lihat pekerjaan berdasarkan tanggal bulan ini</td></tr>
+      </tbody>
+    </table>
+    <h5 style="font-size:.84rem;font-weight:700;margin:12px 0 8px">Aturan Akses Pekerjaan</h5>
+    <table>
+      <thead><tr><th>Role</th><th>Hak Akses</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge" style="background:#ede9fe;color:#7c3aed">Admin</span></td><td>Dapat melihat, edit, dan hapus <b>semua</b> pekerjaan</td></tr>
+        <tr><td><span class="badge" style="background:#dbeafe;color:#2563eb">Asisten</span></td><td>Hanya dapat edit dan hapus pekerjaan yang <b>dibuat sendiri</b></td></tr>
+        <tr><td>🔒 Terkunci</td><td>Pekerjaan milik orang lain — tidak bisa diubah atau dihapus</td></tr>
+      </tbody>
+    </table>
+    <div style="background:#eff6ff;border-left:4px solid #2563eb;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:.82rem;color:#1e40af">
+      💡 Pekerjaan yang terkunci ditandai ikon 🔒 di tabel dan panel detail.
+    </div>
+  </div>
+
+  <!-- 5. DETAIL PEKERJAAN -->
+  <div class="section">
+    <div class="secHead"><h4>5️⃣ Detail Pekerjaan</h4></div>
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:12px">Klik baris pekerjaan mana saja untuk membuka panel detail di sebelah kanan layar.</p>
+    <table>
+      <thead><tr><th>Fitur</th><th>Fungsi</th></tr></thead>
+      <tbody>
+        <tr><td>⏱️ Time Tracker</td><td>Klik ▶ Mulai untuk menghitung waktu kerja, ⏹ Stop untuk menyimpan. Riwayat waktu tercatat otomatis per sesi.</td></tr>
+        <tr><td>☑️ Subtasks</td><td>Tambah subtask di panel detail. Centang jika selesai. Setiap subtask mencatat tanggal dibuat dan nama pembuatnya.</td></tr>
+        <tr><td>💬 Komentar</td><td>Tulis catatan atau diskusi. Tekan Enter atau klik Kirim. Semua user bisa membaca dan menulis komentar.</td></tr>
+        <tr><td>🔄 Ubah Status</td><td>Klik untuk berganti status: Belum Dimulai → Dalam Proses → Selesai.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 6. DOCS -->
+  <div class="section">
+    <div class="secHead"><h4>6️⃣ Docs</h4></div>
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:12px">Buat dan simpan catatan atau dokumen bebas, bisa dikaitkan ke klien tertentu.</p>
+    <ol style="padding-left:18px;font-size:.84rem;line-height:2">
+      <li>Klik <b>"+ Baru"</b> untuk membuat dokumen baru</li>
+      <li>Isi judul dan isi dokumen</li>
+      <li>Pilih klien terkait (opsional)</li>
+      <li>Klik <b>"💾 Simpan"</b></li>
+    </ol>
+    <div style="background:#d1fae5;border-left:4px solid #10b981;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:.82rem;color:#065f46">
+      💡 Klik dokumen yang sudah ada untuk membuka dan mengedit kembali.
+    </div>
+  </div>
+
+  <!-- 7. ABSENSI -->
+  <div class="section">
+    <div class="secHead"><h4>7️⃣ Absensi</h4></div>
+    <table>
+      <thead><tr><th>Jenis</th><th>Keterangan</th></tr></thead>
+      <tbody>
+        <tr><td>🟢 Otomatis</td><td>Dicatat saat user berhasil login setiap hari</td></tr>
+        <tr><td>✍️ Manual</td><td>Klik "+ Manual", pilih user, tanggal, dan jam masuk</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:.83rem;margin-top:10px">Riwayat absensi ditampilkan secara berurutan dari tanggal terbaru.</p>
+  </div>
+
+  <!-- 8. USERS -->
+  <div class="section">
+    <div class="secHead"><h4>8️⃣ Manajemen User <span class="badge" style="background:#ede9fe;color:#7c3aed;font-size:.72rem">Admin Only</span></h4></div>
+    <div style="background:#fee2e2;border-left:4px solid #ef4444;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:#991b1b">
+      ⛔ Menu ini hanya dapat diakses dan dilihat oleh Admin.
+    </div>
+    <h5 style="font-size:.84rem;font-weight:700;margin-bottom:8px">Menambah User Baru</h5>
+    <ol style="padding-left:18px;font-size:.84rem;line-height:2">
+      <li>Klik <b>"+ Tambah User"</b></li>
+      <li>Isi Nama, pilih Role (Admin / Asisten), dan PIN (opsional)</li>
+      <li>Klik <b>"💾 Simpan"</b></li>
+    </ol>
+    <table style="margin-top:10px">
+      <thead><tr><th>Role</th><th>Akses</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge" style="background:#ede9fe;color:#7c3aed">Admin / Akuntan</span></td><td>Akses penuh ke semua menu, data klien, manajemen user, dan seluruh pekerjaan</td></tr>
+        <tr><td><span class="badge" style="background:#dbeafe;color:#2563eb">Asisten</span></td><td>Akses terbatas — tidak melihat menu Klien & Users, hanya bisa edit pekerjaan milik sendiri</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 9. NOTIFIKASI -->
+  <div class="section">
+    <div class="secHead"><h4>9️⃣ Notifikasi</h4></div>
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:12px">Klik ikon 🔔 di pojok kanan atas topbar untuk melihat notifikasi aktif.</p>
+    <table>
+      <thead><tr><th>Notifikasi</th><th>Keterangan</th></tr></thead>
+      <tbody>
+        <tr><td>⚠️ Melewati Deadline</td><td>Pekerjaan yang sudah melewati tanggal deadline</td></tr>
+        <tr><td>⏰ Deadline Mendekat</td><td>Pekerjaan dengan deadline dalam 3 hari ke depan</td></tr>
+        <tr><td>🔴 Urgent</td><td>Pekerjaan dengan prioritas Urgent yang belum selesai</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 10. HAK AKSES -->
+  <div class="section">
+    <div class="secHead"><h4>🔟 Ringkasan Hak Akses</h4></div>
+    <table>
+      <thead><tr><th>Fitur</th><th style="text-align:center">Admin</th><th style="text-align:center">Asisten</th></tr></thead>
+      <tbody>
+        <tr><td>Dashboard</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
+        <tr><td>Pekerjaan — Lihat</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
+        <tr><td>Pekerjaan — Tambah</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
+        <tr><td>Pekerjaan — Edit/Hapus milik sendiri</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
+        <tr><td>Pekerjaan — Edit/Hapus milik orang lain</td><td style="text-align:center">✅</td><td style="text-align:center">🔒</td></tr>
+        <tr><td>Docs</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
+        <tr><td>Absensi</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
+        <tr><td>Klien — Lihat/Tambah/Edit/Hapus</td><td style="text-align:center">✅</td><td style="text-align:center">🔒</td></tr>
+        <tr><td>Manajemen User</td><td style="text-align:center">✅</td><td style="text-align:center">🔒</td></tr>
+      </tbody>
+    </table>
+    <div style="background:#d1fae5;border-left:4px solid #10b981;border-radius:6px;padding:10px 14px;margin-top:12px;font-size:.82rem;color:#065f46">
+      💡 Logout dengan klik tombol <b>"🚪 Keluar"</b> di bagian bawah sidebar.
+    </div>
+  </div>
+
   </div>`;
+}
+function newDocFromPek(pId){
+  closeDetail();
+  showPage('docs');
+  setTimeout(()=>{
+    newDoc();
+    setTimeout(()=>{
+      const sp=document.getElementById('docPekId');
+      if(sp)sp.value=pId;
+      const p=CACHE.pekerjaan.find(x=>x.id===pId);
+      if(p){
+        const t=document.getElementById('docTitleEl');
+        if(t)t.value='Dok: '+p.judul;
+      }
+    },100);
+  },100);
 }
 // ===== NOTIFIKASI =====
 function getNotifs(){
