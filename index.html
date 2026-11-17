@@ -226,20 +226,22 @@ textarea{resize:vertical;min-height:60px}
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPA_URL = 'https://tgiqjfoacjkgddbdfasl.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnaXFqZm9hY2prZ2RkYmRmYXNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MjE3OTYsImV4cCI6MjA5MzI5Nzc5Nn0.if1yTvoy7kqYICreVt7I-pfhcw6cMIgvEzAreR4ZXwY';
+const SUPA_URL = 'https://hxteconntvsfqcpnoqzb.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4dGVjb25udHZzZnFjcG5vcXpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ5MTU5MjIsImV4cCI6MjExMDQ5MTkyMn0.4lOzeQEVzN5f8pnS8kCcCHeXWbU3jkVqg1h0gOzRm6g';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 let currentUser = null, currentPage = 'dashboard', currentView = 'list';
 let timerInterval = null, timerStart = null, timerPekId = null, timerElapsed = 0;
 let dragId = null;
+let realtimeChannel = null;
+let realtimeDebounce = null;
 let CACHE = {users:[],klien:[],pekerjaan:[],absensi:[],docs:[],comments:[],timelogs:[]};
 let rowsPerPageKlien = 10, rowsPerPagePek = 10;
 let pageKlien = 1, pagePek = 1;
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 
 // ===== UTILS =====
-const isAdmin    = () => currentUser && currentUser.role === 'admin';
+const isAdmin    = () => currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
 const todayStr   = () => new Date().toISOString().split('T')[0];
 const nowTime    = () => new Date().toTimeString().slice(0,5);
 const fmtDate    = s => { if(!s)return'-'; const[y,m,d]=s.split('T')[0].split('-'); return`${d}/${m}/${y}`; };
@@ -259,6 +261,50 @@ function toast(msg,dur=2500){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+// ===== REALTIME =====
+function setupRealtime(){
+  if(realtimeChannel) sb.removeChannel(realtimeChannel);
+  realtimeChannel = sb.channel('sikerja-realtime')
+    .on('postgres_changes',{event:'*',schema:'public',table:'users'},      onRealtimeChange)
+    .on('postgres_changes',{event:'*',schema:'public',table:'klien'},      onRealtimeChange)
+    .on('postgres_changes',{event:'*',schema:'public',table:'pekerjaan'},  onRealtimeChange)
+    .on('postgres_changes',{event:'*',schema:'public',table:'absensi'},    onRealtimeChange)
+    .on('postgres_changes',{event:'*',schema:'public',table:'docs'},       onRealtimeChange)
+    .on('postgres_changes',{event:'*',schema:'public',table:'comments'},   onRealtimeChange)
+    .on('postgres_changes',{event:'*',schema:'public',table:'timelogs'},   onRealtimeChange)
+    .subscribe(status=>{
+      if(status==='SUBSCRIBED') showRealtimeDot(true);
+      if(status==='CLOSED'||status==='CHANNEL_ERROR') showRealtimeDot(false);
+    });
+}
+
+function teardownRealtime(){
+  if(realtimeChannel){ sb.removeChannel(realtimeChannel); realtimeChannel=null; }
+  clearTimeout(realtimeDebounce);
+  showRealtimeDot(false);
+}
+
+function onRealtimeChange(){
+  clearTimeout(realtimeDebounce);
+  realtimeDebounce = setTimeout(async()=>{
+    await loadAll();
+    showPage(currentPage);
+  }, 400);
+}
+
+function showRealtimeDot(on){
+  let dot = document.getElementById('realtimeDot');
+  if(!dot){
+    dot = document.createElement('span');
+    dot.id = 'realtimeDot';
+    dot.title = 'Realtime';
+    dot.style.cssText='width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:6px;vertical-align:middle;transition:.3s';
+    const h3 = document.querySelector('.topbar h3');
+    if(h3) h3.appendChild(dot);
+  }
+  dot.style.background = on ? '#10b981' : '#94a3b8';
 }
 
 // ===== LOAD =====
@@ -292,7 +338,7 @@ async function initLogin(){
     const users=data||[];
     sel.innerHTML='<option value="">-- Pilih User --</option>';
     if(!users.length){ err.textContent='⚠️ Belum ada user. Jalankan SQL insert user di Supabase.'; return; }
-    users.forEach(u=>{ const o=document.createElement('option'); o.value=u.id; o.textContent=u.nama+(u.role==='admin'?' (Admin)':' (Asisten)'); sel.appendChild(o); });
+    users.forEach(u=>{ const o=document.createElement('option'); o.value=u.id; const lbl=u.role==='superadmin'?' (Superadmin)':u.role==='admin'?' (Admin)':' (Asisten)'; o.textContent=u.nama+lbl; sel.appendChild(o); });
     err.textContent='';
   }catch(e){
     sel.innerHTML='<option value="">-- Gagal memuat --</option>';
@@ -318,15 +364,16 @@ async function doLogin(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('sideAvatar').textContent=user.nama.charAt(0).toUpperCase();
   document.getElementById('sideName').textContent=user.nama;
-  document.getElementById('sideRole').textContent=user.role==='admin'?'Admin / Akuntan':'Asisten';
+  document.getElementById('sideRole').textContent=user.role==='superadmin'?'Superadmin':user.role==='admin'?'Admin / Akuntan':'Asisten';
   // sembunyikan menu Klien untuk non-admin
   document.getElementById('navKlien').style.display=isAdmin()?'flex':'none';
   document.getElementById('navUsers').style.display=isAdmin()?'flex':'none';
+  setupRealtime();
   showPage('dashboard');
 }
 
 function doLogout(){
-  stopTimer(); currentUser=null;
+  stopTimer(); teardownRealtime(); currentUser=null;
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('loginPin').value='';
   initLogin();
@@ -432,14 +479,14 @@ function renderKlien(q='',pg=1,rpp=rowsPerPageKlien){
     <div style="overflow-x:auto"><table><thead><tr><th>Nama Perusahaan</th><th>NPWP</th><th>Bidang Usaha</th><th>PIC</th><th>No. Kontak</th><th>Email</th><th>Progres</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="pagination">
       <span class="rowsLabel">Baris per halaman:</span>
-      <select onchange="rowsPerPageKlien=+this.value;pageKlien=1;showPage('klien')">
+      <select onchange="rowsPerPageKlien=+this.value;pageKlien=1;renderKlienPage()">
         <option value="10" ${rpp===10?'selected':''}>10</option>
         <option value="15" ${rpp===15?'selected':''}>15</option>
         <option value="20" ${rpp===20?'selected':''}>20</option>
       </select>
-      <button class="btnSm btnGray" onclick="if(pageKlien>1){pageKlien--;showPage('klien')}" ${pg<=1?'disabled':''}>‹</button>
+      <button class="btnSm btnGray" onclick="pageKlien--;renderKlienPage()" ${pg<=1?'disabled':''}>‹</button>
       <span>Hal ${pg} / ${totalPages} (${total} data)</span>
-      <button class="btnSm btnGray" onclick="if(pageKlien<${totalPages}){pageKlien++;showPage('klien')}" ${pg>=totalPages?'disabled':''}>›</button>
+      <button class="btnSm btnGray" onclick="pageKlien++;renderKlienPage()" ${pg>=totalPages?'disabled':''}>›</button>
     </div>
   </div>`;
 }
@@ -475,10 +522,17 @@ async function saveKlien(id){
 async function delKlien(id){
   if(!isAdmin()){ toast('⛔ Hanya Admin'); return; }
   if(!confirm('Hapus klien ini?')) return;
+  const halamanSekarang = pageKlien;
+  alert('Halaman sebelum hapus: ' + halamanSekarang);
   await sb.from('klien').delete().eq('id',id);
-  await loadAll(); showPage('klien'); toast('🗑️ Klien dihapus');
+  await loadAll();
+  const totalPages=Math.ceil(CACHE.klien.length/rowsPerPageKlien)||1;
+  pageKlien = halamanSekarang > totalPages ? totalPages : halamanSekarang;
+  alert('Halaman setelah hapus: ' + pageKlien + ' dari total: ' + totalPages);
+  const q=document.getElementById('srchKlien')?.value||'';
+  document.getElementById('pageContent').innerHTML=renderKlien(q,pageKlien,rowsPerPageKlien);
+  toast('🗑️ Klien dihapus');
 }
-
 // ===== PEKERJAAN =====
 const KATEGORI=['Laporan Keuangan','SPT Tahunan','SPT Masa','Rekonsiliasi','Audit','Payroll','Pembukuan','Lainnya'];
 
@@ -522,14 +576,14 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
     }).join(''):`<tr><td colspan="10" style="color:var(--sub);text-align:center;padding:20px">Tidak ada data</td></tr>`;
     const pagination=`<div class="pagination">
       <span class="rowsLabel">Baris per halaman:</span>
-      <select onchange="rowsPerPagePek=+this.value;pagePek=1;showPage('pekerjaan')">
+      <select onchange="rowsPerPagePek=+this.value;pagePek=1;renderPekerjaanPage()">
         <option value="10" ${rpp===10?'selected':''}>10</option>
         <option value="15" ${rpp===15?'selected':''}>15</option>
         <option value="20" ${rpp===20?'selected':''}>20</option>
       </select>
-      <button class="btnSm btnGray" onclick="if(pagePek>1){pagePek--;showPage('pekerjaan')}" ${pg<=1?'disabled':''}>‹</button>
+      <button class="btnSm btnGray" onclick="pagePek--;renderPekerjaanPage()" ${pg<=1?'disabled':''}>‹</button>
       <span>Hal ${pg} / ${totalPages} (${total} data)</span>
-      <button class="btnSm btnGray" onclick="if(pagePek<${totalPages}){pagePek++;showPage('pekerjaan')}" ${pg>=totalPages?'disabled':''}>›</button>
+      <button class="btnSm btnGray" onclick="pagePek++;renderPekerjaanPage()" ${pg>=totalPages?'disabled':''}>›</button>
     </div>`;
     viewContent=`<div style="overflow-x:auto"><table><thead><tr><th>Pekerjaan</th><th>Klien</th><th>Kategori</th><th>Status</th><th>Prioritas</th><th>Dikerjakan</th><th>Tgl</th><th>Deadline</th><th>Waktu</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>${pagination}`;
   } else if(currentView==='board'){
@@ -582,6 +636,7 @@ function applyFlt(){
   const fP=document.getElementById('fltP')?.value||'';
   const fU=document.getElementById('fltU')?.value||'';
   const q=document.getElementById('srchPek')?.value||'';
+  pagePek=1;
   document.getElementById('pageContent').innerHTML=renderPekerjaan(fK,fS,fP,fU,q,pagePek,rowsPerPagePek);
 }
 function dragKanban(e,id){dragId=id;e.dataTransfer.effectAllowed='move';}
@@ -692,8 +747,21 @@ async function delPek(id){
   const p=CACHE.pekerjaan.find(x=>x.id===id);
   if(p&&!canEditPek(p)){ toast('⛔ Anda tidak memiliki akses untuk menghapus pekerjaan ini'); return; }
   if(!confirm('Hapus pekerjaan ini?')) return;
+  const halamanSekarang = pagePek;
+  alert('Halaman sebelum hapus: ' + halamanSekarang);
   await sb.from('pekerjaan').delete().eq('id',id);
-  await loadAll(); showPage('pekerjaan'); toast('🗑️ Pekerjaan dihapus');
+  await loadAll();
+  const totalPek=CACHE.pekerjaan.filter(x=>!x.parent_id).length;
+  const totalPages=Math.ceil(totalPek/rowsPerPagePek)||1;
+  pagePek = halamanSekarang > totalPages ? totalPages : halamanSekarang;
+  alert('Halaman setelah hapus: ' + pagePek + ' dari total: ' + totalPages);
+  const fK=document.getElementById('fltK')?.value||'';
+  const fS=document.getElementById('fltS')?.value||'';
+  const fP=document.getElementById('fltP')?.value||'';
+  const fU=document.getElementById('fltU')?.value||'';
+  const q=document.getElementById('srchPek')?.value||'';
+  document.getElementById('pageContent').innerHTML=renderPekerjaan(fK,fS,fP,fU,q,pagePek,rowsPerPagePek);
+  toast('🗑️ Pekerjaan dihapus');
 }
 
 // ===== DETAIL PANEL =====
@@ -1246,6 +1314,19 @@ function newDocFromPek(pId){
       }
     },100);
   },100);
+}
+function renderKlienPage(){
+  console.log('renderKlienPage dipanggil, pageKlien=', pageKlien);
+  const q=document.getElementById('srchKlien')?.value||'';
+  document.getElementById('pageContent').innerHTML=renderKlien(q,pageKlien,rowsPerPageKlien);
+}
+function renderPekerjaanPage(){
+  const fK=document.getElementById('fltK')?.value||'';
+  const fS=document.getElementById('fltS')?.value||'';
+  const fP=document.getElementById('fltP')?.value||'';
+  const fU=document.getElementById('fltU')?.value||'';
+  const q=document.getElementById('srchPek')?.value||'';
+  document.getElementById('pageContent').innerHTML=renderPekerjaan(fK,fS,fP,fU,q,pagePek,rowsPerPagePek);
 }
 // ===== NOTIFIKASI =====
 function getNotifs(){
