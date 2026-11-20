@@ -162,6 +162,30 @@ textarea{resize:vertical;min-height:60px}
 .accessDenied{text-align:center;padding:60px 20px;color:var(--sub)}
 .accessDenied .icon{font-size:3rem;margin-bottom:12px}
 .accessDenied p{font-size:.9rem}
+/* ===== RENCANA HARIAN ===== */
+.rCard{background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:10px;border-left:4px solid var(--orange);position:relative}
+.rCard.selesai{border-left-color:var(--green)}
+.rCard-title{font-weight:700;font-size:.88rem;color:var(--text)}
+.rCard-meta{font-size:.75rem;color:var(--sub);margin-top:3px}
+.rLaporan{background:#f0fdf4;border-radius:7px;padding:8px 10px;font-size:.8rem;color:#065f46;margin-top:8px;border-left:3px solid var(--green)}
+.kpiRow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.kpiBox{flex:1;min-width:110px;background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center}
+.kpiBox .kv{font-size:1.5rem;font-weight:800;color:var(--text);display:block}
+.kpiBox .kl{font-size:.72rem;color:var(--sub);margin-top:2px;display:block}
+/* Calendar fix */
+.calWrap{overflow:hidden}
+.calGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;width:100%}
+.calCell{height:90px;background:var(--gray);border-radius:6px;padding:5px;overflow:hidden;transition:.15s}
+.calCell:not(.empty){cursor:pointer}.calCell:not(.empty):hover{background:#dbeafe}
+.calCell.today{background:#eff6ff;border:2px solid var(--blue)}
+.calCell.empty{opacity:.35;cursor:default}
+.calDate{font-weight:700;color:var(--text);font-size:.74rem;margin-bottom:2px}
+.calUserBadge{background:var(--blue);color:#fff;border-radius:3px;padding:1px 5px;font-size:.65rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px;display:block}
+/* Lock overlay */
+.rLockOverlay{position:fixed;inset:0;background:rgba(15,23,42,.75);z-index:400;display:flex;align-items:center;justify-content:center}
+.rLockBox{background:#fff;border-radius:16px;padding:28px 32px;width:460px;max-width:95vw}
+.rLockBox h3{font-size:1.05rem;font-weight:800;color:var(--text);margin-bottom:6px}
+.rLockBox .rLockSub{font-size:.84rem;color:var(--sub);margin-bottom:18px}
 </style>
 </head>
 <body>
@@ -188,6 +212,7 @@ textarea{resize:vertical;min-height:60px}
     <a onclick="showPage('dashboard')" class="active"><span class="ico">🏠</span> Dashboard</a>
     <a onclick="showPage('klien')" id="navKlien"><span class="ico">🏢</span> Klien</a>
     <a onclick="showPage('pekerjaan')"><span class="ico">📋</span> Pekerjaan</a>
+    <a onclick="showPage('rencana')" id="navRencana"><span class="ico">📅</span> Rencana Harian</a>
     <a onclick="showPage('docs')"><span class="ico">📝</span> Docs</a>
     <a onclick="showPage('absensi')"><span class="ico">🕐</span> Absensi</a>
     <a onclick="showPage('users')" id="navUsers"><span class="ico">👥</span> Users</a>
@@ -235,7 +260,7 @@ let timerInterval = null, timerStart = null, timerPekId = null, timerElapsed = 0
 let dragId = null;
 let realtimeChannel = null;
 let realtimeDebounce = null;
-let CACHE = {users:[],klien:[],pekerjaan:[],absensi:[],docs:[],comments:[],timelogs:[]};
+let CACHE = {users:[],klien:[],pekerjaan:[],absensi:[],docs:[],comments:[],timelogs:[],rencana:[]};
 let rowsPerPageKlien = 10, rowsPerPagePek = 10;
 let pageKlien = 1, pagePek = 1;
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
@@ -273,7 +298,8 @@ function setupRealtime(){
     .on('postgres_changes',{event:'*',schema:'public',table:'absensi'},    onRealtimeChange)
     .on('postgres_changes',{event:'*',schema:'public',table:'docs'},       onRealtimeChange)
     .on('postgres_changes',{event:'*',schema:'public',table:'comments'},   onRealtimeChange)
-    .on('postgres_changes',{event:'*',schema:'public',table:'timelogs'},   onRealtimeChange)
+    .on('postgres_changes',{event:'*',schema:'public',table:'timelogs'},       onRealtimeChange)
+    .on('postgres_changes',{event:'*',schema:'public',table:'rencana_harian'}, onRealtimeChange)
     .subscribe(status=>{
       if(status==='SUBSCRIBED') showRealtimeDot(true);
       if(status==='CLOSED'||status==='CHANNEL_ERROR') showRealtimeDot(false);
@@ -309,7 +335,7 @@ function showRealtimeDot(on){
 
 // ===== LOAD =====
 async function loadAll(){
-  const [u,k,p,a,d,c,tl] = await Promise.all([
+  const [u,k,p,a,d,c,tl,r] = await Promise.all([
     sb.from('users').select('*').order('created_at'),
     sb.from('klien').select('*').order('nama'),
     sb.from('pekerjaan').select('*').order('created_at'),
@@ -317,6 +343,7 @@ async function loadAll(){
     sb.from('docs').select('*').order('updated_at',{ascending:false}),
     sb.from('comments').select('*').order('created_at'),
     sb.from('timelogs').select('*').order('created_at'),
+    sb.from('rencana_harian').select('*').order('created_at'),
   ]);
   CACHE.users     = u.data||[];
   CACHE.klien     = k.data||[];
@@ -325,6 +352,7 @@ async function loadAll(){
   CACHE.docs      = d.data||[];
   CACHE.comments  = c.data||[];
   CACHE.timelogs  = tl.data||[];
+  CACHE.rencana   = r.data||[];
 }
 
 // ===== LOGIN =====
@@ -356,6 +384,17 @@ async function doLogin(){
   const user=users&&users[0];
   if(!user){ err.textContent='User tidak ditemukan!'; return; }
   if(user.pin&&user.pin!==pin){ err.textContent='PIN salah!'; return; }
+
+  // ===== PEMBATASAN JAM 08:00 UNTUK ASISTEN =====
+  const isAdminRole = r => r==='admin'||r==='superadmin';
+  if(!isAdminRole(user.role)){
+    const now=new Date(), h=now.getHours(), mn=now.getMinutes();
+    if(h>8||(h===8&&mn>0)){
+      err.textContent='⛔ Akses ditutup. Asisten harus masuk sebelum pukul 08:00 pagi.';
+      return;
+    }
+  }
+
   currentUser=user;
   const today=todayStr();
   const {data:abCek}=await sb.from('absensi').select('id').eq('user_id',uid).eq('tanggal',today);
@@ -365,10 +404,19 @@ async function doLogin(){
   document.getElementById('sideAvatar').textContent=user.nama.charAt(0).toUpperCase();
   document.getElementById('sideName').textContent=user.nama;
   document.getElementById('sideRole').textContent=user.role==='superadmin'?'Superadmin':user.role==='admin'?'Admin / Akuntan':'Asisten';
-  // sembunyikan menu Klien untuk non-admin
   document.getElementById('navKlien').style.display=isAdmin()?'flex':'none';
   document.getElementById('navUsers').style.display=isAdmin()?'flex':'none';
   setupRealtime();
+
+  // ===== CEK RENCANA HARI INI UNTUK ASISTEN =====
+  if(!isAdmin()){
+    const todayRencana=CACHE.rencana.filter(r=>r.user_id===user.id&&r.tanggal===today);
+    if(!todayRencana.length){
+      showPage('dashboard');
+      setTimeout(()=>showForcedRencanaModal(),300);
+      return;
+    }
+  }
   showPage('dashboard');
 }
 
@@ -381,25 +429,25 @@ function doLogout(){
 
 // ===== NAVIGATE =====
 function showPage(p){
-  // proteksi halaman klien untuk non-admin
   if(p==='klien'&&!isAdmin()){ toast('⛔ Akses hanya untuk Admin'); return; }
   if(p==='users'&&!isAdmin()){ toast('⛔ Akses hanya untuk Admin'); return; }
   currentPage=p;
   document.querySelectorAll('nav a').forEach((a,i)=>{
-    a.classList.toggle('active',['dashboard','klien','pekerjaan','docs','absensi','users'][i]===p);
+    a.classList.toggle('active',['dashboard','klien','pekerjaan','rencana','docs','absensi','users'][i]===p);
   });
-  const titles={dashboard:'Dashboard',klien:'Manajemen Klien',pekerjaan:'Log & Rencana Pekerjaan',docs:'Docs',absensi:'Absensi',users:'Manajemen User',manual:'Manual Pengguna'};
-  document.getElementById('pageTitle').textContent=titles[p];
+  const titles={dashboard:'Dashboard',klien:'Manajemen Klien',pekerjaan:'Log & Rencana Pekerjaan',rencana:'Rencana Harian',docs:'Docs',absensi:'Absensi',users:'Manajemen User',manual:'Manual Pengguna'};
+  document.getElementById('pageTitle').textContent=titles[p]||p;
   document.getElementById('pageDate').textContent=pageDate();
   closeDetail();
   const c=document.getElementById('pageContent');
-  if(p==='dashboard')   c.innerHTML=renderDashboard();
-  else if(p==='klien')  c.innerHTML=renderKlien();
-  else if(p==='pekerjaan') c.innerHTML=renderPekerjaan();
-  else if(p==='docs')   c.innerHTML=renderDocs();
+  if(p==='dashboard')    c.innerHTML=renderDashboard();
+  else if(p==='klien')   c.innerHTML=renderKlien();
+  else if(p==='pekerjaan')  c.innerHTML=renderPekerjaan();
+  else if(p==='rencana') c.innerHTML=renderRencana();
+  else if(p==='docs')    c.innerHTML=renderDocs();
   else if(p==='absensi') c.innerHTML=renderAbsensi();
-  else if(p==='users')  c.innerHTML=renderUsers();
-  else if(p==='manual') c.innerHTML=renderManual();
+  else if(p==='users')   c.innerHTML=renderUsers();
+  else if(p==='manual')  c.innerHTML=renderManual();
   renderNotifs();
 }
 
@@ -416,7 +464,33 @@ function renderDashboard(){
   const soon=new Date(); soon.setDate(soon.getDate()+7);
   const soonList=CACHE.pekerjaan.filter(p=>p.deadline&&p.status!=='Selesai'&&new Date(p.deadline)<=soon&&new Date(p.deadline)>=new Date()&&!p.parent_id).slice(0,4);
   const urgList=CACHE.pekerjaan.filter(p=>p.prioritas==='Urgent'&&p.status!=='Selesai'&&!p.parent_id).slice(0,4);
+
+  // KPI Rencana Harian
+  let kpiRencanaHtml='';
+  if(currentUser){
+    const myR=CACHE.rencana.filter(r=>r.user_id===currentUser.id&&r.tanggal===today);
+    const rDone=myR.filter(r=>r.status==='selesai').length;
+    const rCos=[...new Set(myR.map(r=>r.klien_id).filter(Boolean))].length;
+    const lastR=myR.slice().sort((a,b)=>a.created_at.localeCompare(b.created_at)).pop();
+    const canAdd=!isAdmin()&&(!myR.length||(lastR&&lastR.status==='selesai'));
+    if(!isAdmin()||myR.length){
+      kpiRencanaHtml=`<div class="section" style="position:relative;z-index:1;margin-bottom:14px">
+        <div class="secHead"><h4>📋 Rencana Harian Anda — ${fmtDateL(today)}</h4>
+          <button class="btnPrimary" style="font-size:.8rem" onclick="showPage('rencana')">Lihat Semua →</button></div>
+        <div class="kpiRow" style="margin-bottom:${myR.length?'12px':'0'}">
+          <div class="kpiBox"><span class="kv">${myR.length}</span><span class="kl">Total Rencana</span></div>
+          <div class="kpiBox"><span class="kv" style="color:var(--green)">${rDone}</span><span class="kl">Selesai</span></div>
+          <div class="kpiBox"><span class="kv" style="color:var(--orange)">${myR.length-rDone}</span><span class="kl">Dalam Proses</span></div>
+          <div class="kpiBox"><span class="kv" style="color:var(--blue)">${rCos}</span><span class="kl">Perusahaan</span></div>
+        </div>
+        ${!isAdmin()&&canAdd?`<button class="btnPrimary" style="font-size:.8rem" onclick="showPage('rencana');setTimeout(()=>modalTambahRencana(),200)">+ Rencana Baru</button>`:''}
+        ${!isAdmin()&&lastR&&lastR.status==='rencana'?`<div style="background:#fef3c7;border-left:3px solid var(--orange);border-radius:6px;padding:8px 12px;font-size:.8rem;color:#92400e;margin-top:8px">🔄 <b>Aktif:</b> ${lastR.judul} — <a href="#" onclick="showPage('rencana')" style="color:#92400e">Laporkan setelah selesai</a></div>`:''}
+      </div>`;
+    }
+  }
+
   return`
+  ${kpiRencanaHtml}
   <div class="cardGrid">
     <div class="card"><div class="cardIcon">🏢</div><div class="cardVal">${totalK}</div><div class="cardLabel">Total Klien</div><div class="cardAccent acc-blue"></div></div>
     <div class="card"><div class="cardIcon">📋</div><div class="cardVal">${totalP}</div><div class="cardLabel">Total Pekerjaan</div><div class="cardAccent acc-pink"></div></div>
@@ -523,12 +597,10 @@ async function delKlien(id){
   if(!isAdmin()){ toast('⛔ Hanya Admin'); return; }
   if(!confirm('Hapus klien ini?')) return;
   const halamanSekarang = pageKlien;
-  alert('Halaman sebelum hapus: ' + halamanSekarang);
   await sb.from('klien').delete().eq('id',id);
   await loadAll();
   const totalPages=Math.ceil(CACHE.klien.length/rowsPerPageKlien)||1;
   pageKlien = halamanSekarang > totalPages ? totalPages : halamanSekarang;
-  alert('Halaman setelah hapus: ' + pageKlien + ' dari total: ' + totalPages);
   const q=document.getElementById('srchKlien')?.value||'';
   document.getElementById('pageContent').innerHTML=renderKlien(q,pageKlien,rowsPerPageKlien);
   toast('🗑️ Klien dihapus');
@@ -651,14 +723,35 @@ function renderCalendar(list){
   const y=calYear, m=calMonth;
   const days=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
   const months=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+  // Kelompokkan rencana_harian berdasarkan tanggal
+  const rByDate={};
+  CACHE.rencana.forEach(r=>{
+    const d=r.tanggal; if(!rByDate[d])rByDate[d]=[]; rByDate[d].push(r);
+  });
+
   let cells='';
-  for(let i=0;i<new Date(y,m,1).getDay();i++) cells+=`<div class="calCell" style="opacity:.3"></div>`;
-  for(let d=1;d<=new Date(y,m+1,0).getDate();d++){
+  const firstDay=new Date(y,m,1).getDay();
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  for(let i=0;i<firstDay;i++) cells+=`<div class="calCell empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
     const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const evs=list.filter(p=>(p.deadline&&p.deadline.startsWith(ds))||(p.tanggal&&p.tanggal.startsWith(ds)));
-    cells+=`<div class="calCell${ds===todayStr()?' today':''}"><div class="calDate">${d}</div>${evs.map(p=>`<div class="calEvent${p.prioritas==='Urgent'?' urgent':''}" onclick="openDetail('${p.id}')">${p.judul}</div>`).join('')}</div>`;
+    const dayR=rByDate[ds]||[];
+    const isToday=ds===todayStr();
+    // Kelompokkan per user
+    const byUser={};
+    dayR.forEach(r=>{ if(!byUser[r.user_id])byUser[r.user_id]=[]; byUser[r.user_id].push(r); });
+    const hasData=dayR.length>0;
+    const userTags=Object.entries(byUser).map(([uid,items])=>{
+      const u=CACHE.users.find(x=>x.id===uid);
+      const done=items.filter(r=>r.status==='selesai').length;
+      return `<span class="calUserBadge" title="${u?u.nama:'?'}: ${done}/${items.length} selesai">${u?u.nama.split(' ')[0]:'?'} (${items.length})</span>`;
+    }).join('');
+    cells+=`<div class="calCell${isToday?' today':''}${!hasData?' empty':''}" ${hasData?`onclick="showCalDayDetail('${ds}')"`:''}>
+      <div class="calDate">${d}</div>${userTags}
+    </div>`;
   }
-  const isCurrentMonth = y===new Date().getFullYear()&&m===new Date().getMonth();
+  const isCurrentMonth=y===new Date().getFullYear()&&m===new Date().getMonth();
   return`<div class="calWrap">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <button onclick="prevMonth()" style="padding:6px 14px;border:1.5px solid var(--gray2);border-radius:7px;background:#fff;cursor:pointer;font-size:.84rem;font-weight:600">‹ Sebelumnya</button>
@@ -669,7 +762,39 @@ function renderCalendar(list){
       <button onclick="nextMonth()" style="padding:6px 14px;border:1.5px solid var(--gray2);border-radius:7px;background:#fff;cursor:pointer;font-size:.84rem;font-weight:600">Berikutnya ›</button>
     </div>
     <div class="calGrid">${days.map(d=>`<div class="calHead">${d}</div>`).join('')}${cells}</div>
+    <div style="font-size:.74rem;color:var(--sub);margin-top:8px">💡 Klik tanggal untuk melihat detail rencana harian</div>
   </div>`;
+}
+
+function showCalDayDetail(ds){
+  const dayR=CACHE.rencana.filter(r=>r.tanggal===ds).sort((a,b)=>a.user_id.localeCompare(b.user_id)||a.urutan-b.urutan);
+  const mo=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const [y,mo2,d]=ds.split('-');
+  const tgl=`${parseInt(d)} ${mo[parseInt(mo2)-1]} ${y}`;
+  const byUser={};
+  dayR.forEach(r=>{ if(!byUser[r.user_id])byUser[r.user_id]=[]; byUser[r.user_id].push(r); });
+  const content=Object.keys(byUser).length?Object.entries(byUser).map(([uid,items])=>{
+    const u=CACHE.users.find(x=>x.id===uid);
+    const done=items.filter(r=>r.status==='selesai').length;
+    const cos=[...new Set(items.map(r=>r.klien_id).filter(Boolean))].map(cid=>CACHE.klien.find(k=>k.id===cid)?.nama).filter(Boolean);
+    return`<div style="margin-bottom:14px">
+      <div style="font-weight:700;font-size:.85rem;color:var(--text);margin-bottom:6px;border-bottom:1px solid var(--gray2);padding-bottom:4px">
+        👤 ${u?u.nama:'?'} — ${done}/${items.length} selesai · ${cos.length} perusahaan
+      </div>
+      ${items.map(r=>{
+        const k=CACHE.klien.find(k=>k.id===r.klien_id);
+        return`<div style="margin-bottom:6px;padding:8px 10px;background:var(--gray);border-radius:7px;border-left:3px solid ${r.status==='selesai'?'var(--green)':'var(--orange)'}">
+          <div style="font-weight:600;font-size:.82rem">${r.judul} ${r.status==='selesai'?'✅':'🔄'}</div>
+          <div style="font-size:.76rem;color:var(--sub)">🏢 ${k?k.nama:'—'}</div>
+          ${r.catatan?`<div style="font-size:.75rem;color:var(--sub);margin-top:2px">${r.catatan}</div>`:''}
+          ${r.laporan?`<div style="font-size:.76rem;color:#065f46;margin-top:4px;background:#f0fdf4;border-radius:4px;padding:4px 7px">📝 ${r.laporan}</div>`:''}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join(''):`<p style="color:var(--sub);text-align:center;padding:20px 0">Tidak ada rencana</p>`;
+  document.getElementById('modalBox').innerHTML=`<h4>📅 Rencana — ${tgl}</h4>${content}
+    <button onclick="closeModal()" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem;margin-top:12px">Tutup</button>`;
+  document.getElementById('modalWrap').classList.remove('hidden');
 }
 
 function prevMonth(){
@@ -748,13 +873,11 @@ async function delPek(id){
   if(p&&!canEditPek(p)){ toast('⛔ Anda tidak memiliki akses untuk menghapus pekerjaan ini'); return; }
   if(!confirm('Hapus pekerjaan ini?')) return;
   const halamanSekarang = pagePek;
-  alert('Halaman sebelum hapus: ' + halamanSekarang);
   await sb.from('pekerjaan').delete().eq('id',id);
   await loadAll();
   const totalPek=CACHE.pekerjaan.filter(x=>!x.parent_id).length;
   const totalPages=Math.ceil(totalPek/rowsPerPagePek)||1;
   pagePek = halamanSekarang > totalPages ? totalPages : halamanSekarang;
-  alert('Halaman setelah hapus: ' + pagePek + ' dari total: ' + totalPages);
   const fK=document.getElementById('fltK')?.value||'';
   const fS=document.getElementById('fltS')?.value||'';
   const fP=document.getElementById('fltP')?.value||'';
@@ -1097,6 +1220,197 @@ async function delUser(id){
   await sb.from('users').delete().eq('id',id);
   await loadAll(); showPage('users'); toast('🗑️ User dihapus');
 }
+// ===== RENCANA HARIAN =====
+function renderRencana(){
+  const today=todayStr();
+  const myR=CACHE.rencana.filter(r=>r.user_id===currentUser.id&&r.tanggal===today)
+    .sort((a,b)=>a.urutan-b.urutan||a.created_at.localeCompare(b.created_at));
+  const total=myR.length;
+  const rDone=myR.filter(r=>r.status==='selesai').length;
+  const rCos=[...new Set(myR.map(r=>r.klien_id).filter(Boolean))].length;
+  const lastR=myR[myR.length-1];
+  const canAddNew=!myR.length||(lastR&&lastR.status==='selesai');
+
+  const kpiHtml=`<div class="kpiRow">
+    <div class="kpiBox"><span class="kv">${total}</span><span class="kl">Total Rencana</span></div>
+    <div class="kpiBox"><span class="kv" style="color:var(--green)">${rDone}</span><span class="kl">Selesai</span></div>
+    <div class="kpiBox"><span class="kv" style="color:var(--orange)">${total-rDone}</span><span class="kl">Dalam Proses</span></div>
+    <div class="kpiBox"><span class="kv" style="color:var(--blue)">${rCos}</span><span class="kl">Perusahaan</span></div>
+  </div>`;
+
+  const listHtml=myR.length?myR.map((r,i)=>{
+    const k=CACHE.klien.find(k=>k.id===r.klien_id);
+    const stBadge=r.status==='selesai'
+      ?`<span class="badge b-done">✅ Selesai</span>`
+      :`<span class="badge b-progress">🔄 Rencana</span>`;
+    return`<div class="rCard ${r.status}">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:10px">
+        <div style="flex:1">
+          <div class="rCard-title">${i+1}. ${r.judul}</div>
+          <div class="rCard-meta">🏢 ${k?k.nama:'—'} &nbsp;·&nbsp; ${stBadge}</div>
+          ${r.catatan?`<div style="font-size:.78rem;color:var(--sub);margin-top:4px">${r.catatan}</div>`:''}
+        </div>
+        ${r.status==='rencana'?`<button class="btnPrimary" style="font-size:.76rem;padding:6px 12px;white-space:nowrap" onclick="modalClosingRencana('${r.id}')">✅ Selesai &amp; Laporkan</button>`:''}
+      </div>
+      ${r.laporan?`<div class="rLaporan">📝 Laporan: ${r.laporan}</div>`:''}
+      ${r.closing_at?`<div style="font-size:.72rem;color:var(--sub);margin-top:4px">Ditutup: ${r.closing_at.substring(11,16)}</div>`:''}
+    </div>`;
+  }).join(''):`<div style="text-align:center;padding:30px;color:var(--sub)">Belum ada rencana hari ini — mulai dengan menambah rencana pertama Anda!</div>`;
+
+  const addBtn=isAdmin()?'':canAddNew
+    ?`<button class="btnPrimary" onclick="modalTambahRencana()">+ Tambah Rencana Baru</button>`
+    :`<button class="btnPrimary" style="opacity:.5;cursor:not-allowed" disabled>+ Tambah Rencana (Tutup rencana aktif dulu)</button>`;
+
+  // Admin: tampilkan semua user
+  let adminViewHtml='';
+  if(isAdmin()){
+    const allToday=CACHE.rencana.filter(r=>r.tanggal===today);
+    if(allToday.length){
+      const byUser={};
+      allToday.forEach(r=>{ if(!byUser[r.user_id])byUser[r.user_id]=[]; byUser[r.user_id].push(r); });
+      adminViewHtml=`<div class="section" style="margin-top:14px;position:relative;z-index:1">
+        <div class="secHead"><h4>👥 Semua Rencana Hari Ini</h4></div>
+        ${Object.entries(byUser).map(([uid,items])=>{
+          const u=CACHE.users.find(x=>x.id===uid);
+          const done=items.filter(r=>r.status==='selesai').length;
+          const cos=[...new Set(items.map(r=>r.klien_id).filter(Boolean))].map(cid=>CACHE.klien.find(k=>k.id===cid)?.nama).filter(Boolean);
+          return`<div style="margin-bottom:14px">
+            <div style="font-weight:700;font-size:.85rem;margin-bottom:6px;color:var(--text)">
+              ${u?u.nama:'?'} — ${done}/${items.length} selesai · ${cos.length} perusahaan
+              ${done===items.length&&items.length?`<span class="badge b-done" style="margin-left:6px">KPI ${done}/${items.length} ✅</span>`:''}
+            </div>
+            ${items.map(r=>{const k=CACHE.klien.find(k=>k.id===r.klien_id);return`<div style="font-size:.8rem;padding:5px 10px;background:var(--gray);border-radius:5px;margin-bottom:4px;border-left:3px solid ${r.status==='selesai'?'var(--green)':'var(--orange)'}">${r.judul}${k?' — '+k.nama:''} ${r.status==='selesai'?'✅':'🔄'}</div>`;}).join('')}
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+  }
+
+  return`<div style="position:relative;z-index:1">
+    <div class="section">
+      <div class="secHead">
+        <h4>📋 Rencana Harian — ${fmtDateL(today)}</h4>
+        ${addBtn}
+      </div>
+      ${kpiHtml}
+      ${listHtml}
+    </div>
+    ${adminViewHtml}
+  </div>`;
+}
+
+function showForcedRencanaModal(){
+  const klienOpts=CACHE.klien.map(k=>`<option value="${k.id}">${k.nama}</option>`).join('');
+  const overlay=document.createElement('div');
+  overlay.className='rLockOverlay'; overlay.id='rencanaForceOverlay';
+  overlay.innerHTML=`<div class="rLockBox">
+    <h3>📋 Rencanakan Pekerjaan Hari Ini</h3>
+    <p class="rLockSub">Sebelum mulai bekerja, buat rencana pertama Anda. Rencana = pekerjaan yang akan Anda lakukan dan untuk perusahaan mana.</p>
+    <div class="formGrid">
+      <div class="formGroup full"><label>Judul Pekerjaan *</label><input id="rfjudul" placeholder="Contoh: Pembukuan klien ABC"/></div>
+      <div class="formGroup"><label>Klien / Perusahaan *</label>
+        <select id="rfklien"><option value="">-- Pilih --</option>${klienOpts}</select></div>
+      <div class="formGroup"><label>Kategori</label>
+        <select id="rfkat">${KATEGORI.map(k=>`<option>${k}</option>`).join('')}</select></div>
+      <div class="formGroup full"><label>Catatan (opsional)</label>
+        <textarea id="rfcatat" style="min-height:60px" placeholder="Deskripsi singkat pekerjaan..."></textarea></div>
+    </div>
+    <div class="flex mt10">
+      <button class="btnPrimary" onclick="saveForcedRencana()">✅ Mulai Kerja</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function saveForcedRencana(){
+  const judul=document.getElementById('rfjudul').value.trim();
+  const klienId=document.getElementById('rfklien').value;
+  if(!judul){ alert('Judul pekerjaan wajib diisi!'); return; }
+  if(!klienId){ alert('Pilih klien/perusahaan!'); return; }
+  const catatan=document.getElementById('rfcatat').value;
+  const kat=document.getElementById('rfkat').value;
+  const today=todayStr();
+  const existing=CACHE.rencana.filter(r=>r.user_id===currentUser.id&&r.tanggal===today);
+  await sb.from('rencana_harian').insert({
+    user_id:currentUser.id, tanggal:today, klien_id:klienId, judul,
+    catatan:catatan+(kat?'\nKategori: '+kat:''),
+    urutan:existing.length+1, status:'rencana'
+  });
+  await loadAll();
+  document.getElementById('rencanaForceOverlay')?.remove();
+  showPage('dashboard');
+  toast('✅ Rencana dibuat! Selamat bekerja.');
+}
+
+function modalTambahRencana(){
+  if(!isAdmin()){
+    const today=todayStr();
+    const myR=CACHE.rencana.filter(r=>r.user_id===currentUser.id&&r.tanggal===today);
+    const last=myR.slice().sort((a,b)=>a.created_at.localeCompare(b.created_at)).pop();
+    if(last&&last.status==='rencana'){
+      toast('⛔ Selesaikan rencana aktif terlebih dahulu sebelum menambah rencana baru'); return;
+    }
+  }
+  const klienOpts=CACHE.klien.map(k=>`<option value="${k.id}">${k.nama}</option>`).join('');
+  document.getElementById('modalBox').innerHTML=`<h4>➕ Tambah Rencana Baru</h4>
+    <div class="formGrid">
+      <div class="formGroup full"><label>Judul Pekerjaan *</label><input id="mrjudul" placeholder="Contoh: Rekonsiliasi bank PT ABC"/></div>
+      <div class="formGroup"><label>Klien / Perusahaan *</label>
+        <select id="mrklien"><option value="">-- Pilih --</option>${klienOpts}</select></div>
+      <div class="formGroup"><label>Kategori</label>
+        <select id="mrkat">${KATEGORI.map(k=>`<option>${k}</option>`).join('')}</select></div>
+      <div class="formGroup full"><label>Catatan / Deskripsi</label>
+        <textarea id="mrcatat" style="min-height:70px" placeholder="Uraian singkat pekerjaan..."></textarea></div>
+    </div>
+    <div class="flex mt10">
+      <button class="btnPrimary" onclick="saveRencana()">💾 Simpan Rencana</button>
+      <button onclick="closeModal()" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">Batal</button>
+    </div>`;
+  document.getElementById('modalWrap').classList.remove('hidden');
+}
+
+async function saveRencana(){
+  const judul=document.getElementById('mrjudul').value.trim();
+  const klienId=document.getElementById('mrklien').value;
+  if(!judul){ alert('Judul wajib!'); return; }
+  if(!klienId){ alert('Pilih klien!'); return; }
+  const catatan=document.getElementById('mrcatat').value;
+  const kat=document.getElementById('mrkat').value;
+  const today=todayStr();
+  const existing=CACHE.rencana.filter(r=>r.user_id===currentUser.id&&r.tanggal===today);
+  await sb.from('rencana_harian').insert({
+    user_id:currentUser.id, tanggal:today, klien_id:klienId, judul,
+    catatan:catatan+(kat?'\nKategori: '+kat:''),
+    urutan:existing.length+1, status:'rencana'
+  });
+  await loadAll(); closeModal(); showPage('rencana'); toast('✅ Rencana ditambahkan!');
+}
+
+function modalClosingRencana(id){
+  const r=CACHE.rencana.find(x=>x.id===id); if(!r)return;
+  document.getElementById('modalBox').innerHTML=`<h4>✅ Laporan Penyelesaian</h4>
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:14px">Pekerjaan: <b>${r.judul}</b></p>
+    <div class="formGroup full">
+      <label>Uraian pekerjaan yang telah dilakukan *</label>
+      <textarea id="closingLaporan" style="min-height:100px" placeholder="Deskripsikan apa yang sudah Anda kerjakan..."></textarea>
+    </div>
+    <div class="flex mt10">
+      <button class="btnPrimary" onclick="saveClosingRencana('${id}')">✅ Tutup &amp; Simpan Laporan</button>
+      <button onclick="closeModal()" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">Batal</button>
+    </div>`;
+  document.getElementById('modalWrap').classList.remove('hidden');
+}
+
+async function saveClosingRencana(id){
+  const laporan=document.getElementById('closingLaporan').value.trim();
+  if(!laporan){ alert('Laporan wajib diisi!'); return; }
+  await sb.from('rencana_harian').update({
+    status:'selesai', laporan, closing_at:new Date().toISOString()
+  }).eq('id',id);
+  await loadAll(); closeModal(); showPage('rencana');
+  toast('✅ Pekerjaan ditutup! Rencana berikutnya bisa ditambahkan.');
+}
+
 // ===== MANUAL =====
 function renderManual(){
   return`<div style="position:relative;z-index:1">
