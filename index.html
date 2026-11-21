@@ -733,7 +733,7 @@ function showPage(p){
   Object.values(dashCharts).forEach(c=>{ try{c.destroy();}catch(_){} }); dashCharts={};
   const c=document.getElementById('pageContent');
   if(p==='dashboard'){ c.innerHTML=renderDashboard(); setTimeout(initDashboardCharts, 30); }
-  else if(p==='klien')     c.innerHTML=renderKlien();
+  else if(p==='klien')     renderKlienPage();
   else if(p==='pekerjaan') c.innerHTML=renderPekerjaan();
   else if(p==='rencana')   c.innerHTML=renderRencana();
   else if(p==='docs')      c.innerHTML=renderDocs();
@@ -1534,7 +1534,7 @@ function showClientKpiModal(klienId){
 }
 
 // ===== KLIEN (Admin only) =====
-function renderKlien(q='',pg=1,rpp=rowsPerPageKlien){
+function renderKlien(q='',pg=pageKlien,rpp=rowsPerPageKlien){
   if(!isAdmin()) return`<div class="accessDenied"><div class="icon">⛔</div><p>Halaman ini hanya dapat diakses oleh <b>Admin</b>.</p></div>`;
   let list=CACHE.klien.filter(k=>!q||(k.nama+' '+(k.npwp||'')+(k.nama_kontak||'')).toLowerCase().includes(q.toLowerCase()));
   const total=list.length;
