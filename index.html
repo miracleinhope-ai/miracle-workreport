@@ -906,7 +906,10 @@ function renderDashboard(){
     <div class="section">
       <div class="secHead">
         <h4>🗓️ Pekerjaan Harian Anda — ${fmtDateL(today)}</h4>
-        <button class="btnPrimary" style="font-size:.8rem" onclick="showPage('rencana')">Kelola Pekerjaan Harian →</button>
+        <div class="flex">
+          <button class="btnPrimary" style="font-size:.8rem" onclick="showForcedRencanaModal()">+ Rencanakan Pekerjaan</button>
+          <button class="btnSm btnGray" style="padding:8px 12px;font-size:.8rem" onclick="showPage('rencana')">Kelola Pekerjaan Harian →</button>
+        </div>
       </div>
       <div style="overflow-x:auto">
         <table><thead><tr><th>#</th><th>Klien &amp; Periode</th><th>Sistem</th><th>Jenis Tindakan</th><th>Uraian</th><th>Mulai</th><th>Durasi</th><th>Aksi</th></tr></thead>
@@ -2542,14 +2545,19 @@ function cekRiwayatTindakan(prefix){
 }
 
 function showForcedRencanaModal(){
+  document.getElementById('rencanaForceOverlay')?.remove();
   const overlay=document.createElement('div');
   overlay.className='rLockOverlay'; overlay.id='rencanaForceOverlay';
   overlay.innerHTML=`<div class="rLockBox">
-    <h3>🗓️ Rencanakan Pekerjaan Hari Ini (${fmtDateL(todayStr())})</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <h3 style="margin:0">🗓️ Rencanakan Pekerjaan Hari Ini (${fmtDateL(todayStr())})</h3>
+      <button onclick="document.getElementById('rencanaForceOverlay')?.remove()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--sub)" title="Tutup sementara">✕</button>
+    </div>
     <p class="rLockSub">Sebelum mulai bekerja, buat minimal 1 rencana tindakan harian Anda (waktu tercatat dalam WITA).</p>
     ${buildTindakanFormHtml('rf')}
     <div class="flex mt10">
       <button class="btnPrimary" id="rfBtnSave" onclick="submitTindakan('rf', true)">✅ Simpan &amp; Mulai Kerja</button>
+      <button class="btnSm btnGray" style="padding:9px 14px;font-size:.82rem" onclick="document.getElementById('rencanaForceOverlay')?.remove()">Lihat Dashboard Dulu</button>
     </div>
   </div>`;
   document.body.appendChild(overlay);
