@@ -24,14 +24,25 @@
 .btnLogin{width:100%;padding:13px;background:var(--grad);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer}
 .loginLogo{width:60px;height:60px;background:var(--grad);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.8rem}
 body{display:flex;height:100vh;overflow:hidden;background:var(--gray)}
-#sidebar{width:240px;min-width:240px;background:var(--grad2);display:flex;flex-direction:column;z-index:10}
-.sideTop{padding:20px 20px 14px;border-bottom:1px solid rgba(255,255,255,.15)}
-.sideTop h2{color:#fff;font-size:1.05rem;font-weight:700}
-.sideTop p{color:rgba(255,255,255,.65);font-size:.72rem;margin-top:1px}
-.userBadge{margin:10px 16px;background:rgba(255,255,255,.15);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:9px}
+#sidebar{width:240px;min-width:240px;background:var(--grad2);display:flex;flex-direction:column;z-index:10;transition:width .22s ease,min-width .22s ease}
+#sidebar.collapsed{width:0;min-width:0;overflow:hidden;border:none}
+.sideTop{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sideTop h2{color:#fff;font-size:.98rem;font-weight:700;line-height:1.2}
+.sideTop p{color:rgba(255,255,255,.65);font-size:.7rem;margin-top:2px}
+.btnSideHide{background:rgba(255,255,255,.16);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:.82rem;flex-shrink:0}
+.btnSideHide:hover{background:rgba(255,255,255,.28)}
+.userBadge{margin:8px 12px 6px;background:rgba(255,255,255,.15);border-radius:10px;padding:9px 11px;display:flex;align-items:center;gap:9px}
 .userAvatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.88rem;flex-shrink:0}
 .userInfo p{color:#fff;font-size:.82rem;font-weight:600}
 .userInfo span{color:rgba(255,255,255,.65);font-size:.7rem}
+/* FLOATING MENU WHEN SIDEBAR COLLAPSED */
+#floatingMenu{position:fixed;left:12px;top:68px;background:var(--grad2);border-radius:16px;padding:8px 6px;box-shadow:0 10px 30px rgba(30,64,175,.32);z-index:80;display:none;flex-direction:column;align-items:center;gap:4px}
+#floatingMenu.show{display:flex}
+#floatingMenu a,#floatingMenu button{position:relative;width:40px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.85);text-decoration:none;font-size:1.05rem;cursor:pointer;border:none;background:transparent;transition:.15s}
+#floatingMenu a:hover,#floatingMenu a.active,#floatingMenu button:hover{background:rgba(255,255,255,.24);color:#fff}
+#floatingMenu a[data-label]:hover::after,#floatingMenu button[data-label]:hover::after{content:attr(data-label);position:absolute;left:50px;top:50%;transform:translateY(-50%);background:#0f172a;color:#fff;padding:5px 10px;border-radius:7px;font-size:.75rem;font-weight:600;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.2);pointer-events:none;z-index:90}
+.floatSep{width:26px;height:1px;background:rgba(255,255,255,.2);margin:3px 0}
+body.side-collapsed #main .content{padding-left:68px}
 /* SIDEBAR SCROLL */
 nav{flex:1;padding:6px 10px;overflow-y:auto;scroll-behavior:smooth}
 nav a{display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:9px;color:rgba(255,255,255,.8);text-decoration:none;font-size:.85rem;margin-bottom:1px;cursor:pointer;transition:.15s}
@@ -223,12 +234,11 @@ textarea{resize:vertical;min-height:60px}
 </div>
 
 <div id="sidebar">
-  <div class="sideTop"><h2>📊 SiKerja Pro</h2><p>Akuntansi & Produktivitas</p></div>
-  <div class="userBadge">
-    <div class="userAvatar" id="sideAvatar">?</div>
-    <div class="userInfo"><p id="sideName">-</p><span id="sideRole">-</span></div>
+  <div class="sideTop">
+    <div><h2>📊 Miracle Work Report</h2><p>Akuntansi &amp; Produktivitas</p></div>
+    <button class="btnSideHide" onclick="toggleSidebar()" title="Sembunyikan Sidebar">◀</button>
   </div>
-    <nav id="sideNav">
+  <nav id="sideNav">
     <a data-page="dashboard" onclick="showPage('dashboard')" class="active"><span class="ico">🏠</span> Dashboard</a>
     <a data-page="klien" onclick="showPage('klien')" id="navKlien"><span class="ico">🏢</span> Klien</a>
     <a data-page="pekerjaan" onclick="showPage('pekerjaan')"><span class="ico">📋</span> Pekerjaan</a>
@@ -239,13 +249,37 @@ textarea{resize:vertical;min-height:60px}
     <a data-page="users" onclick="showPage('users')" id="navUsers"><span class="ico">👥</span> Users</a>
     <a data-page="manual" onclick="showPage('manual')"><span class="ico">📖</span> Manual</a>
   </nav>
-  <div class="sideBottom"><button class="btnLogout" onclick="doLogout()">🚪 Keluar</button></div>
+  <div class="userBadge">
+    <div class="userAvatar" id="sideAvatar">?</div>
+    <div class="userInfo"><p id="sideName">-</p><span id="sideRole">-</span></div>
+  </div>
+  <div class="sideBottom"><button class="btnLogout" onclick="doLogout()">🚪 Keluar / Exit</button></div>
+</div>
+
+<div id="floatingMenu">
+  <button onclick="toggleSidebar()" data-label="Buka Sidebar">☰</button>
+  <div class="floatSep"></div>
+  <a data-page="dashboard" data-label="Dashboard" onclick="showPage('dashboard')" class="active">🏠</a>
+  <a data-page="klien" id="fNavKlien" data-label="Klien" onclick="showPage('klien')">🏢</a>
+  <a data-page="pekerjaan" data-label="Pekerjaan" onclick="showPage('pekerjaan')">📋</a>
+  <a data-page="rencana" data-label="Pekerjaan Harian" onclick="showPage('rencana')">🗓️</a>
+  <a data-page="docs" data-label="Docs" onclick="showPage('docs')">📝</a>
+  <a data-page="absensi" data-label="Absensi" onclick="showPage('absensi')">🕐</a>
+  <a data-page="master" id="fNavMaster" data-label="Master Data" onclick="showPage('master')">⚙️</a>
+  <a data-page="users" id="fNavUsers" data-label="Users" onclick="showPage('users')">👥</a>
+  <a data-page="manual" data-label="Manual" onclick="showPage('manual')">📖</a>
+  <div class="floatSep"></div>
+  <button id="floatUserBtn" data-label="User Login" onclick="toggleSidebar()" style="font-size:.8rem;font-weight:800;background:rgba(255,255,255,.2)">?</button>
+  <button data-label="Keluar / Exit" onclick="doLogout()">🚪</button>
 </div>
 
 <div id="main">
   <div class="bgDeco"></div><div class="bgDeco2"></div>
   <div class="topbar">
-    <h3 id="pageTitle">Dashboard</h3>
+    <div class="flex">
+      <button class="btnSm btnGray" id="btnTopMenu" onclick="toggleSidebar()" title="Tampilkan/Sembunyikan Sidebar" style="margin:0;font-size:.95rem">☰</button>
+      <h3 id="pageTitle">Dashboard</h3>
+    </div>
     <div class="flex">
       <span class="witaPill" id="witaClock">--:-- WITA</span>
       <span id="pageDate"></span>
@@ -290,6 +324,8 @@ let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 let serverOffsetMs = 0;
 let dashFilter = { bulan: 0, tahun: 0, userId: '', klienId: '' };
 let tindakanFilter = { tanggal: '', bulan: 0, tahun: 0, klienId: '', userId: '' };
+let pekFilter = { dari: '', sampai: '', userId: '', klienId: '', status: '', q: '' };
+let abCalYear = new Date().getFullYear(), abCalMonth = new Date().getMonth();
 let dashCharts = {};
 let migrationReady = false;
 let loginLateInfo = null; // { isLate, jam, menitTerlambat, lateMonth, lateTotal }
@@ -341,6 +377,7 @@ const fmtDur     = s => { s=Math.max(0,Math.round(s||0)); const h=Math.floor(s/3
 const fmtDurHM   = s => { s=Math.max(0,Math.round(s||0)); const h=Math.floor(s/3600),m=Math.floor((s%3600)/60); return h>0?`${h}j ${m}m`:`${m}m`; };
 const badgeSt    = s => s==='Selesai'?'b-done':s==='Dalam Proses'?'b-progress':'b-plan';
 const esc        = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const safeUrl    = u => { try{ const p=new URL(String(u||'')); return (p.protocol==='http:'||p.protocol==='https:') ? u : '#'; }catch(_){ return '#'; } };
 
 function canEditPek(p){
   if(!currentUser) return false;
@@ -494,14 +531,22 @@ async function doLogin(){
   const my = witaMonthYear();
   dashFilter = { bulan: my.bulan, tahun: my.tahun, userId: '', klienId: '' };
   tindakanFilter = { tanggal: today, bulan: my.bulan, tahun: my.tahun, klienId: '', userId: '' };
+  const firstDayOfMonth = `${my.tahun}-${String(my.bulan).padStart(2,'0')}-01`;
+  pekFilter = { dari: firstDayOfMonth, sampai: today, userId: '', klienId: '', status: '', q: '' };
+  abCalYear = my.tahun; abCalMonth = my.bulan - 1;
 
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('sideAvatar').textContent=user.nama.charAt(0).toUpperCase();
   document.getElementById('sideName').textContent=user.nama;
   document.getElementById('sideRole').textContent=user.role==='superadmin'?'Superadmin':user.role==='admin'?'Admin / Akuntan':'Asisten';
+  const fBtn = document.getElementById('floatUserBtn');
+  if(fBtn){ fBtn.textContent=user.nama.charAt(0).toUpperCase(); fBtn.dataset.label=`${user.nama} (${user.role})`; }
   document.getElementById('navKlien').style.display=isAdmin()?'flex':'none';
   document.getElementById('navUsers').style.display=isAdmin()?'flex':'none';
   document.getElementById('navMaster').style.display=isAdmin()?'flex':'none';
+  document.getElementById('fNavKlien').style.display=isAdmin()?'flex':'none';
+  document.getElementById('fNavUsers').style.display=isAdmin()?'flex':'none';
+  document.getElementById('fNavMaster').style.display=isAdmin()?'flex':'none';
   const wc = document.getElementById('witaClock'); if(wc) wc.textContent = nowTime() + ' WITA';
   setupRealtime();
 
@@ -512,22 +557,40 @@ async function doLogin(){
     setTimeout(()=>notifySuperadminDesktop(), 800);
   }
 
-  // ===== CEK CLOSING KEMARIN & RENCANA HARI INI UNTUK ASISTEN =====
+  // ===== ALUR POP-UP ASISTEN SAAT LOGIN =====
   if(!isAdmin() && migrationReady){
-    const unclosedPrev = CACHE.tindakan.filter(t=>t.user_id===user.id && t.tanggal_kerja<today && (t.status==='rencana'||t.status==='dikerjakan'));
-    if(unclosedPrev.length){
-      showPage('rencana');
-      toast(`⚠️ Ada ${unclosedPrev.length} tindakan dari hari sebelumnya yang belum di-closing!`, 5000);
+    // 1. Cek jika ada tindakan belum di-closing (hari ini atau hari sebelumnya)
+    const unclosed = CACHE.tindakan
+      .filter(t=>t.user_id===user.id && (t.status==='rencana'||t.status==='dikerjakan'))
+      .sort((a,b)=>a.tanggal_kerja.localeCompare(b.tanggal_kerja)||(a.created_at||'').localeCompare(b.created_at||''));
+    if(unclosed.length){
+      showPage('dashboard');
+      setTimeout(()=>showForcedClosingModal(unclosed[0].id), 300);
       return;
     }
+    // 2. Belum ada tindakan sama sekali hari ini -> langsung buka pop-up form rencana awal hari
     const todayTindakan = CACHE.tindakan.filter(t=>t.user_id===user.id && t.tanggal_kerja===today);
     if(!todayTindakan.length){
       showPage('dashboard');
-      setTimeout(()=>showForcedRencanaModal(),300);
+      setTimeout(()=>showForcedRencanaModal(), 300);
+      return;
+    }
+    // 3. Sudah ada tindakan hari ini & semua sudah di-closing, tapi belum closing akhir hari -> tanyakan lanjut atau closing akhir hari
+    if(!todayAb || !todayAb.jam_keluar){
+      showPage('dashboard');
+      setTimeout(()=>showAfterClosingChoiceModal(), 300);
       return;
     }
   }
   showPage('dashboard');
+}
+
+function toggleSidebar(){
+  const sbEl = document.getElementById('sidebar');
+  const flEl = document.getElementById('floatingMenu');
+  const collapsed = sbEl.classList.toggle('collapsed');
+  if(flEl) flEl.classList.toggle('show', collapsed);
+  document.body.classList.toggle('side-collapsed', collapsed);
 }
 
 function doLogout(){
@@ -544,10 +607,10 @@ function showPage(p){
   if(p==='users'&&!isAdmin()){ toast('⛔ Akses hanya untuk Admin'); return; }
   if(p==='master'&&!isAdmin()){ toast('⛔ Akses hanya untuk Admin'); return; }
   currentPage=p;
-  document.querySelectorAll('#sideNav a').forEach(a=>{
+  document.querySelectorAll('#sideNav a, #floatingMenu a').forEach(a=>{
     a.classList.toggle('active', a.dataset.page===p);
   });
-  const titles={dashboard:'Dashboard & KPI',klien:'Manajemen Klien',pekerjaan:'Log & Rencana Pekerjaan',rencana:'Pekerjaan Harian',docs:'Docs',absensi:'Absensi',master:'Master Data (Sistem & Tindakan)',users:'Manajemen User',manual:'Manual Pengguna'};
+  const titles={dashboard:'Dashboard & KPI',klien:'Manajemen Klien',pekerjaan:'Log Pekerjaan (Datatable)',rencana:'Pekerjaan Harian',docs:'Docs',absensi:'Kalender Absensi & Aktivitas',master:'Master Data (Sistem & Tindakan)',users:'Manajemen User',manual:'Manual Pengguna'};
   document.getElementById('pageTitle').textContent=titles[p]||p;
   document.getElementById('pageDate').textContent=pageDate();
   closeDetail();
@@ -1188,12 +1251,12 @@ function renderKlien(q='',pg=1,rpp=rowsPerPageKlien){
     const done=CACHE.pekerjaan.filter(p=>p.klien_id===k.id&&p.status==='Selesai'&&!p.parent_id).length;
     const pct=jml?Math.round(done/jml*100):0;
     return`<tr>
-      <td><b>${k.nama}</b></td>
-      <td>${k.npwp||'-'}</td>
-      <td>${k.bidang||'-'}</td>
-      <td>${k.nama_kontak||'-'}</td>
-      <td>${k.kontak||'-'}</td>
-      <td>${k.email||'-'}</td>
+      <td><b>${esc(k.nama)}</b></td>
+      <td>${esc(k.npwp||'-')}</td>
+      <td>${esc(k.bidang||'-')}</td>
+      <td>${esc(k.nama_kontak||'-')}</td>
+      <td>${esc(k.kontak||'-')}</td>
+      <td>${esc(k.email||'-')}</td>
       <td>${jml}<span style="color:var(--sub);font-size:.74rem"> (${done} selesai)</span>
         <div class="progressBar"><div class="progressFill" style="width:${pct}%"></div></div></td>
       <td>
@@ -1227,13 +1290,13 @@ function modalKlien(id=''){
   const k=id?CACHE.klien.find(x=>x.id===id):null;
   document.getElementById('modalBox').innerHTML=`<h4>${k?'Edit':'Tambah'} Klien</h4>
     <div class="formGrid">
-      <div class="formGroup full"><label>Nama Perusahaan *</label><input id="fkN" value="${k?k.nama:''}"/></div>
-      <div class="formGroup"><label>NPWP</label><input id="fkNPWP" placeholder="00.000.000.0-000.000" value="${k?k.npwp||'':''}"/></div>
-      <div class="formGroup"><label>Bidang Usaha</label><input id="fkB" value="${k?k.bidang||'':''}"/></div>
-      <div class="formGroup"><label>PIC</label><input id="fkNK" value="${k?k.nama_kontak||'':''}"/></div>
-      <div class="formGroup"><label>No. Kontak</label><input id="fkK" value="${k?k.kontak||'':''}"/></div>
-      <div class="formGroup full"><label>Email</label><input id="fkE" value="${k?k.email||'':''}"/></div>
-      <div class="formGroup full"><label>Catatan</label><textarea id="fkC">${k?k.catatan||'':''}</textarea></div>
+      <div class="formGroup full"><label>Nama Perusahaan *</label><input id="fkN" value="${k?esc(k.nama):''}"/></div>
+      <div class="formGroup"><label>NPWP</label><input id="fkNPWP" placeholder="00.000.000.0-000.000" value="${k?esc(k.npwp||''):''}"/></div>
+      <div class="formGroup"><label>Bidang Usaha</label><input id="fkB" value="${k?esc(k.bidang||''):''}"/></div>
+      <div class="formGroup"><label>PIC</label><input id="fkNK" value="${k?esc(k.nama_kontak||''):''}"/></div>
+      <div class="formGroup"><label>No. Kontak</label><input id="fkK" value="${k?esc(k.kontak||''):''}"/></div>
+      <div class="formGroup full"><label>Email</label><input id="fkE" value="${k?esc(k.email||''):''}"/></div>
+      <div class="formGroup full"><label>Catatan</label><textarea id="fkC">${k?esc(k.catatan||''):''}</textarea></div>
     </div>
     <div class="flex mt10"><button class="btnPrimary" onclick="saveKlien('${id}')">💾 Simpan</button>
     <button onclick="closeModal()" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">Batal</button></div>`;
@@ -1262,10 +1325,122 @@ async function delKlien(id){
   document.getElementById('pageContent').innerHTML=renderKlien(q,pageKlien,rowsPerPageKlien);
   toast('🗑️ Klien dihapus');
 }
-// ===== PEKERJAAN =====
+// ===== PEKERJAAN (DATATABLE LOG PEKERJAAN + PROYEK) =====
 const KATEGORI=['Laporan Keuangan','SPT Tahunan','SPT Masa','Rekonsiliasi','Audit','Payroll','Pembukuan','Lainnya'];
+let pekMode = 'datatable'; // 'datatable' | 'proyek'
 
 function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
+  if(pekMode === 'datatable'){
+    const dari = pekFilter.dari || '';
+    const sampai = pekFilter.sampai || '';
+    const fu = pekFilter.userId || '';
+    const fk = pekFilter.klienId || '';
+    const fs = pekFilter.status || '';
+    const fq = (pekFilter.q || '').toLowerCase();
+
+    let rows = (CACHE.tindakan || []).slice();
+    if(dari)   rows = rows.filter(t => t.tanggal_kerja >= dari);
+    if(sampai) rows = rows.filter(t => t.tanggal_kerja <= sampai);
+    if(fu)     rows = rows.filter(t => t.user_id === fu);
+    if(fk)     rows = rows.filter(t => t.klien_id === fk);
+    if(fs)     rows = rows.filter(t => t.status === fs);
+    if(fq){
+      rows = rows.filter(t => {
+        const k = CACHE.klien.find(x=>x.id===t.klien_id)?.nama || '';
+        const u = CACHE.users.find(x=>x.id===t.user_id)?.nama || '';
+        const s = CACHE.sistem.find(x=>x.id===t.sistem_id)?.nama || '';
+        const j = CACHE.jenis.find(x=>x.id===t.jenis_id)?.nama || '';
+        return (k+' '+u+' '+s+' '+j+' '+(t.uraian||'')+' '+(t.kendala||'')).toLowerCase().includes(fq);
+      });
+    }
+    rows.sort((a,b) => b.tanggal_kerja.localeCompare(a.tanggal_kerja) || (b.created_at||'').localeCompare(a.created_at||''));
+
+    const total = rows.length;
+    const totalDur = rows.reduce((s,t)=>s+(t.durasi_detik||0),0);
+    const totalDone = rows.filter(t=>t.status==='selesai').length;
+    const totalUlang = rows.filter(t=>t.is_ulang).length;
+    const totalPages = Math.ceil(total/rpp)||1;
+    pg = Math.min(pg, totalPages);
+    const paged = rows.slice((pg-1)*rpp, pg*rpp);
+
+    const klienOpts = CACHE.klien.map(k=>`<option value="${k.id}" ${fk===k.id?'selected':''}>${esc(k.nama)}</option>`).join('');
+    const userOpts = CACHE.users.map(u=>`<option value="${u.id}" ${fu===u.id?'selected':''}>${esc(u.nama)}</option>`).join('');
+
+    const trs = paged.length ? paged.map((t,i)=>{
+      const u = CACHE.users.find(x=>x.id===t.user_id);
+      const k = CACHE.klien.find(x=>x.id===t.klien_id);
+      const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
+      const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
+      const stBadge = t.status==='selesai' ? `<span class="badge b-done">✅ Selesai</span>`
+        : t.status==='dikerjakan' ? `<span class="badge b-progress">🔄 Dikerjakan</span>`
+        : t.status==='lanjut' ? `<span class="badge b-warn">⏭️ Lanjut</span>`
+        : t.status==='bermasalah' ? `<span class="badge b-urgent">⚠️ Bermasalah</span>`
+        : `<span class="badge b-plan">📋 Rencana</span>`;
+      return `<tr>
+        <td>${(pg-1)*rpp + i + 1}</td>
+        <td style="white-space:nowrap">${fmtDate(t.tanggal_kerja)}</td>
+        <td><b>${esc(u?u.nama:'-')}</b></td>
+        <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.71rem;color:var(--sub)">${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}</span></td>
+        <td>${esc(s?s.nama:'-')}</td>
+        <td>${esc(j?j.nama:'-')}${t.is_ulang?`<br><span class="badge b-warn">🔁 Ulang #${t.ulang_ke}</span>`:''}</td>
+        <td style="max-width:210px">${esc(t.uraian||'-')}</td>
+        <td style="white-space:nowrap">${t.mulai_at?fmtTimeWita(t.mulai_at):'-'}</td>
+        <td style="white-space:nowrap">${t.selesai_at?fmtTimeWita(t.selesai_at):'-'}</td>
+        <td style="white-space:nowrap"><b>${t.durasi_detik?fmtDur(t.durasi_detik):'-'}</b></td>
+        <td>${stBadge}${t.kendala?`<div style="font-size:.71rem;color:#dc2626;margin-top:2px">⚠️ ${esc(t.kendala)}</div>`:''}</td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="11" style="text-align:center;color:var(--sub);padding:24px">Tidak ada data pekerjaan pada rentang filter ini.</td></tr>`;
+
+    return `<div class="section" style="position:relative;z-index:1">
+      <div class="secHead">
+        <h4>📋 Datatable Log Pekerjaan</h4>
+        <div class="flex">
+          <div class="viewToggle">
+            <button class="viewBtn active" onclick="pekMode='datatable';showPage('pekerjaan')">📊 Datatable Pekerjaan</button>
+            <button class="viewBtn" onclick="pekMode='proyek';showPage('pekerjaan')">🗂️ Proyek / Kanban</button>
+          </div>
+          <button class="btnSm btnGray" style="padding:7px 12px;font-size:.78rem" onclick="exportPekerjaanCSV()">⬇️ Export CSV</button>
+        </div>
+      </div>
+      <div class="filterBar">
+        <div class="flex" style="gap:5px"><label style="font-size:.74rem">Dari:</label><input type="date" value="${dari}" onchange="pekFilter.dari=this.value;pagePek=1;showPage('pekerjaan')"/></div>
+        <div class="flex" style="gap:5px"><label style="font-size:.74rem">Sampai:</label><input type="date" value="${sampai}" onchange="pekFilter.sampai=this.value;pagePek=1;showPage('pekerjaan')"/></div>
+        <select onchange="pekFilter.userId=this.value;pagePek=1;showPage('pekerjaan')"><option value="">Semua User</option>${userOpts}</select>
+        <select onchange="pekFilter.klienId=this.value;pagePek=1;showPage('pekerjaan')"><option value="">Semua Klien / Rekanan</option>${klienOpts}</select>
+        <select onchange="pekFilter.status=this.value;pagePek=1;showPage('pekerjaan')">
+          <option value="">Semua Status</option>
+          <option value="selesai" ${fs==='selesai'?'selected':''}>Selesai</option>
+          <option value="dikerjakan" ${fs==='dikerjakan'?'selected':''}>Dikerjakan</option>
+          <option value="lanjut" ${fs==='lanjut'?'selected':''}>Lanjut</option>
+          <option value="bermasalah" ${fs==='bermasalah'?'selected':''}>Bermasalah</option>
+          <option value="rencana" ${fs==='rencana'?'selected':''}>Rencana</option>
+        </select>
+        <input placeholder="Cari uraian / sistem..." value="${esc(pekFilter.q||'')}" oninput="pekFilter.q=this.value;pagePek=1;showPage('pekerjaan')" style="width:170px"/>
+      </div>
+      <div class="kpiRow">
+        <div class="kpiBox"><span class="kv">${total}</span><span class="kl">Total Pekerjaan</span></div>
+        <div class="kpiBox"><span class="kv" style="color:var(--green)">${totalDone}</span><span class="kl">Selesai</span></div>
+        <div class="kpiBox"><span class="kv" style="color:var(--orange)">${totalUlang}</span><span class="kl">Pengulangan</span></div>
+        <div class="kpiBox"><span class="kv" style="font-size:1.25rem;color:var(--blue)">${fmtDur(totalDur)}</span><span class="kl">Total Lama Pekerjaan</span></div>
+      </div>
+      <div style="overflow-x:auto">
+        <table><thead><tr><th>#</th><th>Tanggal</th><th>Nama User</th><th>Rekanan / Klien</th><th>Sistem</th><th>Jenis Tindakan</th><th>Uraian</th><th>Mulai</th><th>Selesai</th><th>Lama Pekerjaan</th><th>Status &amp; Kendala</th></tr></thead>
+        <tbody>${trs}</tbody></table>
+      </div>
+      <div class="pagination">
+        <span class="rowsLabel">Baris per halaman:</span>
+        <select onchange="rowsPerPagePek=+this.value;pagePek=1;showPage('pekerjaan')">
+          <option value="10" ${rpp===10?'selected':''}>10</option>
+          <option value="20" ${rpp===20?'selected':''}>20</option>
+          <option value="50" ${rpp===50?'selected':''}>50</option>
+        </select>
+        <button class="btnSm btnGray" onclick="pagePek--;document.getElementById('pageContent').innerHTML=renderPekerjaan('','','','','',pagePek,rowsPerPagePek)" ${pg<=1?'disabled':''}>‹</button>
+        <span>Hal ${pg} / ${totalPages} (${total} data)</span>
+        <button class="btnSm btnGray" onclick="pagePek++;document.getElementById('pageContent').innerHTML=renderPekerjaan('','','','','',pagePek,rowsPerPagePek)" ${pg>=totalPages?'disabled':''}>›</button>
+      </div>
+    </div>`;
+  }
+
   let list=CACHE.pekerjaan.filter(p=>!p.parent_id);
   if(fK) list=list.filter(p=>p.klien_id===fK);
   if(fS) list=list.filter(p=>p.status===fS);
@@ -1335,6 +1510,10 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
       <h4>Log & Rencana Pekerjaan</h4>
       <div class="flex">
         <div class="viewToggle">
+          <button class="viewBtn" onclick="pekMode='datatable';showPage('pekerjaan')">📊 Datatable Pekerjaan</button>
+          <button class="viewBtn active" onclick="pekMode='proyek';showPage('pekerjaan')">🗂️ Proyek / Kanban</button>
+        </div>
+        <div class="viewToggle">
           <button class="viewBtn ${currentView==='list'?'active':''}" onclick="setView('list')">☰ List</button>
           <button class="viewBtn ${currentView==='board'?'active':''}" onclick="setView('board')">⊞ Board</button>
           <button class="viewBtn ${currentView==='calendar'?'active':''}" onclick="setView('calendar')">📅 Kalender</button>
@@ -1367,6 +1546,27 @@ function applyFlt(){
   const q=document.getElementById('srchPek')?.value||'';
   pagePek=1;
   document.getElementById('pageContent').innerHTML=renderPekerjaan(fK,fS,fP,fU,q,pagePek,rowsPerPagePek);
+}
+function exportPekerjaanCSV(){
+  let rows = (CACHE.tindakan || []).slice();
+  if(pekFilter.dari) rows = rows.filter(t=>t.tanggal_kerja>=pekFilter.dari);
+  if(pekFilter.sampai) rows = rows.filter(t=>t.tanggal_kerja<=pekFilter.sampai);
+  if(pekFilter.userId) rows = rows.filter(t=>t.user_id===pekFilter.userId);
+  if(pekFilter.klienId) rows = rows.filter(t=>t.klien_id===pekFilter.klienId);
+  if(pekFilter.status) rows = rows.filter(t=>t.status===pekFilter.status);
+  const q = (pekFilter.q||'').toLowerCase();
+  if(q) rows = rows.filter(t=>((CACHE.klien.find(x=>x.id===t.klien_id)?.nama||'')+' '+(t.uraian||'')).toLowerCase().includes(q));
+  const csvEsc = v => `"${String(v??'').replace(/"/g,'""')}"`;
+  const lines = [['Tanggal','User','Klien','Periode','Sistem','Jenis Tindakan','Uraian','Mulai WITA','Selesai WITA','Durasi (detik)','Status','Kendala'].map(csvEsc).join(',')];
+  rows.forEach(t=>{
+    const u=CACHE.users.find(x=>x.id===t.user_id)?.nama||'';
+    const k=CACHE.klien.find(x=>x.id===t.klien_id)?.nama||'';
+    const s=CACHE.sistem.find(x=>x.id===t.sistem_id)?.nama||'';
+    const j=CACHE.jenis.find(x=>x.id===t.jenis_id)?.nama||'';
+    lines.push([t.tanggal_kerja,u,k,`${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}`,s,j,t.uraian||'',t.mulai_at?fmtTimeWita(t.mulai_at):'',t.selesai_at?fmtTimeWita(t.selesai_at):'',t.durasi_detik||0,t.status,t.kendala||''].map(csvEsc).join(','));
+  });
+  const blob = new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`log-pekerjaan-${todayStr()}.csv`; a.click();
 }
 function dragKanban(e,id){dragId=id;e.dataTransfer.effectAllowed='move';}
 async function dropKanban(e,status){
@@ -1486,7 +1686,7 @@ function modalPek(id=''){
   const dl=p&&p.deadline?p.deadline.split('T')[0]:'';
   document.getElementById('modalBox').innerHTML=`<h4>${p?'Edit':'Tambah'} Pekerjaan</h4>
     <div class="formGrid">
-      <div class="formGroup full"><label>Judul *</label><input id="fpJ" value="${p?p.judul:''}"/></div>
+      <div class="formGroup full"><label>Judul *</label><input id="fpJ" value="${p?esc(p.judul):''}"/></div>
       <div class="formGroup"><label>Klien *</label><select id="fpK"><option value="">-- Pilih --</option>${klienOpts}</select></div>
       <div class="formGroup"><label>Kategori</label><select id="fpKat">${katOpts}</select></div>
       <div class="formGroup"><label>Dikerjakan oleh</label><select id="fpU"><option value="">--</option>${userOpts}</select></div>
@@ -1500,7 +1700,7 @@ function modalPek(id=''){
         <option ${p&&p.prioritas==='Urgent'?'selected':''}>Urgent</option></select></div>
       <div class="formGroup"><label>Tanggal</label><input type="date" id="fpT" value="${tgl}"/></div>
       <div class="formGroup"><label>Deadline</label><input type="date" id="fpD" value="${dl}"/></div>
-      <div class="formGroup full"><label>Catatan</label><textarea id="fpC">${p?p.catatan||'':''}</textarea></div>
+      <div class="formGroup full"><label>Catatan</label><textarea id="fpC">${p?esc(p.catatan||''):''}</textarea></div>
     </div>
     <div class="flex mt10"><button class="btnPrimary" onclick="savePek('${id}')">💾 Simpan</button>
     <button onclick="closeModal()" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">Batal</button></div>`;
@@ -1628,7 +1828,7 @@ async function openDetail(pId){
             <b>${d.judul||'Tanpa Judul'}</b>
             ${d.nama_file?`<br><span style="color:var(--sub);font-size:.75rem">📄 ${d.nama_file}</span>`:''}
           </div>
-          ${d.link_dokumen?`<a href="${d.link_dokumen}" target="_blank" style="color:var(--blue);font-weight:600;font-size:.8rem;text-decoration:none;white-space:nowrap;margin-left:10px">🔗 Buka</a>`:''}
+          ${d.link_dokumen?`<a href="${safeUrl(d.link_dokumen)}" target="_blank" rel="noopener noreferrer" style="color:var(--blue);font-weight:600;font-size:.8rem;text-decoration:none;white-space:nowrap;margin-left:10px">🔗 Buka</a>`:''}
         </div>`).join(''):`<p style="color:var(--sub);font-size:.82rem">Belum ada dokumen terlampir</p>`}
       <button class="btnSm btnGray" style="margin-top:6px;font-size:.78rem" onclick="newDocFromPek('${pId}')">+ Lampirkan Dokumen</button>
     </div>
@@ -1717,7 +1917,7 @@ function renderDocs(){
               <td>${d.nama_file||'-'}</td>
               <td>${p?p.judul:'-'}</td>
               <td>${k?k.nama:'-'}</td>
-              <td>${d.link_dokumen?`<a href="${d.link_dokumen}" target="_blank" style="color:var(--blue);font-size:.8rem;text-decoration:none">🔗 Buka File</a>`:'-'}</td>
+              <td>${d.link_dokumen?`<a href="${safeUrl(d.link_dokumen)}" target="_blank" rel="noopener noreferrer" style="color:var(--blue);font-size:.8rem;text-decoration:none">🔗 Buka File</a>`:'-'}</td>
               <td>${fmtDateL(d.updated_at)}</td>
               <td>
                 <button class="btnSm btnEdit" onclick="openDoc('${d.id}')">✏️</button>
@@ -1795,12 +1995,13 @@ async function delDoc(id){
   await loadAll(); showPage('docs'); toast('🗑️ Dokumen dihapus');
 }
 
-// ===== ABSENSI =====
+// ===== ABSENSI (KALENDER FIXED GRID 1 BULAN + POPUP DETAIL) =====
 function renderAbsensi(){
   const isRowLate = a => a.terlambat===true || a.tipe==='Terlambat' || (a.jam && a.jam>'08:00');
-  const ym = todayStr().slice(0,7);
+  const today = todayStr();
+  const ym = `${abCalYear}-${String(abCalMonth+1).padStart(2,'0')}`;
 
-  // Rekap keterlambatan per user
+  // Rekap keterlambatan per user pada bulan kalender aktif
   const userLateSummary = CACHE.users.filter(u=>u.role!=='superadmin').map(u=>{
     const all = CACHE.absensi.filter(a=>a.user_id===u.id);
     const lMonth = all.filter(a=>a.tanggal&&a.tanggal.startsWith(ym)&&isRowLate(a)).length;
@@ -1811,30 +2012,112 @@ function renderAbsensi(){
     </div>`;
   }).join('');
 
-  const byDate={};
-  CACHE.absensi.forEach(a=>{if(!byDate[a.tanggal])byDate[a.tanggal]=[];byDate[a.tanggal].push(a);});
-  const dates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
-  const html=dates.map(d=>{
-    const rows=byDate[d].map(a=>{
-      const late = isRowLate(a);
-      const min = a.menit_terlambat || (late && a.jam ? (()=>{const[h,m]=a.jam.split(':').map(Number);return Math.max(0,(h-8)*60+m);})() : 0);
-      const badge = late
-        ? `<span class="badge b-late">⏰ Terlambat ${min>0?min+' mnt':''}</span>`
-        : a.tipe==='Manual'
-        ? `<span class="badge b-info">✍️ Manual</span>`
-        : `<span class="badge b-green">✅ Tepat Waktu</span>`;
-      return `<tr><td style="width:50%">${esc(a.nama)}</td><td style="width:20%;white-space:nowrap">${a.jam} WITA</td><td style="width:30%;white-space:nowrap">${badge}</td></tr>`;
+  // Bangun fixed grid kalender 7 kolom
+  const days = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+  const firstDow = new Date(abCalYear, abCalMonth, 1).getDay();
+  const daysInMonth = new Date(abCalYear, abCalMonth + 1, 0).getDate();
+  const curMY = witaMonthYear();
+  const isCurMonth = (abCalYear === curMY.tahun && (abCalMonth + 1) === curMY.bulan);
+
+  let cells = '';
+  for(let i=0; i<firstDow; i++){
+    cells += `<div class="calCell empty" style="min-height:115px;height:auto"></div>`;
+  }
+  for(let d=1; d<=daysInMonth; d++){
+    const ds = `${abCalYear}-${String(abCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const abDay = CACHE.absensi.filter(a=>a.tanggal===ds);
+    const tDay  = CACHE.tindakan.filter(t=>t.tanggal_kerja===ds);
+    const uids  = [...new Set([...abDay.map(a=>a.user_id), ...tDay.map(t=>t.user_id)])].filter(Boolean);
+
+    const userPills = uids.map(uid=>{
+      const u = CACHE.users.find(x=>x.id===uid);
+      const ab = abDay.find(a=>a.user_id===uid);
+      const cnt = tDay.filter(t=>t.user_id===uid).length;
+      const late = ab && isRowLate(ab);
+      const jamIn = ab?.jam || '-';
+      const jamOut = ab?.jam_keluar || '';
+      const bg = late ? '#dc2626' : (jamOut ? '#059669' : '#2563eb');
+      return `<div class="calUserBadge" style="background:${bg};cursor:pointer;padding:3px 5px;margin-bottom:2px" onclick="event.stopPropagation();showAbsensiDayDetailModal('${uid}','${ds}')" title="Klik untuk detail kegiatan">
+        <b>${esc(u?u.nama:(ab?.nama||'?'))}</b> · ${cnt} tind.<br>
+        <span style="font-size:.6rem;opacity:.92">${jamIn}${jamOut?'–'+jamOut:''} WITA</span>
+      </div>`;
     }).join('');
-    return`<div style="margin-bottom:14px"><div style="font-weight:700;color:var(--text);margin-bottom:6px;font-size:.85rem">📅 ${fmtDateL(d)}</div>
-      <table style="table-layout:fixed;width:100%"><thead><tr><th style="width:50%">Nama</th><th style="width:20%">Jam (WITA)</th><th style="width:30%">Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-  }).join('')||'<p style="color:var(--sub);text-align:center">Belum ada data</p>';
+
+    cells += `<div class="calCell${ds===today?' today':''}" style="min-height:115px;height:auto;cursor:default">
+      <div class="calDate" style="display:flex;justify-content:space-between"><span>${d}</span>${uids.length?`<span style="font-size:.65rem;color:var(--sub)">${tDay.length}x</span>`:''}</div>
+      ${userPills}
+    </div>`;
+  }
+
   return`<div class="section" style="position:relative;z-index:1">
-    <div class="secHead"><h4>Rekap Keterlambatan Karyawan (&gt; 08:00 WITA)</h4></div>
+    <div class="secHead"><h4>Rekap Keterlambatan (${BULAN_NAMA[abCalMonth]} ${abCalYear})</h4>
+      <button class="btnPrimary" onclick="modalAbsensi()">+ Absensi Manual</button>
+    </div>
     <div class="abToday">${userLateSummary||'-'}</div>
   </div>
   <div class="section" style="position:relative;z-index:1">
-    <div class="secHead"><h4>Riwayat Absensi</h4>
-    <button class="btnPrimary" onclick="modalAbsensi()">+ Manual</button></div>${html}</div>`;
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <button onclick="prevAbMonth()" style="padding:6px 14px;border:1.5px solid var(--gray2);border-radius:7px;background:#fff;cursor:pointer;font-size:.84rem;font-weight:600">‹ Bulan Sebelumnya</button>
+      <div style="text-align:center">
+        <span style="font-weight:800;color:var(--text);font-size:1rem">📅 ${BULAN_NAMA[abCalMonth]} ${abCalYear}</span>
+        ${!isCurMonth?`<br><button onclick="backToCurAbMonth()" style="font-size:.74rem;color:var(--blue);background:none;border:none;cursor:pointer;margin-top:2px">● Kembali ke bulan ini</button>`:''}
+      </div>
+      <button onclick="nextAbMonth()" style="padding:6px 14px;border:1.5px solid var(--gray2);border-radius:7px;background:#fff;cursor:pointer;font-size:.84rem;font-weight:600">Bulan Berikutnya ›</button>
+    </div>
+    <div style="font-size:.74rem;color:var(--sub);margin-bottom:8px;display:flex;gap:12px;flex-wrap:wrap">
+      <span><span class="badge" style="background:#2563eb;color:#fff">Biru</span> Sedang kerja / belum closing akhir hari</span>
+      <span><span class="badge" style="background:#059669;color:#fff">Hijau</span> Sudah closing akhir hari (ada jam keluar)</span>
+      <span><span class="badge" style="background:#dc2626;color:#fff">Merah</span> Terlambat (&gt; 08:00 WITA)</span>
+      <span>💡 Klik nama user di kalender untuk melihat detail kegiatan.</span>
+    </div>
+    <div style="overflow-x:auto">
+      <div class="calGrid" style="grid-template-columns:repeat(7,minmax(110px,1fr))">${days.map(d=>`<div class="calHead">${d}</div>`).join('')}${cells}</div>
+    </div>
+  </div>`;
+}
+function prevAbMonth(){ abCalMonth--; if(abCalMonth<0){abCalMonth=11;abCalYear--;} showPage('absensi'); }
+function nextAbMonth(){ abCalMonth++; if(abCalMonth>11){abCalMonth=0;abCalYear++;} showPage('absensi'); }
+function backToCurAbMonth(){ const my=witaMonthYear(); abCalYear=my.tahun; abCalMonth=my.bulan-1; showPage('absensi'); }
+
+function showAbsensiDayDetailModal(uid, ds){
+  const u = CACHE.users.find(x=>x.id===uid);
+  const ab = CACHE.absensi.find(a=>a.user_id===uid && a.tanggal===ds);
+  const items = CACHE.tindakan.filter(t=>t.user_id===uid && t.tanggal_kerja===ds).sort((a,b)=>(a.created_at||'').localeCompare(b.created_at||''));
+  const isRowLate = a => a && (a.terlambat===true || a.tipe==='Terlambat' || (a.jam && a.jam>'08:00'));
+  const late = isRowLate(ab);
+  const totalDur = items.reduce((s,t)=>s+(t.durasi_detik||0),0);
+
+  const rowsHtml = items.length ? items.map((t,i)=>{
+    const k = CACHE.klien.find(x=>x.id===t.klien_id);
+    const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
+    const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
+    return `<tr>
+      <td>${i+1}</td>
+      <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.7rem;color:var(--sub)">${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}</span></td>
+      <td>${esc(s?s.nama:'-')}</td>
+      <td>${esc(j?j.nama:'-')}${t.is_ulang?` <span class="badge b-warn">Ulang</span>`:''}</td>
+      <td>${esc(t.uraian||'-')}</td>
+      <td style="white-space:nowrap">${t.mulai_at?fmtTimeWita(t.mulai_at):'-'} – ${t.selesai_at?fmtTimeWita(t.selesai_at):'-'}</td>
+      <td><b>${t.durasi_detik?fmtDurHM(t.durasi_detik):'-'}</b></td>
+      <td>${t.status}${t.kendala?`<br><span style="font-size:.7rem;color:#dc2626">⚠️ ${esc(t.kendala)}</span>`:''}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--sub);padding:16px">Belum ada catatan tindakan pada tanggal ini.</td></tr>`;
+
+  document.getElementById('modalBox').style.width = '780px';
+  document.getElementById('modalBox').innerHTML = `
+    <h4>📅 Detail Absensi &amp; Kegiatan — ${esc(u?u.nama:(ab?.nama||'-'))} (${fmtDateL(ds)})</h4>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;background:var(--gray);padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:.82rem">
+      <span>🟢 Masuk: <b>${ab?ab.jam+' WITA':'Belum absen'}</b> ${late?`<span class="badge b-late">Terlambat</span>`:''}</span>
+      <span>🏁 Keluar: <b>${ab&&ab.jam_keluar?ab.jam_keluar+' WITA':'Belum closing akhir hari'}</b></span>
+      <span>📋 Total Tindakan: <b>${items.length}</b></span>
+      <span>⏱️ Total Lama Kerja: <b>${fmtDurHM(totalDur)}</b></span>
+    </div>
+    <div style="overflow-x:auto;max-height:360px;overflow-y:auto">
+      <table><thead><tr><th>#</th><th>Klien &amp; Periode</th><th>Sistem</th><th>Jenis Tindakan</th><th>Uraian</th><th>Waktu (WITA)</th><th>Durasi</th><th>Status</th></tr></thead>
+      <tbody>${rowsHtml}</tbody></table>
+    </div>
+    <div class="flex mt10"><button onclick="document.getElementById('modalBox').style.width='';closeModal()" class="btnPrimary">Tutup</button></div>`;
+  document.getElementById('modalWrap').classList.remove('hidden');
 }
 function modalAbsensi(){
   const uOpts=CACHE.users.map(u=>`<option value="${u.id}">${u.nama}</option>`).join('');
@@ -1866,7 +2149,7 @@ function renderUsers(){
   const rows=CACHE.users.map(u=>{
     const jml=CACHE.pekerjaan.filter(p=>p.user_id===u.id||p.asisten_id===u.id).length;
     const totalT=CACHE.timelogs.filter(t=>t.user_id===u.id).reduce((s,t)=>s+(t.durasi||0),0);
-    return`<tr><td><b>${u.nama}</b></td><td>${u.role==='superadmin'?'Superadmin':u.role==='admin'?'Admin / Akuntan':'Asisten'}</td><td>${jml}</td><td>${fmtDur(totalT)}</td>
+    return`<tr><td><b>${esc(u.nama)}</b></td><td>${u.role==='superadmin'?'Superadmin':u.role==='admin'?'Admin / Akuntan':'Asisten'}</td><td>${jml}</td><td>${fmtDur(totalT)}</td>
       <td>
         <button class="btnSm btnEdit" onclick="modalUser('${u.id}')">✏️</button>
         ${CACHE.users.length>1?`<button class="btnSm btnDanger" onclick="delUser('${u.id}')">🗑️</button>`:''}
@@ -1883,10 +2166,11 @@ function modalUser(id=''){
   const u=id?CACHE.users.find(x=>x.id===id):null;
   document.getElementById('modalBox').innerHTML=`<h4>${u?'Edit':'Tambah'} User</h4>
     <div class="formGrid">
-      <div class="formGroup full"><label>Nama *</label><input id="fuN" value="${u?u.nama:''}"/></div>
+      <div class="formGroup full"><label>Nama *</label><input id="fuN" value="${u?esc(u.nama):''}"/></div>
       <div class="formGroup"><label>Role</label><select id="fuR" ${!isAdmin()?'disabled':''}>
+        ${u&&u.role==='superadmin'?`<option value="superadmin" selected disabled>Superadmin</option>`:''}
         <option value="admin" ${u&&u.role==='admin'?'selected':''}>Admin / Akuntan</option>
-        <option value="asisten" ${!u||u.role==='asisten'?'selected':''}>Asisten</option></select></div>
+        <option value="asisten" ${(!u||u.role==='asisten')?'selected':''}>Asisten</option></select></div>
       <div class="formGroup"><label>PIN (opsional)</label><input type="password" id="fuP" placeholder="Kosongkan = tanpa PIN"/></div>
     </div>
     <div class="flex mt10"><button class="btnPrimary" onclick="saveUser('${id}')">💾 Simpan</button>
@@ -1897,7 +2181,9 @@ async function saveUser(id){
   if(!isAdmin()&&!id){ toast('⛔ Hanya Admin'); return; }
   const nama=document.getElementById('fuN').value.trim(); if(!nama)return alert('Nama wajib!');
   const pin=document.getElementById('fuP').value;
-  const role=isAdmin()?document.getElementById('fuR').value:'asisten';
+  const target=id?CACHE.users.find(x=>x.id===id):null;
+  let role=isAdmin()?document.getElementById('fuR').value:'asisten';
+  if(target&&target.role==='superadmin') role='superadmin';
   const data={nama,role};
   if(pin)data.pin=pin;
   if(id) await sb.from('users').update(data).eq('id',id);
@@ -2115,9 +2401,14 @@ function renderRencana(){
     </tr>`;
   }).join('') : `<tr><td colspan="${isAdmin()?11:10}" style="text-align:center;color:var(--sub);padding:24px">Belum ada tindakan pada tanggal ini.</td></tr>`;
 
+  const todayAb = !isAdmin() ? CACHE.absensi.find(a=>a.user_id===currentUser.id && a.tanggal===today) : null;
+  const endDayBtn = (!isAdmin() && !unclosedPrev.length && total>0 && !rProc && (!todayAb || !todayAb.jam_keluar))
+    ? `<button class="btnSm" style="background:#059669;color:#fff;padding:9px 14px;font-size:.82rem;font-weight:600" onclick="closingAkhirHari()">🏁 Closing Akhir Hari</button>`
+    : (todayAb && todayAb.jam_keluar ? `<span class="badge b-done">🏁 Selesai Hari Ini (${todayAb.jam_keluar} WITA)</span>` : '');
+
   const addBtn = unclosedPrev.length
     ? `<button class="btnPrimary" style="opacity:.5;cursor:not-allowed" disabled>+ Tambah Tindakan (Closing kemarin dulu)</button>`
-    : `<button class="btnPrimary" onclick="modalTambahRencana()">+ Tambah Tindakan Harian</button>`;
+    : `<div class="flex">${endDayBtn}<button class="btnPrimary" onclick="modalTambahRencana()">+ Tambah Tindakan Harian</button></div>`;
 
   const klienOpts = CACHE.klien.map(k=>`<option value="${k.id}" ${fltKlien===k.id?'selected':''}>${esc(k.nama)}</option>`).join('');
   const userOpts = CACHE.users.filter(u=>u.role!=='superadmin').map(u=>`<option value="${u.id}" ${fltUser===u.id?'selected':''}>${esc(u.nama)}</option>`).join('');
@@ -2267,12 +2558,14 @@ async function submitTindakan(prefix, isForced){
   const alasan_ulang = is_ulang ? document.getElementById(prefix+'Alasan').value : null;
 
   await syncServerTime();
+  const nowIso = nowWitaDate().toISOString();
   const payload = {
     user_id: currentUser.id,
     tanggal_kerja: todayStr(),
     klien_id, periode_bulan, periode_tahun, sistem_id, jenis_id, uraian,
     is_ulang, ulang_ke, ulang_dari_id, alasan_ulang,
-    status: 'rencana'
+    mulai_at: isForced ? nowIso : null,
+    status: isForced ? 'dikerjakan' : 'rencana'
   };
   const { error } = await sb.from('tindakan_harian').insert(payload);
   if(error) return alert('Gagal menyimpan: ' + error.message);
@@ -2281,12 +2574,128 @@ async function submitTindakan(prefix, isForced){
   if(isForced){
     document.getElementById('rencanaForceOverlay')?.remove();
     showPage('rencana');
-    toast('✅ Rencana hari ini dibuat! Klik ▶ Mulai saat mengerjakan.');
+    toast(`✅ Rencana dimulai pukul ${fmtTimeWita(nowIso)}!`);
   } else {
     closeModal();
     showPage('rencana');
     toast('✅ Tindakan ditambahkan!');
   }
+}
+
+async function showForcedClosingModal(id){
+  await syncServerTime();
+  const t = CACHE.tindakan.find(x=>x.id===id); if(!t) return;
+  const selesaiIso = nowWitaDate().toISOString();
+  const mulaiIso = t.mulai_at || t.created_at || selesaiIso;
+  const durasi = Math.max(0, Math.round((new Date(selesaiIso) - new Date(mulaiIso))/1000));
+  const k = CACHE.klien.find(x=>x.id===t.klien_id);
+  const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
+  const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
+  const katOpts = KENDALA_OPSI.map(g=>`<optgroup label="${esc(g.group)}">${g.items.map(it=>`<option value="${g.sifat}|${esc(it)}">${esc(it)}</option>`).join('')}</optgroup>`).join('');
+
+  document.getElementById('rencanaForceOverlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'rLockOverlay'; overlay.id = 'rencanaForceOverlay';
+  overlay.innerHTML = `<div class="rLockBox">
+    <h3>⏹ Closing Kegiatan Sebelumnya</h3>
+    <p class="rLockSub">Sebelum melanjutkan, lakukan closing untuk kegiatan yang sudah Anda kerjakan sebelumnya:</p>
+    <div style="background:var(--gray);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:.82rem">
+      <b>🏢 ${esc(k?k.nama:'-')}</b> (${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}) · ${esc(s?s.nama:'-')}<br>
+      <b>🛠️ ${esc(j?j.nama:'-')}</b>${t.uraian?` — ${esc(t.uraian)}`:''}<br>
+      Tanggal: <b>${fmtDateL(t.tanggal_kerja)}</b> · Mulai: <b>${fmtTimeWita(mulaiIso)}</b> · Selesai: <b>${fmtTimeWita(selesaiIso)}</b> · Durasi: <b>${fmtDur(durasi)}</b>
+    </div>
+    <div class="formGrid">
+      <div class="formGroup full"><label>Status Closing *</label>
+        <select id="fcStatus">
+          <option value="selesai">✅ Selesai (Tuntas)</option>
+          <option value="lanjut">⏭️ Belum Selesai (Lanjut)</option>
+          <option value="bermasalah">⚠️ Bermasalah / Tertunda</option>
+        </select>
+      </div>
+      <div class="formGroup full"><label>Kategori Permasalahan (Kosongkan jika normal)</label>
+        <select id="fcKat"><option value="">-- Normal / Tidak Ada Masalah --</option>${katOpts}</select>
+      </div>
+      <div class="formGroup full"><label>Informasi Permasalahan (Opsional — kosongkan jika normal)</label>
+        <textarea id="fcKendala" style="min-height:70px" placeholder="Kosongkan jika kondisi normal..."></textarea>
+      </div>
+    </div>
+    <div class="flex mt10">
+      <button class="btnPrimary" onclick="saveForcedClosing('${id}','${mulaiIso}','${selesaiIso}',${durasi})">💾 Simpan Closing &amp; Lanjutkan →</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function saveForcedClosing(id, mulaiIso, selesaiIso, durasi){
+  const status = document.getElementById('fcStatus').value;
+  const katRaw = document.getElementById('fcKat').value;
+  const kendala = document.getElementById('fcKendala').value.trim();
+  let sifat_kendala = null, kategori_kendala = null;
+  if(katRaw){ const p=katRaw.split('|'); sifat_kendala=p[0]; kategori_kendala=p[1]; }
+  const finalKendala = kendala || (kategori_kendala || null);
+
+  const { error } = await sb.from('tindakan_harian').update({
+    mulai_at: mulaiIso, selesai_at: selesaiIso, durasi_detik: durasi,
+    status, kategori_kendala, sifat_kendala, kendala: finalKendala, closing_at: selesaiIso
+  }).eq('id', id);
+  if(error) return alert('Gagal closing: '+error.message);
+
+  await loadAll();
+  document.getElementById('rencanaForceOverlay')?.remove();
+
+  // Cek apakah masih ada tindakan lain yang belum di-closing
+  const nextUnclosed = CACHE.tindakan
+    .filter(t=>t.user_id===currentUser.id && (t.status==='rencana'||t.status==='dikerjakan'))
+    .sort((a,b)=>a.tanggal_kerja.localeCompare(b.tanggal_kerja)||(a.created_at||'').localeCompare(b.created_at||''));
+  if(nextUnclosed.length){
+    showForcedClosingModal(nextUnclosed[0].id);
+  } else {
+    showAfterClosingChoiceModal();
+  }
+}
+
+function showAfterClosingChoiceModal(){
+  document.getElementById('rencanaForceOverlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'rLockOverlay'; overlay.id = 'rencanaForceOverlay';
+  overlay.innerHTML = `<div class="rLockBox">
+    <h3>✅ Closing Tindakan Tersimpan</h3>
+    <p class="rLockSub">Apakah Anda masih akan melanjutkan pekerjaan berikutnya hari ini (pekerjaan baru atau Checker → Review pekerjaan sebelumnya), atau mengakhiri pekerjaan hari ini?</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btnPrimary" style="padding:12px" onclick="document.getElementById('rencanaForceOverlay')?.remove();showForcedRencanaModal()">➕ Tambah Rencana Kerja Baru Berikutnya</button>
+      <button class="btnSm" style="padding:12px;background:#059669;color:#fff;font-size:.9rem;font-weight:700;border-radius:8px" onclick="closingAkhirHari(true)">🏁 Closing Akhir Hari (Akhiri Pekerjaan Hari Ini)</button>
+      <button class="btnSm btnGray" style="padding:9px;font-size:.82rem" onclick="document.getElementById('rencanaForceOverlay')?.remove();showPage('rencana')">Lihat Halaman Pekerjaan Harian</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function closingAkhirHari(fromOverlay=false){
+  await syncServerTime();
+  const today = todayStr();
+  const jamKeluar = nowTime();
+  const nowIso = nowWitaDate().toISOString();
+
+  // Pastikan tidak ada yang masih terbuka
+  const openTasks = CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja<=today && (t.status==='rencana'||t.status==='dikerjakan'));
+  if(openTasks.length){
+    toast('⚠️ Masih ada tindakan yang belum di-closing!');
+    if(fromOverlay){ document.getElementById('rencanaForceOverlay')?.remove(); showForcedClosingModal(openTasks[0].id); }
+    return;
+  }
+
+  const ab = CACHE.absensi.find(a=>a.user_id===currentUser.id && a.tanggal===today);
+  if(ab){
+    const { error } = await sb.from('absensi').update({ jam_keluar: jamKeluar, closing_hari_at: nowIso }).eq('id', ab.id);
+    if(error){
+      // fallback jika kolom jam_keluar belum dimigrasi
+      toast('ℹ️ Jam keluar dicatat di sesi. Jalankan migration_v2_kpi_tindakan.sql untuk menyimpan jam_keluar.');
+    }
+  }
+  await loadAll();
+  if(fromOverlay) document.getElementById('rencanaForceOverlay')?.remove();
+  showPage('dashboard');
+  toast(`🏁 Closing akhir hari berhasil pukul ${jamKeluar} WITA! Terima kasih atas kerja kerasnya.`);
 }
 
 async function mulaiTindakan(id){
@@ -2362,6 +2771,10 @@ async function saveClosingTindakan(id, mulaiIso, selesaiIso, durasi){
   if(error) return alert('Gagal closing: '+error.message);
   await loadAll(); closeModal(); showPage(currentPage);
   toast('✅ Tindakan berhasil di-closing!');
+  if(!isAdmin()){
+    const remaining = CACHE.tindakan.filter(t=>t.user_id===currentUser.id && (t.status==='rencana'||t.status==='dikerjakan'));
+    if(!remaining.length) showAfterClosingChoiceModal();
+  }
 }
 
 // ===== MANUAL =====
@@ -2658,7 +3071,7 @@ function toggleNotif(){renderNotifs();document.getElementById('notifList').class
 function closeNotif(){document.getElementById('notifList').classList.remove('open');}
 document.addEventListener('click',e=>{const nb=document.getElementById('notifBtn');if(nb&&!nb.contains(e.target))closeNotif();});
 
-function closeModal(){document.getElementById('modalWrap').classList.add('hidden');}
+function closeModal(){document.getElementById('modalBox').style.width='';document.getElementById('modalWrap').classList.add('hidden');}
 document.getElementById('modalWrap').addEventListener('click',function(e){if(e.target===this)closeModal();});
 
 (async()=>{ await initLogin(); })();
