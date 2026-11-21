@@ -13,9 +13,11 @@ AS $$
   SELECT now();
 $$;
 
--- 2. Tambah kolom pelacakan keterlambatan pada tabel absensi
+-- 2. Tambah kolom pelacakan keterlambatan & jam keluar pada tabel absensi
 ALTER TABLE absensi ADD COLUMN IF NOT EXISTS terlambat boolean DEFAULT false;
 ALTER TABLE absensi ADD COLUMN IF NOT EXISTS menit_terlambat integer DEFAULT 0;
+ALTER TABLE absensi ADD COLUMN IF NOT EXISTS jam_keluar text;
+ALTER TABLE absensi ADD COLUMN IF NOT EXISTS closing_hari_at timestamptz;
 
 -- 3. MASTER: Sistem Kerja (keberadaan pekerjaan: ABSS, Access, Excel, NextBO, dll.)
 CREATE TABLE IF NOT EXISTS m_sistem_kerja (
@@ -160,5 +162,29 @@ END $$;
 DO $$
 BEGIN
   ALTER PUBLICATION supabase_realtime ADD TABLE tindakan_harian;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 9. KOMENTAR & ARAHAN KOLABORASI (gaya ClickUp / Monday.com)
+CREATE TABLE IF NOT EXISTS tindakan_comments (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tindakan_id  uuid REFERENCES tindakan_harian(id) ON DELETE CASCADE,
+  user_id      uuid REFERENCES users(id) ON DELETE SET NULL,
+  pesan        text NOT NULL,
+  is_instruksi boolean NOT NULL DEFAULT false,
+  mention_ids  uuid[] NOT NULL DEFAULT '{}',
+  sudah_dibaca uuid[] NOT NULL DEFAULT '{}',
+  created_at   timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tc_tindakan ON tindakan_comments(tindakan_id, created_at);
+
+ALTER TABLE tindakan_comments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "anon_all_tindakan_comments" ON tindakan_comments;
+CREATE POLICY "anon_all_tindakan_comments" ON tindakan_comments FOR ALL TO anon USING (true) WITH CHECK (true);
+
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE tindakan_comments;
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;

@@ -217,6 +217,13 @@ textarea{resize:vertical;min-height:60px}
 .b-late{background:#fee2e2;color:#dc2626}.b-warn{background:#fef3c7;color:#d97706}.b-info{background:#dbeafe;color:#2563eb}
 .witaPill{font-size:.74rem;background:#eff6ff;color:#1e40af;padding:4px 10px;border-radius:20px;font-weight:600;border:1px solid #bfdbfe}
 .btnTiny{padding:4px 9px;border:none;border-radius:5px;font-size:.73rem;font-weight:600;cursor:pointer}
+.btnChat{background:#ede9fe;color:#6d28d9;padding:4px 8px;border:none;border-radius:5px;font-size:.73rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.btnChat.hasUnread{background:#fef3c7;color:#b45309;border:1px solid #f59e0b}
+.mentionGrid{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.mentionOpt{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:var(--gray);border:1.5px solid var(--gray2);font-size:.76rem;cursor:pointer;user-select:none}
+.mentionOpt input{width:13px;height:13px;accent-color:var(--blue)}
+.mentionChip{display:inline-block;background:#dbeafe;color:#1d4ed8;padding:1px 7px;border-radius:12px;font-size:.7rem;font-weight:600;margin-right:3px}
+.cmtInstruksi{background:#fef3c7!important;border-left:4px solid #f59e0b}
 </style>
 </head>
 <body>
@@ -240,11 +247,11 @@ textarea{resize:vertical;min-height:60px}
   </div>
   <nav id="sideNav">
     <a data-page="dashboard" onclick="showPage('dashboard')" class="active"><span class="ico">🏠</span> Dashboard</a>
-    <a data-page="klien" onclick="showPage('klien')" id="navKlien"><span class="ico">🏢</span> Klien</a>
-    <a data-page="pekerjaan" onclick="showPage('pekerjaan')"><span class="ico">📋</span> Pekerjaan</a>
     <a data-page="rencana" onclick="showPage('rencana')" id="navRencana"><span class="ico">🗓️</span> Pekerjaan Harian</a>
-    <a data-page="docs" onclick="showPage('docs')"><span class="ico">📝</span> Docs</a>
+    <a data-page="pekerjaan" onclick="showPage('pekerjaan')"><span class="ico">📋</span> Pekerjaan</a>
     <a data-page="absensi" onclick="showPage('absensi')"><span class="ico">🕐</span> Absensi</a>
+    <a data-page="docs" onclick="showPage('docs')"><span class="ico">📝</span> Docs</a>
+    <a data-page="klien" onclick="showPage('klien')" id="navKlien"><span class="ico">🏢</span> Klien</a>
     <a data-page="master" onclick="showPage('master')" id="navMaster"><span class="ico">⚙️</span> Master Data</a>
     <a data-page="users" onclick="showPage('users')" id="navUsers"><span class="ico">👥</span> Users</a>
     <a data-page="manual" onclick="showPage('manual')"><span class="ico">📖</span> Manual</a>
@@ -260,11 +267,11 @@ textarea{resize:vertical;min-height:60px}
   <button onclick="toggleSidebar()" data-label="Buka Sidebar">☰</button>
   <div class="floatSep"></div>
   <a data-page="dashboard" data-label="Dashboard" onclick="showPage('dashboard')" class="active">🏠</a>
-  <a data-page="klien" id="fNavKlien" data-label="Klien" onclick="showPage('klien')">🏢</a>
-  <a data-page="pekerjaan" data-label="Pekerjaan" onclick="showPage('pekerjaan')">📋</a>
   <a data-page="rencana" data-label="Pekerjaan Harian" onclick="showPage('rencana')">🗓️</a>
-  <a data-page="docs" data-label="Docs" onclick="showPage('docs')">📝</a>
+  <a data-page="pekerjaan" data-label="Pekerjaan" onclick="showPage('pekerjaan')">📋</a>
   <a data-page="absensi" data-label="Absensi" onclick="showPage('absensi')">🕐</a>
+  <a data-page="docs" data-label="Docs" onclick="showPage('docs')">📝</a>
+  <a data-page="klien" id="fNavKlien" data-label="Klien" onclick="showPage('klien')">🏢</a>
   <a data-page="master" id="fNavMaster" data-label="Master Data" onclick="showPage('master')">⚙️</a>
   <a data-page="users" id="fNavUsers" data-label="Users" onclick="showPage('users')">👥</a>
   <a data-page="manual" data-label="Manual" onclick="showPage('manual')">📖</a>
@@ -317,7 +324,7 @@ let timerInterval = null, timerStart = null, timerPekId = null, timerElapsed = 0
 let dragId = null;
 let realtimeChannel = null;
 let realtimeDebounce = null;
-let CACHE = {users:[],klien:[],pekerjaan:[],absensi:[],docs:[],comments:[],timelogs:[],rencana:[],sistem:[],jenis:[],tindakan:[]};
+let CACHE = {users:[],klien:[],pekerjaan:[],absensi:[],docs:[],comments:[],timelogs:[],rencana:[],sistem:[],jenis:[],tindakan:[],tcomments:[]};
 let rowsPerPageKlien = 10, rowsPerPagePek = 10;
 let pageKlien = 1, pagePek = 1;
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
@@ -407,6 +414,7 @@ function setupRealtime(){
     .on('postgres_changes',{event:'*',schema:'public',table:'m_sistem_kerja'},   onRealtimeChange)
     .on('postgres_changes',{event:'*',schema:'public',table:'m_jenis_tindakan'}, onRealtimeChange)
     .on('postgres_changes',{event:'*',schema:'public',table:'tindakan_harian'},  onRealtimeChange)
+    .on('postgres_changes',{event:'*',schema:'public',table:'tindakan_comments'},onRealtimeChange)
     .subscribe(status=>{
       if(status==='SUBSCRIBED') showRealtimeDot(true);
       if(status==='CLOSED'||status==='CHANNEL_ERROR') showRealtimeDot(false);
@@ -442,7 +450,7 @@ function showRealtimeDot(on){
 
 // ===== LOAD =====
 async function loadAll(){
-  const [u,k,p,a,d,c,tl,r,sk,jt,th] = await Promise.all([
+  const [u,k,p,a,d,c,tl,r,sk,jt,th,tc] = await Promise.all([
     sb.from('users').select('*').order('created_at'),
     sb.from('klien').select('*').order('nama'),
     sb.from('pekerjaan').select('*').order('created_at'),
@@ -454,6 +462,7 @@ async function loadAll(){
     sb.from('m_sistem_kerja').select('*').order('urutan'),
     sb.from('m_jenis_tindakan').select('*').order('urutan'),
     sb.from('tindakan_harian').select('*').order('created_at'),
+    sb.from('tindakan_comments').select('*').order('created_at'),
   ]);
   CACHE.users     = u.data||[];
   CACHE.klien     = k.data||[];
@@ -466,7 +475,8 @@ async function loadAll(){
   CACHE.sistem    = sk.data||[];
   CACHE.jenis     = jt.data||[];
   CACHE.tindakan  = th.data||[];
-  migrationReady  = !sk.error && !jt.error && !th.error;
+  CACHE.tcomments = tc.data||[];
+  migrationReady  = !sk.error && !jt.error && !th.error && !tc.error;
 }
 
 // ===== LOGIN =====
@@ -559,30 +569,45 @@ async function doLogin(){
 
   // ===== ALUR POP-UP ASISTEN SAAT LOGIN =====
   if(!isAdmin() && migrationReady){
-    // 1. Cek jika ada tindakan belum di-closing (hari ini atau hari sebelumnya)
-    const unclosed = CACHE.tindakan
-      .filter(t=>t.user_id===user.id && (t.status==='rencana'||t.status==='dikerjakan'))
-      .sort((a,b)=>a.tanggal_kerja.localeCompare(b.tanggal_kerja)||(a.created_at||'').localeCompare(b.created_at||''));
-    if(unclosed.length){
+    const unreadArahan = getAllUnreadCommentsForUser(user.id);
+    if(unreadArahan.length){
       showPage('dashboard');
-      setTimeout(()=>showForcedClosingModal(unclosed[0].id), 300);
+      setTimeout(()=>showForcedArahanModal(), 300);
       return;
     }
-    // 2. Belum ada tindakan sama sekali hari ini -> langsung buka pop-up form rencana awal hari
-    const todayTindakan = CACHE.tindakan.filter(t=>t.user_id===user.id && t.tanggal_kerja===today);
-    if(!todayTindakan.length){
-      showPage('dashboard');
-      setTimeout(()=>showForcedRencanaModal(), 300);
-      return;
-    }
-    // 3. Sudah ada tindakan hari ini & semua sudah di-closing, tapi belum closing akhir hari -> tanyakan lanjut atau closing akhir hari
-    if(!todayAb || !todayAb.jam_keluar){
-      showPage('dashboard');
-      setTimeout(()=>showAfterClosingChoiceModal(), 300);
-      return;
-    }
+    if(continueAssistantLoginFlow()) return;
   }
   showPage('dashboard');
+}
+
+function continueAssistantLoginFlow(){
+  if(isAdmin() || !migrationReady) return false;
+  const today = todayStr();
+  const uid = currentUser.id;
+  // 1. Cek jika ada tindakan belum di-closing (hari ini atau hari sebelumnya)
+  const unclosed = CACHE.tindakan
+    .filter(t=>t.user_id===uid && (t.status==='rencana'||t.status==='dikerjakan'))
+    .sort((a,b)=>a.tanggal_kerja.localeCompare(b.tanggal_kerja)||(a.created_at||'').localeCompare(b.created_at||''));
+  if(unclosed.length){
+    showPage('dashboard');
+    setTimeout(()=>showForcedClosingModal(unclosed[0].id), 250);
+    return true;
+  }
+  // 2. Belum ada tindakan sama sekali hari ini -> langsung buka pop-up form rencana awal hari
+  const todayTindakan = CACHE.tindakan.filter(t=>t.user_id===uid && t.tanggal_kerja===today);
+  if(!todayTindakan.length){
+    showPage('dashboard');
+    setTimeout(()=>showForcedRencanaModal(), 250);
+    return true;
+  }
+  // 3. Sudah ada tindakan hari ini & semua sudah di-closing, tapi belum closing akhir hari -> tanyakan lanjut atau closing akhir hari
+  const todayAb = CACHE.absensi.find(a=>a.user_id===uid && a.tanggal===today);
+  if(!todayAb || !todayAb.jam_keluar){
+    showPage('dashboard');
+    setTimeout(()=>showAfterClosingChoiceModal(), 250);
+    return true;
+  }
+  return false;
 }
 
 function toggleSidebar(){
@@ -1388,8 +1413,9 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
         <td style="white-space:nowrap">${t.selesai_at?fmtTimeWita(t.selesai_at):'-'}</td>
         <td style="white-space:nowrap"><b>${t.durasi_detik?fmtDur(t.durasi_detik):'-'}</b></td>
         <td>${stBadge}${t.kendala?`<div style="font-size:.71rem;color:#dc2626;margin-top:2px">⚠️ ${esc(t.kendala)}</div>`:''}</td>
+        <td>${chatBtnHtml(t.id)}</td>
       </tr>`;
-    }).join('') : `<tr><td colspan="11" style="text-align:center;color:var(--sub);padding:24px">Tidak ada data pekerjaan pada rentang filter ini.</td></tr>`;
+    }).join('') : `<tr><td colspan="12" style="text-align:center;color:var(--sub);padding:24px">Tidak ada data pekerjaan pada rentang filter ini.</td></tr>`;
 
     return `<div class="section" style="position:relative;z-index:1">
       <div class="secHead">
@@ -1424,7 +1450,7 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
         <div class="kpiBox"><span class="kv" style="font-size:1.25rem;color:var(--blue)">${fmtDur(totalDur)}</span><span class="kl">Total Lama Pekerjaan</span></div>
       </div>
       <div style="overflow-x:auto">
-        <table><thead><tr><th>#</th><th>Tanggal</th><th>Nama User</th><th>Rekanan / Klien</th><th>Sistem</th><th>Jenis Tindakan</th><th>Uraian</th><th>Mulai</th><th>Selesai</th><th>Lama Pekerjaan</th><th>Status &amp; Kendala</th></tr></thead>
+        <table><thead><tr><th>#</th><th>Tanggal</th><th>Nama User</th><th>Rekanan / Klien</th><th>Sistem</th><th>Jenis Tindakan</th><th>Uraian</th><th>Mulai</th><th>Selesai</th><th>Lama Pekerjaan</th><th>Status &amp; Kendala</th><th>Diskusi</th></tr></thead>
         <tbody>${trs}</tbody></table>
       </div>
       <div class="pagination">
@@ -1555,15 +1581,21 @@ function exportPekerjaanCSV(){
   if(pekFilter.klienId) rows = rows.filter(t=>t.klien_id===pekFilter.klienId);
   if(pekFilter.status) rows = rows.filter(t=>t.status===pekFilter.status);
   const q = (pekFilter.q||'').toLowerCase();
-  if(q) rows = rows.filter(t=>((CACHE.klien.find(x=>x.id===t.klien_id)?.nama||'')+' '+(t.uraian||'')).toLowerCase().includes(q));
+  if(q) rows = rows.filter(t=>{
+    const k = CACHE.klien.find(x=>x.id===t.klien_id)?.nama||'';
+    const u = CACHE.users.find(x=>x.id===t.user_id)?.nama||'';
+    const s = CACHE.sistem.find(x=>x.id===t.sistem_id)?.nama||'';
+    const j = CACHE.jenis.find(x=>x.id===t.jenis_id)?.nama||'';
+    return (k+' '+u+' '+s+' '+j+' '+(t.uraian||'')+' '+(t.kendala||'')).toLowerCase().includes(q);
+  });
   const csvEsc = v => `"${String(v??'').replace(/"/g,'""')}"`;
-  const lines = [['Tanggal','User','Klien','Periode','Sistem','Jenis Tindakan','Uraian','Mulai WITA','Selesai WITA','Durasi (detik)','Status','Kendala'].map(csvEsc).join(',')];
+  const lines = [['Tanggal','User','Klien','Periode','Sistem','Jenis Tindakan','Uraian','Mulai WITA','Selesai WITA','Lama Pekerjaan','Durasi (detik)','Status','Kendala'].map(csvEsc).join(',')];
   rows.forEach(t=>{
     const u=CACHE.users.find(x=>x.id===t.user_id)?.nama||'';
     const k=CACHE.klien.find(x=>x.id===t.klien_id)?.nama||'';
     const s=CACHE.sistem.find(x=>x.id===t.sistem_id)?.nama||'';
     const j=CACHE.jenis.find(x=>x.id===t.jenis_id)?.nama||'';
-    lines.push([t.tanggal_kerja,u,k,`${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}`,s,j,t.uraian||'',t.mulai_at?fmtTimeWita(t.mulai_at):'',t.selesai_at?fmtTimeWita(t.selesai_at):'',t.durasi_detik||0,t.status,t.kendala||''].map(csvEsc).join(','));
+    lines.push([t.tanggal_kerja,u,k,`${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}`,s,j,t.uraian||'',t.mulai_at?fmtTimeWita(t.mulai_at):'',t.selesai_at?fmtTimeWita(t.selesai_at):'',t.durasi_detik?fmtDur(t.durasi_detik):'',t.durasi_detik||0,t.status,t.kendala||''].map(csvEsc).join(','));
   });
   const blob = new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`log-pekerjaan-${todayStr()}.csv`; a.click();
@@ -2100,10 +2132,11 @@ function showAbsensiDayDetailModal(uid, ds){
       <td style="white-space:nowrap">${t.mulai_at?fmtTimeWita(t.mulai_at):'-'} – ${t.selesai_at?fmtTimeWita(t.selesai_at):'-'}</td>
       <td><b>${t.durasi_detik?fmtDurHM(t.durasi_detik):'-'}</b></td>
       <td>${t.status}${t.kendala?`<br><span style="font-size:.7rem;color:#dc2626">⚠️ ${esc(t.kendala)}</span>`:''}</td>
+      <td>${chatBtnHtml(t.id)}</td>
     </tr>`;
-  }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--sub);padding:16px">Belum ada catatan tindakan pada tanggal ini.</td></tr>`;
+  }).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--sub);padding:16px">Belum ada catatan tindakan pada tanggal ini.</td></tr>`;
 
-  document.getElementById('modalBox').style.width = '780px';
+  document.getElementById('modalBox').style.width = '840px';
   document.getElementById('modalBox').innerHTML = `
     <h4>📅 Detail Absensi &amp; Kegiatan — ${esc(u?u.nama:(ab?.nama||'-'))} (${fmtDateL(ds)})</h4>
     <div style="display:flex;gap:10px;flex-wrap:wrap;background:var(--gray);padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:.82rem">
@@ -2113,7 +2146,7 @@ function showAbsensiDayDetailModal(uid, ds){
       <span>⏱️ Total Lama Kerja: <b>${fmtDurHM(totalDur)}</b></span>
     </div>
     <div style="overflow-x:auto;max-height:360px;overflow-y:auto">
-      <table><thead><tr><th>#</th><th>Klien &amp; Periode</th><th>Sistem</th><th>Jenis Tindakan</th><th>Uraian</th><th>Waktu (WITA)</th><th>Durasi</th><th>Status</th></tr></thead>
+      <table><thead><tr><th>#</th><th>Klien &amp; Periode</th><th>Sistem</th><th>Jenis Tindakan</th><th>Uraian</th><th>Waktu (WITA)</th><th>Durasi</th><th>Status</th><th>Diskusi</th></tr></thead>
       <tbody>${rowsHtml}</tbody></table>
     </div>
     <div class="flex mt10"><button onclick="document.getElementById('modalBox').style.width='';closeModal()" class="btnPrimary">Tutup</button></div>`;
@@ -2397,7 +2430,7 @@ function renderRencana(){
       <td style="white-space:nowrap">${t.selesai_at?fmtTimeWita(t.selesai_at):'-'}</td>
       <td style="white-space:nowrap"><b>${t.durasi_detik?fmtDurHM(t.durasi_detik):'-'}</b></td>
       <td>${stBadge}${t.kendala?`<div style="font-size:.72rem;color:#dc2626;margin-top:3px">⚠️ ${esc(t.kendala)}</div>`:''}</td>
-      <td>${actBtns}</td>
+      <td><div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">${actBtns}${chatBtnHtml(t.id)}</div></td>
     </tr>`;
   }).join('') : `<tr><td colspan="${isAdmin()?11:10}" style="text-align:center;color:var(--sub);padding:24px">Belum ada tindakan pada tanggal ini.</td></tr>`;
 
@@ -2777,6 +2810,200 @@ async function saveClosingTindakan(id, mulaiIso, selesaiIso, durasi){
   }
 }
 
+// ===== DISKUSI, CATATAN & KOLABORASI TINDAKAN (ClickUp / Monday.com style) =====
+function getAllUnreadCommentsForUser(uid){
+  return (CACHE.tcomments || []).filter(c => {
+    if(c.user_id === uid) return false;
+    const t = CACHE.tindakan.find(x=>x.id===c.tindakan_id);
+    if(!t) return false;
+    const isTargeted = (t.user_id === uid) || (Array.isArray(c.mention_ids) && c.mention_ids.includes(uid));
+    const alreadyRead = Array.isArray(c.sudah_dibaca) && c.sudah_dibaca.includes(uid);
+    return isTargeted && !alreadyRead;
+  });
+}
+
+function showForcedArahanModal(){
+  const unread = getAllUnreadCommentsForUser(currentUser.id);
+  if(!unread.length) return;
+  document.getElementById('rencanaForceOverlay')?.remove();
+  const listHtml = unread.map(c=>{
+    const t = CACHE.tindakan.find(x=>x.id===c.tindakan_id);
+    const k = t ? CACHE.klien.find(x=>x.id===t.klien_id) : null;
+    const j = t ? CACHE.jenis.find(x=>x.id===t.jenis_id) : null;
+    const sender = CACHE.users.find(x=>x.id===c.user_id);
+    const mentions = (c.mention_ids||[]).map(mid=>'@'+esc(CACHE.users.find(x=>x.id===mid)?.nama||'')).join(' ');
+    return `<div style="background:${c.is_instruksi?'#fef3c7':'var(--gray)'};border-left:4px solid ${c.is_instruksi?'#f59e0b':'var(--blue)'};border-radius:9px;padding:11px 13px;margin-bottom:10px;font-size:.82rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span><b>${esc(sender?sender.nama:'-')}</b> ${c.is_instruksi?'<span class="badge b-warn">📌 Arahan Superadmin</span>':'<span class="badge b-info">💬 Catatan</span>'}</span>
+        <span style="font-size:.72rem;color:var(--sub)">${fmtDateL(c.created_at)} ${fmtTimeWita(c.created_at)}</span>
+      </div>
+      <div style="font-size:.75rem;color:var(--sub);margin-bottom:5px">
+        🏢 <b>${esc(k?k.nama:'-')}</b> ${t?`(${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun})`:''} · ${esc(j?j.nama:'-')}
+        ${mentions?`<br>👥 Ditujukan ke: <b>${mentions}</b>`:''}
+      </div>
+      <div style="color:var(--text);white-space:pre-wrap;margin-bottom:6px">${esc(c.pesan)}</div>
+      <input id="faReply_${c.id}" placeholder="Balasan singkat (opsional)..." style="width:100%;font-size:.78rem;padding:6px 9px"/>
+    </div>`;
+  }).join('');
+
+  const overlay = document.createElement('div');
+  overlay.className = 'rLockOverlay'; overlay.id = 'rencanaForceOverlay';
+  overlay.innerHTML = `<div class="rLockBox" style="width:600px">
+    <h3>📌 Tanggapan &amp; Arahan untuk Anda (${unread.length})</h3>
+    <p class="rLockSub">Terdapat catatan / arahan dari Superadmin atau rekan tim yang perlu Anda ketahui. Baca dan klik tombol di bawah untuk mengonfirmasi.</p>
+    <div style="max-height:360px;overflow-y:auto;margin-bottom:12px">${listHtml}</div>
+    <div class="flex">
+      <button class="btnPrimary" onclick="acknowledgeAllArahan()">✅ Diketahui / Dibaca &amp; Closing Tanggapan</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function acknowledgeAllArahan(){
+  const unread = getAllUnreadCommentsForUser(currentUser.id);
+  const errors = [];
+  for(const c of unread){
+    const replyEl = document.getElementById('faReply_'+c.id);
+    const replyTxt = replyEl ? replyEl.value.trim() : '';
+    if(replyTxt){
+      const {error:insErr} = await sb.from('tindakan_comments').insert({
+        tindakan_id: c.tindakan_id,
+        user_id: currentUser.id,
+        pesan: replyTxt,
+        is_instruksi: false,
+        mention_ids: c.user_id ? [c.user_id] : [],
+        sudah_dibaca: [currentUser.id]
+      });
+      if(insErr) errors.push(insErr.message);
+    }
+    const nextRead = [...new Set([...(c.sudah_dibaca||[]), currentUser.id])];
+    const {error:updErr} = await sb.from('tindakan_comments').update({ sudah_dibaca: nextRead }).eq('id', c.id);
+    if(updErr) errors.push(updErr.message);
+  }
+  if(errors.length){ toast('⚠️ Sebagian konfirmasi gagal: '+errors[0]); return; }
+  await loadAll();
+  document.getElementById('rencanaForceOverlay')?.remove();
+  toast('✅ Semua tanggapan telah dikonfirmasi diketahui & di-closing!');
+  if(!continueAssistantLoginFlow()) showPage('dashboard');
+}
+
+function getUnreadCommentsForUser(tId, uid){
+  const t = CACHE.tindakan.find(x=>x.id===tId);
+  return (CACHE.tcomments || []).filter(c => {
+    if(c.tindakan_id !== tId || c.user_id === uid) return false;
+    const isTargeted = (t && t.user_id === uid) || (Array.isArray(c.mention_ids) && c.mention_ids.includes(uid));
+    const alreadyRead = Array.isArray(c.sudah_dibaca) && c.sudah_dibaca.includes(uid);
+    return isTargeted && !alreadyRead;
+  });
+}
+
+function chatBtnHtml(tId){
+  const cnt = (CACHE.tcomments || []).filter(c=>c.tindakan_id===tId).length;
+  const unread = currentUser ? getUnreadCommentsForUser(tId, currentUser.id).length : 0;
+  return `<button class="btnChat ${unread?'hasUnread':''}" onclick="event.stopPropagation();openTindakanDiskusi('${tId}')" title="Diskusi, Arahan Superadmin &amp; Tag Rekan Kerja">
+    💬 ${cnt}${unread?` <span style="background:#dc2626;color:#fff;border-radius:10px;padding:0 5px;font-size:.65rem">${unread} baru</span>`:''}
+  </button>`;
+}
+
+async function openTindakanDiskusi(tId){
+  const t = CACHE.tindakan.find(x=>x.id===tId);
+  if(!t) return;
+  const u = CACHE.users.find(x=>x.id===t.user_id);
+  const k = CACHE.klien.find(x=>x.id===t.klien_id);
+  const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
+  const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
+
+  // Tandai pesan yang ditujukan ke currentUser sebagai sudah dibaca
+  if(currentUser){
+    const unread = getUnreadCommentsForUser(tId, currentUser.id);
+    if(unread.length){
+      await Promise.all(unread.map(c=>{
+        const nextRead = [...new Set([...(c.sudah_dibaca||[]), currentUser.id])];
+        return sb.from('tindakan_comments').update({ sudah_dibaca: nextRead }).eq('id', c.id);
+      }));
+      await loadAll();
+    }
+  }
+
+  const cmts = (CACHE.tcomments || []).filter(c=>c.tindakan_id===tId);
+  const cmtsHtml = cmts.length ? cmts.map(c=>{
+    const cu = CACHE.users.find(x=>x.id===c.user_id);
+    const mentions = (c.mention_ids || []).map(mid=>{
+      const mu = CACHE.users.find(x=>x.id===mid);
+      return mu ? `<span class="mentionChip">@${esc(mu.nama)}</span>` : '';
+    }).join('');
+    return `<div class="commentItem">
+      <div class="commentAvatar">${cu?cu.nama.charAt(0).toUpperCase():'?'}</div>
+      <div class="commentBody ${c.is_instruksi?'cmtInstruksi':''}">
+        <div class="cmeta">
+          <b>${esc(cu?cu.nama:'-')}</b> ${cu&&(cu.role==='superadmin'||cu.role==='admin')?'<span class="badge" style="background:#ede9fe;color:#6d28d9;font-size:.65rem">Superadmin</span>':''}
+          ${c.is_instruksi?'<span class="badge b-warn" style="font-size:.65rem">📌 Arahan / Catatan Wajib</span>':''}
+          · ${fmtDateL(c.created_at)} ${fmtTimeWita(c.created_at)}
+        </div>
+        ${mentions?`<div style="margin-bottom:4px">${mentions}</div>`:''}
+        <p style="white-space:pre-wrap">${esc(c.pesan)}</p>
+        ${(()=>{
+          const readers = (c.sudah_dibaca||[]).filter(rid=>rid!==c.user_id).map(rid=>CACHE.users.find(x=>x.id===rid)?.nama).filter(Boolean);
+          return readers.length ? `<div style="font-size:.7rem;color:#059669;margin-top:4px">👁️ Diketahui / dibaca oleh: <b>${readers.map(esc).join(', ')}</b></div>` : '';
+        })()}
+      </div>
+    </div>`;
+  }).join('') : `<div style="color:var(--sub);font-size:.82rem;padding:12px 0">Belum ada tanggapan atau catatan kolaborasi.</div>`;
+
+  const otherUsers = CACHE.users.filter(x=>currentUser && x.id!==currentUser.id);
+  const mentionChecks = otherUsers.map(x=>`
+    <label class="mentionOpt">
+      <input type="checkbox" class="tcMention" value="${x.id}"/> @${esc(x.nama)}
+    </label>`).join('');
+
+  document.getElementById('modalBox').style.width = '680px';
+  document.getElementById('modalBox').innerHTML = `
+    <h4>💬 Diskusi &amp; Arahan Pekerjaan</h4>
+    <div style="background:var(--gray);border-radius:9px;padding:10px 12px;margin-bottom:12px;font-size:.81rem">
+      <b>🏢 ${esc(k?k.nama:'-')}</b> (${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}) · ${esc(s?s.nama:'-')} · <b>${esc(j?j.nama:'-')}</b><br>
+      Dikerjakan oleh: <b>${esc(u?u.nama:'-')}</b> · Tgl: ${fmtDateL(t.tanggal_kerja)} · Status: <b>${t.status}</b>
+      ${t.uraian?`<div style="color:var(--sub);margin-top:4px">${esc(t.uraian)}</div>`:''}
+    </div>
+    <div style="max-height:260px;overflow-y:auto;margin-bottom:12px;padding-right:4px">
+      ${cmtsHtml}
+    </div>
+    <div style="border-top:1px solid var(--gray2);padding-top:12px">
+      ${isAdmin()?`<label style="display:flex;align-items:center;gap:7px;font-size:.8rem;color:#b45309;font-weight:700;margin-bottom:8px;cursor:pointer">
+        <input type="checkbox" id="tcInstruksi" checked style="width:15px;height:15px;accent-color:#f59e0b"/> 📌 Tandai sebagai Arahan / Catatan Wajib Dikerjakan
+      </label>`:''}
+      <div style="margin-bottom:8px">
+        <label style="font-size:.75rem">👥 Kirim / Tag ke User Lain (untuk dikerjakan &amp; diketahui bersama):</label>
+        <div class="mentionGrid">${mentionChecks}</div>
+      </div>
+      <textarea id="tcPesan" style="width:100%;min-height:70px" placeholder="Tulis tanggapan, instruksi perbaikan, atau catatan kolaborasi..."></textarea>
+      <div class="flex mt10">
+        <button class="btnPrimary" onclick="sendTindakanComment('${tId}')">📨 Kirim Tanggapan</button>
+        <button onclick="closeModal();showPage(currentPage)" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">Tutup</button>
+      </div>
+    </div>`;
+  document.getElementById('modalWrap').classList.remove('hidden');
+}
+
+async function sendTindakanComment(tId){
+  const pesan = document.getElementById('tcPesan').value.trim();
+  if(!pesan) return alert('Tulis pesan tanggapan terlebih dahulu!');
+  const is_instruksi = document.getElementById('tcInstruksi')?.checked || false;
+  const mention_ids = [...document.querySelectorAll('.tcMention:checked')].map(el=>el.value);
+
+  const { error } = await sb.from('tindakan_comments').insert({
+    tindakan_id: tId,
+    user_id: currentUser.id,
+    pesan,
+    is_instruksi,
+    mention_ids,
+    sudah_dibaca: [currentUser.id]
+  });
+  if(error) return alert('Gagal mengirim tanggapan (pastikan migrasi SQL terbaru sudah dijalankan): '+error.message);
+  await loadAll();
+  toast('✅ Tanggapan terkirim!');
+  openTindakanDiskusi(tId);
+}
+
 // ===== MANUAL =====
 function renderManual(){
   return`<div style="position:relative;z-index:1">
@@ -3032,6 +3259,25 @@ function notifySuperadminDesktop(force=false){
 function getNotifs(){
   const today=todayStr(); const soon=nowWitaDate(); soon.setDate(soon.getDate()+3);
   const notifs=[];
+  // Komentar / Arahan / Mention yang belum dibaca untuk user login
+  if(currentUser){
+    (CACHE.tcomments || []).forEach(c=>{
+      if(c.user_id === currentUser.id) return;
+      const t = CACHE.tindakan.find(x=>x.id===c.tindakan_id);
+      if(!t) return;
+      const isTargeted = (t.user_id === currentUser.id) || (Array.isArray(c.mention_ids) && c.mention_ids.includes(currentUser.id));
+      const alreadyRead = Array.isArray(c.sudah_dibaca) && c.sudah_dibaca.includes(currentUser.id);
+      if(isTargeted && !alreadyRead){
+        const sender = CACHE.users.find(u=>u.id===c.user_id)?.nama || 'Rekan';
+        const k = CACHE.klien.find(x=>x.id===t.klien_id)?.nama || '-';
+        notifs.push({
+          title: `${c.is_instruksi?'📌 Arahan':'💬 Catatan'} dari ${sender} (${k})`,
+          sub: c.pesan.slice(0,80),
+          action: `openTindakanDiskusi('${t.id}')`
+        });
+      }
+    });
+  }
   if(isAdmin() && migrationReady){
     const my = witaMonthYear();
     const kpi = computeKPIs(my.bulan, my.tahun);
