@@ -1665,7 +1665,7 @@ function renderPgBar(total, pg, rpp, unitLabel, onPerPageJs, onPageTpl){
   </div>`;
 }
 
-function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
+function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=pagePek,rpp=rowsPerPagePek){
   if(pekMode === 'datatable'){
     const dari = pekFilter.dari || '';
     const sampai = pekFilter.sampai || '';
