@@ -108,8 +108,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue)}
 textarea{resize:vertical;min-height:60px}
 .btnPrimary{padding:9px 18px;background:#FF6B6B;color:#fff;border:none;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(255,107,107,.28)}
 .btnPrimary:hover{filter:brightness(.94)}
-.btnSm{padding:5px 10px;border:none;border-radius:5px;font-size:.74rem;cursor:pointer;margin-right:3px;font-weight:600;background:#FF6B6B;color:#fff}
-.btnEdit,.btnDanger,.btnGray{background:#FF6B6B;color:#fff}
+.btnSm{padding:5px 10px;border:1px solid #d5c2a8;border-radius:5px;font-size:.74rem;cursor:pointer;margin-right:3px;font-weight:600;background:#EADCC8;color:#1A0F2E}
+.btnSm:hover,.btnTiny:hover,.btnChat:hover{filter:brightness(.94)}
+.btnEdit,.btnDanger,.btnGray{background:#EADCC8;color:#1A0F2E;border:1px solid #d5c2a8}
 .filterBar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
 .filterBar select,.filterBar input{padding:6px 9px;font-size:.79rem;border-radius:6px}
 .viewToggle{display:flex;gap:4px;background:var(--gray);border-radius:8px;padding:3px}
@@ -239,9 +240,9 @@ textarea{resize:vertical;min-height:60px}
 .riskScore{font-size:1.1rem;font-weight:800;min-width:48px;text-align:center}
 .b-late{background:#fee2e2;color:#dc2626}.b-warn{background:#fef3c7;color:#d97706}.b-info{background:#dbeafe;color:#2563eb}
 .witaPill{font-size:.74rem;background:#F4D7D4;color:#3B1B4F;padding:4px 10px;border-radius:20px;font-weight:600;border:1px solid #D6598F}
-.btnTiny{padding:4px 9px;border:none;border-radius:5px;font-size:.73rem;font-weight:600;cursor:pointer;background:#FF6B6B;color:#fff}
-.btnChat{background:#FF6B6B;color:#fff;padding:4px 8px;border:none;border-radius:5px;font-size:.73rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
-.btnChat.hasUnread{background:#FF6B6B;color:#fff;border:1px solid #7A2E6F}
+.btnTiny{padding:4px 9px;border:1px solid #d5c2a8;border-radius:5px;font-size:.73rem;font-weight:600;cursor:pointer;background:#EADCC8;color:#1A0F2E}
+.btnChat{background:#EADCC8;color:#1A0F2E;padding:4px 8px;border:1px solid #d5c2a8;border-radius:5px;font-size:.73rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.btnChat.hasUnread{background:#EADCC8;color:#1A0F2E;border:1.5px solid #FF6B6B}
 .mentionGrid{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 .mentionOpt{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:var(--gray);border:1.5px solid var(--gray2);font-size:.76rem;cursor:pointer;user-select:none}
 .mentionOpt input{width:13px;height:13px;accent-color:var(--blue)}
@@ -943,9 +944,9 @@ function renderDashboard(){
       const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
       const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
       const btnAct = t.status==='rencana'
-        ? `<button class="btnTiny" style="background:#d1fae5;color:#059669" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button>`
+        ? `<button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button>`
         : t.status==='dikerjakan'
-        ? `<button class="btnTiny" style="background:#fee2e2;color:#dc2626" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`
+        ? `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`
         : `<span class="badge ${t.status==='selesai'?'b-done':t.status==='bermasalah'?'b-urgent':'b-warn'}">${t.status}</span>`;
       return `<tr>
         <td>${i+1}</td>
@@ -1022,7 +1023,7 @@ function renderDashboard(){
           ${r.count} tindakan · <b>${r.ulang}x</b> ulang · <b>${r.kendala}x</b> kendala · ${r.diagnosis}
         </div>
       </div>
-      <button class="btnSm btnEdit" onclick="showClientKpiModal('${r.klien_id}')">Detail</button>
+      <button class="btnSm btnEdit" title="Lihat detail KPI klien" onclick="showClientKpiModal('${r.klien_id}')">Detail</button>
     </div>`).join('')
     : `<div style="color:var(--sub);font-size:.82rem;padding:8px 0">✅ Tidak ada klien dengan indikasi masalah atau kelalaian pada periode ini.</div>`;
 
@@ -1355,8 +1356,8 @@ function renderKlien(q='',pg=1,rpp=rowsPerPageKlien){
       <td>${jml}<span style="color:var(--sub);font-size:.74rem"> (${done} selesai)</span>
         <div class="progressBar"><div class="progressFill" style="width:${pct}%"></div></div></td>
       <td>
-        <button class="btnSm btnEdit" onclick="modalKlien('${k.id}')">✏️</button>
-        <button class="btnSm btnDanger" onclick="delKlien('${k.id}')">🗑️</button>
+        <button class="btnSm btnEdit" title="Edit data klien / rekanan" onclick="modalKlien('${k.id}')">✏️</button>
+        <button class="btnSm btnDanger" title="Hapus data klien / rekanan" onclick="delKlien('${k.id}')">🗑️</button>
       </td></tr>`;
   }).join(''):`<tr><td colspan="8" style="color:var(--sub);text-align:center;padding:20px">Belum ada klien</td></tr>`;
 
@@ -1541,9 +1542,9 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
           <option value="20" ${rpp===20?'selected':''}>20</option>
           <option value="50" ${rpp===50?'selected':''}>50</option>
         </select>
-        <button class="btnSm btnGray" onclick="pagePek--;document.getElementById('pageContent').innerHTML=renderPekerjaan('','','','','',pagePek,rowsPerPagePek)" ${pg<=1?'disabled':''}>‹</button>
+        <button class="btnSm btnGray" title="Halaman sebelumnya" onclick="pagePek--;document.getElementById('pageContent').innerHTML=renderPekerjaan('','','','','',pagePek,rowsPerPagePek)" ${pg<=1?'disabled':''}>‹</button>
         <span>Hal ${pg} / ${totalPages} (${total} data)</span>
-        <button class="btnSm btnGray" onclick="pagePek++;document.getElementById('pageContent').innerHTML=renderPekerjaan('','','','','',pagePek,rowsPerPagePek)" ${pg>=totalPages?'disabled':''}>›</button>
+        <button class="btnSm btnGray" title="Halaman berikutnya" onclick="pagePek++;document.getElementById('pageContent').innerHTML=renderPekerjaan('','','','','',pagePek,rowsPerPagePek)" ${pg>=totalPages?'disabled':''}>›</button>
       </div>
     </div>`;
   }
@@ -1582,7 +1583,7 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
         <td>${u?u.nama:'-'}</td><td>${fmtDate(p.tanggal)}</td><td>${fmtDate(p.deadline)}</td>
         <td>${totalT?'⏱️ '+fmtDur(totalT):'-'}</td>
         <td onclick="event.stopPropagation()">
-          ${canEdit?`<button class="btnSm btnEdit" onclick="modalPek('${p.id}')">✏️</button><button class="btnSm btnDanger" onclick="delPek('${p.id}')">🗑️</button>`:'<span style="font-size:.74rem;color:var(--sub)">🔒</span>'}
+          ${canEdit?`<button class="btnSm btnEdit" title="Edit pekerjaan" onclick="modalPek('${p.id}')">✏️</button><button class="btnSm btnDanger" title="Hapus pekerjaan" onclick="delPek('${p.id}')">🗑️</button>`:'<span style="font-size:.74rem;color:var(--sub)">🔒</span>'}
         </td></tr>`;
     }).join(''):`<tr><td colspan="10" style="color:var(--sub);text-align:center;padding:20px">Tidak ada data</td></tr>`;
     const pagination=`<div class="pagination">
@@ -1592,9 +1593,9 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
         <option value="15" ${rpp===15?'selected':''}>15</option>
         <option value="20" ${rpp===20?'selected':''}>20</option>
       </select>
-      <button class="btnSm btnGray" onclick="pagePek--;renderPekerjaanPage()" ${pg<=1?'disabled':''}>‹</button>
+      <button class="btnSm btnGray" title="Halaman sebelumnya" onclick="pagePek--;renderPekerjaanPage()" ${pg<=1?'disabled':''}>‹</button>
       <span>Hal ${pg} / ${totalPages} (${total} data)</span>
-      <button class="btnSm btnGray" onclick="pagePek++;renderPekerjaanPage()" ${pg>=totalPages?'disabled':''}>›</button>
+      <button class="btnSm btnGray" title="Halaman berikutnya" onclick="pagePek++;renderPekerjaanPage()" ${pg>=totalPages?'disabled':''}>›</button>
     </div>`;
     viewContent=`<div style="overflow-x:auto"><table><thead><tr><th>Pekerjaan</th><th>Klien</th><th>Kategori</th><th>Status</th><th>Prioritas</th><th>Dikerjakan</th><th>Tgl</th><th>Deadline</th><th>Waktu</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>${pagination}`;
   } else if(currentView==='board'){
@@ -1911,7 +1912,7 @@ async function openDetail(pId){
         ${subs.map(st=>`<div class="subtaskItem">
           <input type="checkbox" ${st.status==='Selesai'?'checked':''} onchange="toggleSubtask('${st.id}',this.checked,'${pId}')"/>
           <span class="${st.status==='Selesai'?'done':''}">${st.judul}</span>
-          ${canEdit?`<button class="btnSm btnDanger" style="margin-left:auto;padding:2px 7px;font-size:.7rem" onclick="delSubtask('${st.id}','${pId}')">✕</button>`:''}
+          ${canEdit?`<button class="btnSm btnDanger" title="Hapus subtugas" style="margin-left:auto;padding:2px 7px;font-size:.7rem" onclick="delSubtask('${st.id}','${pId}')">✕</button>`:''}
         </div>`).join('')}
       </div>
       <div class="flex mt10">
@@ -2033,8 +2034,8 @@ function renderDocs(){
               <td>${d.link_dokumen?`<a href="${safeUrl(d.link_dokumen)}" target="_blank" rel="noopener noreferrer" style="color:var(--blue);font-size:.8rem;text-decoration:none">🔗 Buka File</a>`:'-'}</td>
               <td>${fmtDateL(d.updated_at)}</td>
               <td>
-                <button class="btnSm btnEdit" onclick="openDoc('${d.id}')">✏️</button>
-                <button class="btnSm btnDanger" onclick="delDoc('${d.id}')">🗑️</button>
+                <button class="btnSm btnEdit" title="Buka &amp; edit dokumen" onclick="openDoc('${d.id}')">✏️</button>
+                <button class="btnSm btnDanger" title="Hapus dokumen" onclick="delDoc('${d.id}')">🗑️</button>
               </td>
             </tr>`;
           }).join(''):`<tr><td colspan="7" style="text-align:center;color:var(--sub);padding:20px">Belum ada dokumen</td></tr>`}
@@ -2265,8 +2266,8 @@ function renderUsers(){
     const totalT=CACHE.timelogs.filter(t=>t.user_id===u.id).reduce((s,t)=>s+(t.durasi||0),0);
     return`<tr><td><b>${esc(u.nama)}</b></td><td>${u.role==='superadmin'?'Superadmin':u.role==='admin'?'Admin / Akuntan':'Asisten'}</td><td>${jml}</td><td>${fmtDur(totalT)}</td>
       <td>
-        <button class="btnSm btnEdit" onclick="modalUser('${u.id}')">✏️</button>
-        ${CACHE.users.length>1?`<button class="btnSm btnDanger" onclick="delUser('${u.id}')">🗑️</button>`:''}
+        <button class="btnSm btnEdit" title="Edit data pengguna" onclick="modalUser('${u.id}')">✏️</button>
+        ${CACHE.users.length>1?`<button class="btnSm btnDanger" title="Hapus pengguna" onclick="delUser('${u.id}')">🗑️</button>`:''}
       </td></tr>`;
   }).join('');
   const addBtn=isAdmin()?`<button class="btnPrimary" onclick="modalUser()">+ Tambah User</button>`:`<span style="font-size:.8rem;color:var(--sub)">🔒 Hanya Admin yang dapat menambah user</span>`;
@@ -2319,8 +2320,8 @@ function renderMaster(){
     <td>${s.urutan}</td>
     <td><span class="badge ${s.aktif?'b-done':'b-urgent'}">${s.aktif?'Aktif':'Nonaktif'}</span></td>
     <td>
-      <button class="btnSm btnEdit" onclick="modalSistem('${s.id}')">✏️</button>
-      <button class="btnSm btnGray" onclick="toggleSistemAktif('${s.id}',${!s.aktif})">${s.aktif?'Nonaktifkan':'Aktifkan'}</button>
+      <button class="btnSm btnEdit" title="Edit sistem" onclick="modalSistem('${s.id}')">✏️</button>
+      <button class="btnSm btnGray" title="${s.aktif?'Nonaktifkan sistem ini':'Aktifkan sistem ini'}" onclick="toggleSistemAktif('${s.id}',${!s.aktif})">${s.aktif?'Nonaktifkan':'Aktifkan'}</button>
     </td>
   </tr>`).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--sub)">Belum ada data (jalankan migrasi SQL v2)</td></tr>`;
 
@@ -2331,8 +2332,8 @@ function renderMaster(){
     <td><b>${j.bobot}</b></td>
     <td><span class="badge ${j.aktif?'b-done':'b-urgent'}">${j.aktif?'Aktif':'Nonaktif'}</span></td>
     <td>
-      <button class="btnSm btnEdit" onclick="modalJenis('${j.id}')">✏️</button>
-      <button class="btnSm btnGray" onclick="toggleJenisAktif('${j.id}',${!j.aktif})">${j.aktif?'Nonaktifkan':'Aktifkan'}</button>
+      <button class="btnSm btnEdit" title="Edit jenis tindakan" onclick="modalJenis('${j.id}')">✏️</button>
+      <button class="btnSm btnGray" title="${j.aktif?'Nonaktifkan jenis tindakan ini':'Aktifkan jenis tindakan ini'}" onclick="toggleJenisAktif('${j.id}',${!j.aktif})">${j.aktif?'Nonaktifkan':'Aktifkan'}</button>
     </td>
   </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--sub)">Belum ada data (jalankan migrasi SQL v2)</td></tr>`;
 
@@ -2468,7 +2469,7 @@ function renderRencana(){
             const j=CACHE.jenis.find(x=>x.id===t.jenis_id);
             return `<div style="display:flex;justify-content:space-between;align-items:center;background:#fff;padding:6px 10px;border-radius:6px;margin-bottom:4px;color:var(--text)">
               <span><b>${fmtDate(t.tanggal_kerja)}</b> · ${esc(k?k.nama:'-')} · ${esc(j?j.nama:'-')}</span>
-              <button class="btnTiny" style="background:#dc2626;color:#fff" onclick="selesaiTindakan('${t.id}')">⏹ Closing Sekarang</button>
+              <button class="btnTiny" title="Closing tindakan ini sekarang" onclick="selesaiTindakan('${t.id}')">⏹ Closing Sekarang</button>
             </div>`;
           }).join('')}
         </div>
@@ -2491,10 +2492,10 @@ function renderRencana(){
     let actBtns = '';
     if(canAct){
       if(t.status==='rencana'){
-        actBtns = `<button class="btnTiny" style="background:#d1fae5;color:#059669" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button>
-          <button class="btnTiny" style="background:#dbeafe;color:#2563eb;margin-top:3px" onclick="selesaiTindakan('${t.id}')">⏹ Closing</button>`;
+        actBtns = `<button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button>
+          <button class="btnTiny" title="Closing tindakan ini" style="margin-top:3px" onclick="selesaiTindakan('${t.id}')">⏹ Closing</button>`;
       } else if(t.status==='dikerjakan'){
-        actBtns = `<button class="btnTiny" style="background:#fee2e2;color:#dc2626" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`;
+        actBtns = `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`;
       } else {
         actBtns = `<span style="font-size:.72rem;color:var(--sub)">Tutup ${t.closing_at?fmtTimeWita(t.closing_at):''}</span>`;
       }
