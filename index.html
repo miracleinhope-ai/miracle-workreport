@@ -231,6 +231,10 @@ textarea{resize:vertical;min-height:60px}
 .pgBtn{border:none;background:transparent;color:var(--sub);border-radius:8px;padding:5px 11px;font-size:.78rem;font-weight:600;cursor:pointer;transition:.15s}
 .pgBtn:hover{background:var(--gray)}
 .pgBtn.active{background:var(--blue);color:#fff}
+.tblNeonBlue thead{background:linear-gradient(90deg,#00d2ff,#007bff);box-shadow:0 3px 14px rgba(0,150,255,.35)}
+.tblNeonBlue thead th{color:#fff;border-bottom:none;padding:10px 11px;font-weight:700;letter-spacing:.02em}
+.tblNeonBlue thead th:first-child{border-radius:8px 0 0 8px}
+.tblNeonBlue thead th:last-child{border-radius:0 8px 8px 0}
 </style>
 </head>
 <body>
@@ -642,7 +646,7 @@ function showPage(p){
   document.querySelectorAll('#sideNav a, #floatingMenu a').forEach(a=>{
     a.classList.toggle('active', a.dataset.page===p);
   });
-  const titles={dashboard:'Dashboard & KPI',klien:'Manajemen Klien',pekerjaan:'Log Pekerjaan (Datatable)',rencana:'Pekerjaan Harian',docs:'Docs',absensi:'Kalender Absensi & Aktivitas',master:'Master Data (Sistem & Tindakan)',users:'Manajemen User',manual:'Manual Pengguna'};
+  const titles={dashboard:'Dashboard & KPI',klien:'Manajemen Klien / Rekanan',pekerjaan:'Log Pekerjaan (Datatable)',rencana:'Pekerjaan Harian',docs:'Docs',absensi:'Kalender Absensi & Aktivitas',master:'Master Data (Sistem & Tindakan)',users:'Manajemen User',manual:'Manual Pengguna'};
   document.getElementById('pageTitle').textContent=titles[p]||p;
   document.getElementById('pageDate').textContent=pageDate();
   closeDetail();
@@ -1320,12 +1324,12 @@ function renderKlien(q='',pg=1,rpp=rowsPerPageKlien){
     </div>` : '';
 
   return`<div class="section" style="position:relative;z-index:1">
-    <div class="secHead"><h4>Daftar Klien</h4>
+    <div class="secHead"><h4>Manajemen Klien / Rekanan</h4>
     <div class="flex">
       <input style="padding:7px 10px;border:1.5px solid var(--gray2);border-radius:7px;font-size:.8rem;width:200px" placeholder="Cari nama / NPWP / kontak..." id="srchKlien" value="${esc(q)}" oninput="pageKlien=1;document.getElementById('pageContent').innerHTML=renderKlien(this.value,1,rowsPerPageKlien)"/>
       <button class="btnPrimary" onclick="modalKlien()">+ Tambah Klien</button>
     </div></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>Nama Perusahaan</th><th>NPWP</th><th>Bidang Usaha</th><th>PIC</th><th>No. Kontak</th><th>Email</th><th>Progres</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div style="overflow-x:auto"><table class="tblNeonBlue"><thead><tr><th>Nama Perusahaan</th><th>NPWP</th><th>Bidang Usaha</th><th>PIC</th><th>No. Kontak</th><th>Email</th><th>Progres</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${pgFooter}
   </div>`;
 }
