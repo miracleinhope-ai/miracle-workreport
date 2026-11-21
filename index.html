@@ -54,6 +54,10 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--gray)}
 .sideTop p{color:rgba(255,255,255,.65);font-size:.7rem;margin-top:2px}
 .btnSideHide{background:#FF6B6B;border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:.82rem;flex-shrink:0}
 .btnSideHide:hover{filter:brightness(.92)}
+.sideNotifBox{margin:6px 12px 2px;padding:9px 11px;border-radius:10px;font-size:.73rem;line-height:1.4;background:rgba(244,215,212,.12);border:1px solid rgba(244,215,212,.24);color:#F4D7D4;max-height:145px;overflow-y:auto}
+.sideNotifBox.hasAlert{background:rgba(214,89,143,.24);border-color:#D6598F;color:#fff}
+.sideNotifItem{padding:4px 6px;border-radius:6px;margin-top:4px;background:rgba(26,15,46,.32);cursor:pointer;transition:.15s}
+.sideNotifItem:hover{background:rgba(255,107,107,.28)}
 .sideLateBox{margin:6px 12px 2px;padding:9px 11px;border-radius:10px;font-size:.73rem;line-height:1.45;background:rgba(244,215,212,.14);border:1px solid rgba(244,215,212,.25);color:#F4D7D4;max-height:145px;overflow-y:auto}
 .sideLateBox.late{background:rgba(255,107,107,.22);border-color:#FF6B6B;color:#fff}
 .userBadge{margin:8px 12px 6px;background:rgba(255,255,255,.15);border-radius:10px;padding:9px 11px;display:flex;align-items:center;gap:9px}
@@ -242,6 +246,10 @@ textarea{resize:vertical;min-height:60px}
 .riskScore{font-size:1.1rem;font-weight:800;min-width:48px;text-align:center}
 .b-late{background:#fee2e2;color:#dc2626}.b-warn{background:#fef3c7;color:#d97706}.b-info{background:#dbeafe;color:#2563eb}
 .witaPill{font-size:.74rem;background:#F4D7D4;color:#3B1B4F;padding:4px 10px;border-radius:20px;font-weight:600;border:1px solid #D6598F}
+.rtPill{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:20px;background:#F4D7D4;color:#3B1B4F;border:1px solid #D6598F;white-space:nowrap}
+.rtDot{width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block;flex-shrink:0}
+.rtPill.online .rtDot{background:#10b981;animation:rtBlink 1.3s ease-in-out infinite}
+@keyframes rtBlink{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 0 0 rgba(16,185,129,.65)}50%{opacity:.38;transform:scale(.85);box-shadow:0 0 0 5px rgba(16,185,129,0)}}
 .btnTiny{padding:4px 9px;border:1px solid #d5c2a8;border-radius:5px;font-size:.73rem;font-weight:600;cursor:pointer;background:#EADCC8;color:#1A0F2E}
 .btnChat{background:#EADCC8;color:#1A0F2E;padding:4px 8px;border:1px solid #d5c2a8;border-radius:5px;font-size:.73rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
 .btnChat.hasUnread{background:#EADCC8;color:#1A0F2E;border:1.5px solid #FF6B6B}
@@ -319,11 +327,13 @@ table thead th:last-child,.tblNeonBlue thead th:last-child{border-radius:0 8px 8
     <a data-page="pekerjaan" onclick="showPage('pekerjaan')"><span class="ico">📋</span> Rekap Pekerjaan</a>
     <a data-page="absensi" onclick="showPage('absensi')"><span class="ico">🕐</span> Absensi</a>
     <a data-page="docs" onclick="showPage('docs')"><span class="ico">📝</span> Docs</a>
+    <a data-page="notifikasi" onclick="showPage('notifikasi')"><span class="ico">🔔</span> Pemberitahuan <span id="navNotifBadge" class="badge b-urgent" style="margin-left:auto;display:none">0</span></a>
     <a data-page="klien" onclick="showPage('klien')" id="navKlien"><span class="ico">🏢</span> Klien</a>
     <a data-page="master" onclick="showPage('master')" id="navMaster"><span class="ico">⚙️</span> Master Data</a>
     <a data-page="users" onclick="showPage('users')" id="navUsers"><span class="ico">👥</span> Users</a>
     <a data-page="manual" onclick="showPage('manual')"><span class="ico">📖</span> Manual</a>
   </nav>
+  <div id="sideNotifAlert"></div>
   <div id="sideLateAlert"></div>
   <div class="userBadge">
     <div class="userAvatar" id="sideAvatar">?</div>
@@ -340,6 +350,7 @@ table thead th:last-child,.tblNeonBlue thead th:last-child{border-radius:0 8px 8
   <a data-page="pekerjaan" data-label="Rekap Pekerjaan" onclick="showPage('pekerjaan')">📋</a>
   <a data-page="absensi" data-label="Absensi" onclick="showPage('absensi')">🕐</a>
   <a data-page="docs" data-label="Docs" onclick="showPage('docs')">📝</a>
+  <a data-page="notifikasi" data-label="Pemberitahuan" onclick="showPage('notifikasi')">🔔</a>
   <a data-page="klien" id="fNavKlien" data-label="Klien" onclick="showPage('klien')">🏢</a>
   <a data-page="master" id="fNavMaster" data-label="Master Data" onclick="showPage('master')">⚙️</a>
   <a data-page="users" id="fNavUsers" data-label="Users" onclick="showPage('users')">👥</a>
@@ -357,6 +368,7 @@ table thead th:last-child,.tblNeonBlue thead th:last-child{border-radius:0 8px 8
       <h3 id="pageTitle">Dashboard</h3>
     </div>
     <div class="flex">
+      <span class="rtPill" id="realtimeBadge" title="Menghubungkan Supabase Realtime Auto-Update..."><span class="rtDot" id="realtimeDot"></span><span id="rtLabel">SYNC</span></span>
       <span class="witaPill" id="witaClock">--:-- WITA</span>
       <span id="pageDate"></span>
       <button id="btnDesktopNotif" class="btnSm btnGray" style="margin:0" onclick="requestDesktopNotif()" title="Aktifkan notifikasi desktop">🖥️ Notif</button>
@@ -393,6 +405,7 @@ let userTrendState = { mode: 'bulan_ini', bulan: null, tahun: null };
 let k3Page = 1, k3PerPage = 5;
 let rencanaPage = 1, rencanaPerPage = 10;
 let dashUserPage = 1, dashUserPerPage = 5;
+let notifPage = 1, notifPerPage = 10, notifFilter = { jenis:'', status:'', q:'' };
 let timerInterval = null, timerStart = null, timerPekId = null, timerElapsed = 0;
 let dragId = null;
 let realtimeChannel = null;
@@ -501,24 +514,24 @@ function teardownRealtime(){
 }
 
 function onRealtimeChange(){
+  const lbl = document.getElementById('rtLabel');
+  if(lbl) lbl.textContent = 'UPDATE...';
   clearTimeout(realtimeDebounce);
   realtimeDebounce = setTimeout(async()=>{
     await loadAll();
     showPage(currentPage);
+    const l2 = document.getElementById('rtLabel');
+    if(l2 && document.getElementById('realtimeBadge')?.classList.contains('online')) l2.textContent = 'LIVE';
   }, 400);
 }
 
 function showRealtimeDot(on){
-  let dot = document.getElementById('realtimeDot');
-  if(!dot){
-    dot = document.createElement('span');
-    dot.id = 'realtimeDot';
-    dot.title = 'Realtime';
-    dot.style.cssText='width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:6px;vertical-align:middle;transition:.3s';
-    const h3 = document.querySelector('.topbar h3');
-    if(h3) h3.appendChild(dot);
-  }
-  dot.style.background = on ? '#10b981' : '#94a3b8';
+  const badge = document.getElementById('realtimeBadge');
+  const lbl = document.getElementById('rtLabel');
+  if(!badge) return;
+  badge.classList.toggle('online', !!on);
+  badge.title = on ? 'Supabase Realtime Auto-Update Aktif' : 'Supabase Realtime Terputus / Menghubungkan...';
+  if(lbl) lbl.textContent = on ? 'LIVE' : 'OFFLINE';
 }
 
 // ===== LOAD =====
@@ -705,7 +718,7 @@ function showPage(p){
   document.querySelectorAll('#sideNav a, #floatingMenu a').forEach(a=>{
     a.classList.toggle('active', a.dataset.page===p);
   });
-  const titles={dashboard:'Dashboard & KPI',klien:'Manajemen Klien / Rekanan',pekerjaan:'Rekap Pekerjaan',rencana:'Pekerjaan Harian',docs:'Docs',absensi:'Kalender Absensi & Aktivitas',master:'Master Data (Sistem & Tindakan)',users:'Manajemen User',manual:'Manual Pengguna'};
+  const titles={dashboard:'Dashboard & KPI',klien:'Manajemen Klien / Rekanan',pekerjaan:'Rekap Pekerjaan',rencana:'Pekerjaan Harian',docs:'Docs',notifikasi:'Pemberitahuan & Tanggapan',absensi:'Kalender Absensi & Aktivitas',master:'Master Data (Sistem & Tindakan)',users:'Manajemen User',manual:'Manual Pengguna'};
   document.getElementById('pageTitle').textContent=titles[p]||p;
   document.getElementById('pageDate').textContent=pageDate();
   closeDetail();
@@ -716,6 +729,7 @@ function showPage(p){
   else if(p==='pekerjaan') c.innerHTML=renderPekerjaan();
   else if(p==='rencana')   c.innerHTML=renderRencana();
   else if(p==='docs')      c.innerHTML=renderDocs();
+  else if(p==='notifikasi') c.innerHTML=renderNotifikasiPage();
   else if(p==='absensi')   c.innerHTML=renderAbsensi();
   else if(p==='master')    c.innerHTML=renderMaster();
   else if(p==='users')     c.innerHTML=renderUsers();
@@ -2276,9 +2290,7 @@ function renderAbsensi(){
   }
 
   return`<div class="section" style="position:relative;z-index:1">
-    <div class="secHead"><h4>Rekap Keterlambatan (${BULAN_NAMA[abCalMonth]} ${abCalYear})</h4>
-      <button class="btnPrimary" onclick="modalAbsensi()">+ Absensi Manual</button>
-    </div>
+    <div class="secHead"><h4>Rekap Keterlambatan (${BULAN_NAMA[abCalMonth]} ${abCalYear})</h4></div>
     <div class="abToday">${userLateSummary||'-'}</div>
   </div>
   <div class="section" style="position:relative;z-index:1">
@@ -2346,30 +2358,7 @@ function showAbsensiDayDetailModal(uid, ds){
     <div class="flex mt10"><button onclick="document.getElementById('modalBox').style.width='';closeModal()" class="btnPrimary">Tutup</button></div>`;
   document.getElementById('modalWrap').classList.remove('hidden');
 }
-function modalAbsensi(){
-  const uOpts=CACHE.users.map(u=>`<option value="${u.id}">${u.nama}</option>`).join('');
-  document.getElementById('modalBox').innerHTML=`<h4>Absensi Manual</h4>
-    <div class="formGrid">
-      <div class="formGroup full"><label>User</label><select id="abU">${uOpts}</select></div>
-      <div class="formGroup"><label>Tanggal</label><input type="date" id="abT" value="${todayStr()}"/></div>
-      <div class="formGroup"><label>Jam</label><input type="time" id="abJ" value="${nowTime()}"/></div>
-    </div>
-    <div class="flex mt10"><button class="btnPrimary" onclick="saveAbsensi()">💾 Simpan</button>
-    <button onclick="closeModal()" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">Batal</button></div>`;
-  document.getElementById('modalWrap').classList.remove('hidden');
-}
-async function saveAbsensi(){
-  const uId=document.getElementById('abU').value;
-  const u=CACHE.users.find(x=>x.id===uId);
-  const jam=document.getElementById('abJ').value;
-  const [hh,mm]=jam.split(':').map(Number);
-  const isLate=(hh>8||(hh===8&&mm>0));
-  const menitTerlambat=isLate?Math.max(0,(hh-8)*60+mm):0;
-  const payload={user_id:uId,nama:u.nama,tanggal:document.getElementById('abT').value,jam,tipe:'Manual',terlambat:isLate,menit_terlambat:menitTerlambat};
-  const {error}=await sb.from('absensi').insert(payload);
-  if(error) await sb.from('absensi').insert({user_id:uId,nama:u.nama,tanggal:document.getElementById('abT').value,jam,tipe:'Manual'});
-  await loadAll(); closeModal(); showPage('absensi'); toast('✅ Absensi tersimpan!');
-}
+
 
 // ===== USERS =====
 function renderUsers(){
@@ -3268,203 +3257,243 @@ async function sendTindakanComment(tId){
 }
 
 // ===== MANUAL =====
+function openManualZoom(src, caption){
+  document.getElementById('modalBox').style.width = '960px';
+  document.getElementById('modalBox').innerHTML = `<h4>🖼️ ${esc(caption||'Pratinjau Halaman')}</h4>
+    <div style="text-align:center;background:#fdf7f6;padding:10px;border-radius:10px;border:1px solid #F4D7D4">
+      <img src="${src}" alt="${esc(caption||'')}" style="max-width:100%;max-height:72vh;border-radius:8px;box-shadow:0 4px 18px rgba(26,15,46,.18)"/>
+    </div>
+    <div class="flex mt10" style="justify-content:flex-end">
+      <button onclick="document.getElementById('modalBox').style.width='580px';closeModal()" class="btnSm btnGray" style="padding:8px 16px">Tutup</button>
+    </div>`;
+  document.getElementById('modalWrap').classList.remove('hidden');
+}
+
+function manualShotHtml(file, caption){
+  return `<div style="margin:12px 0;background:#fdf7f6;border:1.5px solid #F4D7D4;border-radius:12px;padding:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.76rem;color:#3B1B4F">
+      <b>📸 Tampilan: ${esc(caption)}</b>
+      <span style="color:#7A2E6F">Klik gambar untuk memperbesar</span>
+    </div>
+    <img src="assets/manual/${file}" alt="${esc(caption)}" onclick="openManualZoom('assets/manual/${file}','${esc(caption)}')" style="width:100%;max-height:360px;object-fit:contain;border-radius:8px;border:1px solid #F4D7D4;cursor:zoom-in;background:#fff"/>
+  </div>`;
+}
+
 function renderManual(){
-  return`<div style="position:relative;z-index:1">
+  return `<div style="max-width:980px;position:relative;z-index:1">
 
-  <!-- HEADER -->
-  <div style="background:var(--grad);border-radius:14px;padding:24px 28px;margin-bottom:16px;color:#fff">
-    <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:4px">📖 Manual Pengguna Miracle Work Report</h2>
-    <p style="font-size:.85rem;opacity:.85">Sistem Manajemen Pekerjaan & Produktivitas Tim Akuntansi</p>
-    <span style="display:inline-block;background:rgba(255,255,255,.25);padding:3px 12px;border-radius:20px;font-size:.75rem;font-weight:600;margin-top:8px">Versi 1.0</span>
-  </div>
-
-  <!-- 1. LOGIN -->
-  <div class="section">
-    <div class="secHead"><h4>1️⃣ Login</h4></div>
-    <ol style="padding-left:18px;font-size:.84rem;line-height:2">
-      <li>Buka aplikasi Miracle Work Report di browser</li>
-      <li>Pilih nama Anda dari dropdown <b>"Pilih User"</b></li>
-      <li>Masukkan PIN jika ada — kosongkan jika tidak memakai PIN</li>
-      <li>Klik tombol <b>"Masuk →"</b></li>
-      <li>Sistem otomatis mencatat absensi masuk Anda hari ini</li>
-    </ol>
-    <div style="background:#fef3c7;border-left:4px solid #f59e0b;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:.82rem;color:#92400e">
-      ⚠️ Jika dropdown kosong atau muncul pesan error, hubungi Admin untuk memastikan data user sudah tersedia.
+  <div style="background:linear-gradient(135deg,#1A0F2E 0%,#3B1B4F 55%,#7A2E6F 100%);border-radius:14px;padding:24px 28px;margin-bottom:16px;color:#fff">
+    <h2 style="font-size:1.35rem;font-weight:800;margin-bottom:4px">📖 Manual Pengguna Miracle Work Report</h2>
+    <p style="font-size:.86rem;color:#F4D7D4">Panduan Lengkap Seluruh Menu Sidebar, Form Pop-Up, Kolom Datatable &amp; Alur Kerja (Account Serve - Miracles)</p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">
+      <a href="#mn-login" onclick="document.getElementById('mn-login').scrollIntoView({behavior:'smooth'});return false" class="badge" style="background:rgba(244,215,212,.2);color:#fff;text-decoration:none">1. Login &amp; Header</a>
+      <a href="#mn-dash" onclick="document.getElementById('mn-dash').scrollIntoView({behavior:'smooth'});return false" class="badge" style="background:rgba(244,215,212,.2);color:#fff;text-decoration:none">2. Dashboard &amp; KPI</a>
+      <a href="#mn-rencana" onclick="document.getElementById('mn-rencana').scrollIntoView({behavior:'smooth'});return false" class="badge" style="background:rgba(244,215,212,.2);color:#fff;text-decoration:none">3. Pekerjaan Harian</a>
+      <a href="#mn-rekap" onclick="document.getElementById('mn-rekap').scrollIntoView({behavior:'smooth'});return false" class="badge" style="background:rgba(244,215,212,.2);color:#fff;text-decoration:none">4. Rekap Pekerjaan</a>
+      <a href="#mn-absensi" onclick="document.getElementById('mn-absensi').scrollIntoView({behavior:'smooth'});return false" class="badge" style="background:rgba(244,215,212,.2);color:#fff;text-decoration:none">5. Absensi</a>
+      <a href="#mn-docs" onclick="document.getElementById('mn-docs').scrollIntoView({behavior:'smooth'});return false" class="badge" style="background:rgba(244,215,212,.2);color:#fff;text-decoration:none">6. Docs</a>
+      <a href="#mn-notif" onclick="document.getElementById('mn-notif').scrollIntoView({behavior:'smooth'});return false" class="badge" style="background:rgba(244,215,212,.2);color:#fff;text-decoration:none">7. Pemberitahuan</a>
+      <a href="#mn-klien" onclick="document.getElementById('mn-klien').scrollIntoView({behavior:'smooth'});return false" class="badge" style="background:rgba(244,215,212,.2);color:#fff;text-decoration:none">8. Klien</a>
+      <a href="#mn-master" onclick="document.getElementById('mn-master').scrollIntoView({behavior:'smooth'});return false" class="badge" style="background:rgba(244,215,212,.2);color:#fff;text-decoration:none">9. Master Data</a>
+      <a href="#mn-users" onclick="document.getElementById('mn-users').scrollIntoView({behavior:'smooth'});return false" class="badge" style="background:rgba(244,215,212,.2);color:#fff;text-decoration:none">10. Users &amp; Hak Akses</a>
     </div>
   </div>
 
-  <!-- 2. DASHBOARD -->
-  <div class="section">
-    <div class="secHead"><h4>2️⃣ Dashboard</h4></div>
-    <p style="font-size:.84rem;color:var(--sub);margin-bottom:12px">Halaman utama yang menampilkan ringkasan kondisi pekerjaan tim hari ini.</p>
-    <table>
-      <thead><tr><th>Kartu</th><th>Keterangan</th></tr></thead>
-      <tbody>
-        <tr><td>🏢 Total Klien</td><td>Jumlah perusahaan klien yang terdaftar</td></tr>
-        <tr><td>📋 Total Pekerjaan</td><td>Jumlah seluruh pekerjaan</td></tr>
-        <tr><td>🔴 Urgent</td><td>Pekerjaan prioritas Urgent yang belum selesai</td></tr>
-        <tr><td>✅ Selesai</td><td>Jumlah pekerjaan yang sudah diselesaikan</td></tr>
-        <tr><td>⏱️ Waktu Kerja</td><td>Total waktu kerja Anda hari ini</td></tr>
-      </tbody>
-    </table>
-    <p style="font-size:.83rem;margin-top:10px">Dashboard juga menampilkan <b>Absensi Hari Ini</b>, daftar <b>Pekerjaan Urgent</b>, dan pekerjaan dengan <b>Deadline 7 Hari</b> ke depan.</p>
-  </div>
-
-  <!-- 3. KLIEN -->
-  <div class="section">
-    <div class="secHead"><h4>3️⃣ Klien <span class="badge" style="background:#ede9fe;color:#7c3aed;font-size:.72rem">Admin Only</span></h4></div>
-    <div style="background:#fee2e2;border-left:4px solid #ef4444;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:#991b1b">
-      ⛔ Menu ini hanya dapat diakses dan dilihat oleh Admin.
-    </div>
-    <h5 style="font-size:.84rem;font-weight:700;margin-bottom:8px">Menambah Klien Baru</h5>
-    <ol style="padding-left:18px;font-size:.84rem;line-height:2">
-      <li>Klik tombol <b>"+ Tambah Klien"</b></li>
-      <li>Isi form: Nama Perusahaan (wajib), NPWP, Bidang Usaha, PIC, No. Kontak, Catatan</li>
-      <li>Klik <b>"💾 Simpan"</b></li>
+  <!-- 1. LOGIN & HEADER REALTIME -->
+  <div class="section" id="mn-login">
+    <div class="secHead"><h4>1️⃣ Halaman Login, Absensi Masuk Otomatis &amp; Indikator Header</h4></div>
+    ${manualShotHtml('01-login.png', 'Halaman Login 2 Panel Miracle Work Report')}
+    <ol style="padding-left:18px;font-size:.84rem;line-height:1.9;margin-bottom:10px">
+      <li>Buka aplikasi <b>Miracle Work Report</b> di browser. Panel kiri menampilkan identitas aplikasi &amp; logo <b>MIRACLE</b> + <b>nextBO</b>, sedangkan panel kanan berisi form login.</li>
+      <li>Pilih nama Anda pada field <b>Pengguna</b>, masukkan <b>PIN Akses</b> (kosongkan jika tidak memakai PIN), lalu klik <b>Masuk →</b>.</li>
+      <li>Sistem otomatis mencatat <b>Absensi Masuk</b> menggunakan jam server <b>WITA</b> (batas tepat waktu <b>08:00 WITA</b>).</li>
+      <li>Di topbar atas sebelah kiri jam WITA terdapat simbol <b>🟢 LIVE</b> yang berkedip (*blinking*), menandakan koneksi <b>Supabase Realtime Auto-Update</b> aktif sehingga perubahan data langsung tersinkron otomatis.</li>
+      <li>Di bagian bawah sidebar menu terdapat kotak <b>🔔 Pemberitahuan</b> (tanggapan/tugas baru) dan kotak <b>⏰ Keterlambatan</b> (rekap keterlambatan masuk kerja).</li>
     </ol>
-    <table style="margin-top:10px">
-      <thead><tr><th>Fitur</th><th>Cara Penggunaan</th></tr></thead>
+    <table>
+      <thead><tr><th>Field / Elemen</th><th>Keterangan</th></tr></thead>
       <tbody>
-        <tr><td>🔍 Cari Klien</td><td>Ketik nama, NPWP, atau PIC di kolom pencarian</td></tr>
-        <tr><td>✏️ Edit Klien</td><td>Klik tombol ✏️ pada baris klien yang ingin diubah</td></tr>
-        <tr><td>🗑️ Hapus Klien</td><td>Klik tombol 🗑️ pada baris klien</td></tr>
-        <tr><td>📄 Jumlah Baris</td><td>Pilih 10 / 15 / 20 baris di bagian bawah tabel</td></tr>
+        <tr><td><b>Pengguna</b></td><td>Dropdown daftar seluruh akun aktif yang tersimpan di tabel <code>users</code> Supabase.</td></tr>
+        <tr><td><b>PIN Akses</b></td><td>Kode keamanan opsional per pengguna; dikosongkan jika akun tidak memakai PIN.</td></tr>
+        <tr><td><b>🟢 LIVE (Header Kiri Jam)</b></td><td>Indikator blinking Supabase Realtime; berubah menjadi <code>UPDATE...</code> sesaat saat data baru masuk.</td></tr>
       </tbody>
     </table>
   </div>
 
-  <!-- 4. PEKERJAAN -->
-  <div class="section">
-    <div class="secHead"><h4>4️⃣ Pekerjaan</h4></div>
-    <p style="font-size:.84rem;color:var(--sub);margin-bottom:12px">Halaman untuk mencatat log pekerjaan yang sudah dilakukan dan merencanakan pekerjaan mendatang.</p>
-    <h5 style="font-size:.84rem;font-weight:700;margin-bottom:8px">Menambah Pekerjaan</h5>
-    <ol style="padding-left:18px;font-size:.84rem;line-height:2">
-      <li>Klik tombol <b>"+ Tambah"</b></li>
-      <li>Isi <b>Judul</b> dan pilih <b>Klien</b> — keduanya wajib diisi</li>
-      <li>Isi Kategori, Penanggung Jawab, Asisten, Status, Prioritas, Tanggal, Deadline, dan Catatan</li>
-      <li>Klik <b>"💾 Simpan"</b></li>
+  <!-- 2. DASHBOARD & KPI -->
+  <div class="section" id="mn-dash">
+    <div class="secHead"><h4>2️⃣ Menu Sidebar: 🏠 Dashboard &amp; KPI</h4></div>
+    ${manualShotHtml('02-dashboard.png', 'Halaman Dashboard & KPI (Tampilan Superadmin)')}
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:10px">Menampilkan ringkasan performa harian &amp; bulanan secara otomatis berdasarkan role akun yang login:</p>
+    <table>
+      <thead><tr><th>Komponen / Kolom</th><th>Keterangan</th></tr></thead>
+      <tbody>
+        <tr><td><b>Filter Periode KPI (Superadmin)</b></td><td>Filter berdasarkan <b>Bulan</b>, <b>Tahun</b>, <b>Karyawan</b>, dan <b>Klien</b> untuk memperbarui seluruh kartu KPI, grafik, dan tabel SRK.</td></tr>
+        <tr><td><b>6 Kartu KPI (Superadmin)</b></td><td>Hadir Hari Ini, Kepatuhan Login ≤08:00, Tindakan Hari Ini, Klien Dikerjakan (K4), First-Time-Right (tanpa ulang), dan Rasio Pengulangan.</td></tr>
+        <tr><td><b>Peringatan Klien (SRK / IKU)</b></td><td>Menampilkan klien dengan skor risiko kelalaian tinggi (pengulangan &amp; kendala terbanyak). Klik <b>Detail</b> untuk rincian klien.</td></tr>
+        <tr><td><b>6 Grafik Analitik (Donat, Garis, Bar)</b></td><td>Tren Tindakan 30 Hari (Garis), Komposisi Jenis Tindakan (Donat), Top 10 Klien (Bar), Sistem Kerja Digunakan (Donat), Kinerja Karyawan (Bar), dan Jam Login vs 08:00 WITA (Garis).</td></tr>
+        <tr><td><b>Datatable Rincian Klien (K3 &amp; SRK)</b></td><td>Kolom: <b>#</b>, <b>Klien / Rekanan</b>, <b>Frekuensi</b>, <b>Tanggal Dikerjakan</b>, <b>Total Waktu</b>, <b>SRK</b>, <b>Analisis Penyebab</b> — dilengkapi data selector &amp; paginasi <b>5 / 10 / 25 / 50 baris</b>.</td></tr>
+        <tr><td><b>Dashboard User / Asisten</b></td><td>Menampilkan 4 Kartu KPI pribadi, <b>Grafik Tren Tindakan</b> (dengan filter <i>1 Bulan Berjalan</i>, <i>1 Minggu Terakhir</i>, &amp; <i>Filter Bulan Sebelumnya</i>), kotak <b>Pekerjaan Belum Selesai Lintas Hari</b>, dan datatable <b>Pekerjaan Harian Anda</b> lengkap dengan paginasi.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 3. PEKERJAAN HARIAN -->
+  <div class="section" id="mn-rencana">
+    <div class="secHead"><h4>3️⃣ Menu Sidebar: 🗓️ Pekerjaan Harian &amp; Form Tambah Tindakan</h4></div>
+    ${manualShotHtml('03-pekerjaan-harian.png', 'Halaman Pekerjaan Harian')}
+    ${manualShotHtml('04-form-tambah-tindakan.png', 'Form Pop-Up + Tambah Tindakan Harian')}
+    <ol style="padding-left:18px;font-size:.84rem;line-height:1.9;margin-bottom:10px">
+      <li>Klik <b>+ Tambah Tindakan Harian</b> untuk merencanakan pekerjaan. Jika hari sebelumnya belum dilakukan <b>Closing Akhir Hari</b>, tombol tambah terkunci hingga Closing Akhir Hari kemarin diselesaikan.</li>
+      <li>Klik <b>▶ Mulai</b> saat mulai mengerjakan tindakan agar jam mulai (WITA) tercatat.</li>
+      <li>Klik <b>⏹ Selesai &amp; Closing</b> saat tindakan selesai. Pekerjaan yang belum tuntas boleh dibiarkan <b>tetap open lintas hari</b> tanpa pop-up paksa saat login, dan tampil di kotak <b>📌 Pekerjaan Belum Selesai Lintas Hari</b>.</li>
+      <li>Tindakan yang sudah closing tetap dapat diubah keterangannya melalui tombol aksi <b>✏️ Keterangan</b> (jam mulai, jam selesai, dan durasi tetap terkunci).</li>
+      <li>Tombol <b>🏁 Closing Akhir Hari</b> hanya aktif jika seluruh pekerjaan pada hari tersebut sudah di-closing. Jika setelah Closing Akhir Hari user masih menambah tindakan baru di hari yang sama, status Closing Akhir Hari otomatis terbuka kembali.</li>
     </ol>
-    <h5 style="font-size:.84rem;font-weight:700;margin:12px 0 8px">Pilihan Tampilan</h5>
     <table>
-      <thead><tr><th>Tampilan</th><th>Fungsi</th></tr></thead>
+      <thead><tr><th>Kolom Datatable / Field Form</th><th>Keterangan</th></tr></thead>
       <tbody>
-        <tr><td>☰ List</td><td>Tabel detail semua pekerjaan</td></tr>
-        <tr><td>⊞ Board</td><td>Kanban — drag & drop antar kolom status</td></tr>
-        <tr><td>📅 Kalender</td><td>Lihat pekerjaan berdasarkan tanggal bulan ini</td></tr>
+        <tr><td><b>Klien / Rekanan *</b></td><td>Perusahaan klien yang dikerjakan pada tindakan tersebut.</td></tr>
+        <tr><td><b>Periode Buku (Bulan &amp; Tahun) *</b></td><td>Periode pembukuan/pajak yang dikerjakan (untuk deteksi pengulangan tindakan).</td></tr>
+        <tr><td><b>Sistem Kerja *</b></td><td>Software/sistem yang digunakan (dari Master Data, misal ABSS, Accurate, Coretax, dll.).</td></tr>
+        <tr><td><b>Jenis Tindakan *</b></td><td>Jenis aktivitas (misal Input Data, Rekonsiliasi, Checker, Revisi). Sistem mengecek otomatis apakah tindakan boleh diulang.</td></tr>
+        <tr><td><b>Alasan Pengulangan</b></td><td>Muncul otomatis jika tindakan serupa sudah pernah dilakukan pada klien &amp; periode yang sama.</td></tr>
+        <tr><td><b>Uraian / Keterangan Tindakan</b></td><td>Penjelasan detail pekerjaan yang dilakukan (dapat diedit ulang setelah closing lewat tombol <b>✏️ Keterangan</b>).</td></tr>
+        <tr><td><b>Mulai / Selesai / Durasi</b></td><td>Jam mulai &amp; selesai otomatis berbasis server WITA beserta total durasi kerja efektif.</td></tr>
+        <tr><td><b>Status &amp; Kendala</b></td><td>Status tindakan (<i>Rencana</i>, <i>Dikerjakan</i>, <i>Selesai</i>, <i>Lanjut</i>, <i>Bermasalah</i>) dan catatan kendala bila ada.</td></tr>
+        <tr><td><b>Aksi</b></td><td>Tombol <b>▶ Mulai</b>, <b>⏹ Closing</b>, <b>✏️ Keterangan</b> (setelah tutup), dan <b>💬 Diskusi</b> (kolaborasi &amp; tag rekan).</td></tr>
       </tbody>
     </table>
-    <h5 style="font-size:.84rem;font-weight:700;margin:12px 0 8px">Aturan Akses Pekerjaan</h5>
-    <table>
-      <thead><tr><th>Role</th><th>Hak Akses</th></tr></thead>
-      <tbody>
-        <tr><td><span class="badge" style="background:#ede9fe;color:#7c3aed">Admin</span></td><td>Dapat melihat, edit, dan hapus <b>semua</b> pekerjaan</td></tr>
-        <tr><td><span class="badge" style="background:#dbeafe;color:#2563eb">Asisten</span></td><td>Hanya dapat edit dan hapus pekerjaan yang <b>dibuat sendiri</b></td></tr>
-        <tr><td>🔒 Terkunci</td><td>Pekerjaan milik orang lain — tidak bisa diubah atau dihapus</td></tr>
-      </tbody>
-    </table>
-    <div style="background:#eff6ff;border-left:4px solid #2563eb;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:.82rem;color:#1e40af">
-      💡 Pekerjaan yang terkunci ditandai ikon 🔒 di tabel dan panel detail.
-    </div>
   </div>
 
-  <!-- 5. DETAIL PEKERJAAN -->
-  <div class="section">
-    <div class="secHead"><h4>5️⃣ Detail Pekerjaan</h4></div>
-    <p style="font-size:.84rem;color:var(--sub);margin-bottom:12px">Klik baris pekerjaan mana saja untuk membuka panel detail di sebelah kanan layar.</p>
+  <!-- 4. REKAP PEKERJAAN -->
+  <div class="section" id="mn-rekap">
+    <div class="secHead"><h4>4️⃣ Menu Sidebar: 📋 Rekap Pekerjaan</h4></div>
+    ${manualShotHtml('05-rekap-pekerjaan.png', 'Halaman Rekap Pekerjaan (Datatable & Kanban)')}
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:10px">Menyajikan riwayat seluruh tindakan pekerjaan lintas tanggal dan mode manajemen proyek/kanban, dilengkapi filter rentang tanggal, export CSV, serta data selector &amp; paginasi <b>5 / 10 / 25 / 50 baris</b>.</p>
     <table>
-      <thead><tr><th>Fitur</th><th>Fungsi</th></tr></thead>
+      <thead><tr><th>Kolom Datatable / Filter</th><th>Keterangan</th></tr></thead>
       <tbody>
-        <tr><td>⏱️ Time Tracker</td><td>Klik ▶ Mulai untuk menghitung waktu kerja, ⏹ Stop untuk menyimpan. Riwayat waktu tercatat otomatis per sesi.</td></tr>
-        <tr><td>☑️ Subtasks</td><td>Tambah subtask di panel detail. Centang jika selesai. Setiap subtask mencatat tanggal dibuat dan nama pembuatnya.</td></tr>
-        <tr><td>💬 Komentar</td><td>Tulis catatan atau diskusi. Tekan Enter atau klik Kirim. Semua user bisa membaca dan menulis komentar.</td></tr>
-        <tr><td>🔄 Ubah Status</td><td>Klik untuk berganti status: Belum Dimulai → Dalam Proses → Selesai.</td></tr>
+        <tr><td><b>Filter Bar</b></td><td>Filter berdasarkan tanggal <b>Dari – Sampai</b>, <b>User</b>, <b>Klien / Rekanan</b>, <b>Status</b>, dan kotak pencarian uraian/sistem.</td></tr>
+        <tr><td><b>Tanggal &amp; Nama User</b></td><td>Tanggal pelaksanaan pekerjaan dan nama karyawan yang mengerjakan.</td></tr>
+        <tr><td><b>Rekanan / Klien, Sistem &amp; Tindakan</b></td><td>Nama perusahaan klien beserta periode buku, sistem kerja, jenis tindakan, dan badge <i>Ulang</i> jika berulang.</td></tr>
+        <tr><td><b>Mulai, Selesai &amp; Lama Pekerjaan</b></td><td>Rekaman waktu WITA mulai hingga selesai serta total akumulasi durasi kerja.</td></tr>
+        <tr><td><b>Status &amp; Kendala / Diskusi</b></td><td>Status akhir tindakan, catatan kendala, dan tombol <b>💬</b> untuk membuka percakapan terkait.</td></tr>
+        <tr><td><b>⬇️ Export CSV &amp; Mode Proyek</b></td><td>Unduh rekap data terfilter ke file CSV atau beralih ke tampilan Proyek / Kanban.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. ABSENSI -->
+  <div class="section" id="mn-absensi">
+    <div class="secHead"><h4>5️⃣ Menu Sidebar: 🕐 Absensi</h4></div>
+    ${manualShotHtml('06-absensi.png', 'Halaman Kalender Absensi & Aktivitas')}
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:10px">Seluruh absensi masuk tercatat otomatis saat pengguna login ke aplikasi (tanpa input absensi manual), sedangkan jam keluar tercatat otomatis saat menekan <b>🏁 Closing Akhir Hari</b>.</p>
+    <table>
+      <thead><tr><th>Bagian / Elemen</th><th>Keterangan</th></tr></thead>
+      <tbody>
+        <tr><td><b>Rekap Keterlambatan Bulanan</b></td><td>Menampilkan jumlah keterlambatan masuk kerja (&gt; 08:00 WITA) per karyawan pada bulan yang dipilih.</td></tr>
+        <tr><td><b>Kalender Absensi &amp; Aktivitas</b></td><td>Menampilkan tanggal hadir setiap karyawan. Klik tanggal pada kalender untuk melihat detail jam masuk, jam keluar, dan daftar tindakan pada hari tersebut.</td></tr>
       </tbody>
     </table>
   </div>
 
   <!-- 6. DOCS -->
-  <div class="section">
-    <div class="secHead"><h4>6️⃣ Docs</h4></div>
-    <p style="font-size:.84rem;color:var(--sub);margin-bottom:12px">Buat dan simpan catatan atau dokumen bebas, bisa dikaitkan ke klien tertentu.</p>
-    <ol style="padding-left:18px;font-size:.84rem;line-height:2">
-      <li>Klik <b>"+ Baru"</b> untuk membuat dokumen baru</li>
-      <li>Isi judul dan isi dokumen</li>
-      <li>Pilih klien terkait (opsional)</li>
-      <li>Klik <b>"💾 Simpan"</b></li>
+  <div class="section" id="mn-docs">
+    <div class="secHead"><h4>6️⃣ Menu Sidebar: 📝 Docs</h4></div>
+    ${manualShotHtml('07-docs.png', 'Halaman Dokumen & Catatan Kerja')}
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:10px">Pusat penyimpanan dokumen, SOP, catatan kerja, maupun tautan file eksternal yang dapat dikaitkan ke proyek atau klien tertentu.</p>
+    <table>
+      <thead><tr><th>Kolom Datatable / Tombol</th><th>Keterangan</th></tr></thead>
+      <tbody>
+        <tr><td><b>Judul &amp; Nama File</b></td><td>Nama dokumen/catatan beserta nama berkas lampiran.</td></tr>
+        <tr><td><b>Pekerjaan Terkait &amp; Klien</b></td><td>Relasi dokumen dengan proyek/pekerjaan dan perusahaan klien.</td></tr>
+        <tr><td><b>Link &amp; Tgl Update</b></td><td>Tautan URL eksternal (jika ada) dan tanggal pembaruan terakhir.</td></tr>
+        <tr><td><b>Aksi</b></td><td>Tombol <b>✏️</b> untuk membuka/mengubah isi dokumen dan <b>🗑️</b> untuk menghapus dokumen.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 7. PEMBERITAHUAN -->
+  <div class="section" id="mn-notif">
+    <div class="secHead"><h4>7️⃣ Menu Sidebar: 🔔 Pemberitahuan &amp; Form Kirim Manual</h4></div>
+    ${manualShotHtml('08-pemberitahuan.png', 'Halaman Pemberitahuan Manual & Tanggapan')}
+    ${manualShotHtml('09-form-kirim-pemberitahuan.png', 'Form Pop-Up Kirim Pemberitahuan Manual')}
+    <ol style="padding-left:18px;font-size:.84rem;line-height:1.9;margin-bottom:10px">
+      <li>Pemberitahuan hanya muncul apabila dikirim secara manual oleh user lain (atau tanggapan diskusi). <b>Superadmin</b> otomatis menerima seluruh tanggapan &amp; pemberitahuan dari semua user walaupun tanpa dicentang.</li>
+      <li>Klik <b>✉️ Kirim Pemberitahuan</b> untuk mengirim pesan/arahan baru dengan mencentang 1 atau beberapa user tujuan (atau klik <b>Pilih Semua</b>).</li>
+      <li>Penerima yang membaca pemberitahuan wajib/dapat menekan tombol <b>✓ Diketahui</b> di kolom Aksi agar pengirim melihat di kolom <b>Diketahui Oleh</b> bahwa informasi sudah dibaca.</li>
     </ol>
-    <div style="background:#d1fae5;border-left:4px solid #10b981;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:.82rem;color:#065f46">
-      💡 Klik dokumen yang sudah ada untuk membuka dan mengedit kembali.
-    </div>
-  </div>
-
-  <!-- 7. ABSENSI -->
-  <div class="section">
-    <div class="secHead"><h4>7️⃣ Absensi</h4></div>
     <table>
-      <thead><tr><th>Jenis</th><th>Keterangan</th></tr></thead>
+      <thead><tr><th>Kolom / Field Form</th><th>Keterangan</th></tr></thead>
       <tbody>
-        <tr><td>🟢 Otomatis</td><td>Dicatat saat user berhasil login setiap hari</td></tr>
-        <tr><td>✍️ Manual</td><td>Klik "+ Manual", pilih user, tanggal, dan jam masuk</td></tr>
-      </tbody>
-    </table>
-    <p style="font-size:.83rem;margin-top:10px">Riwayat absensi ditampilkan secara berurutan dari tanggal terbaru.</p>
-  </div>
-
-  <!-- 8. USERS -->
-  <div class="section">
-    <div class="secHead"><h4>8️⃣ Manajemen User <span class="badge" style="background:#ede9fe;color:#7c3aed;font-size:.72rem">Admin Only</span></h4></div>
-    <div style="background:#fee2e2;border-left:4px solid #ef4444;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:#991b1b">
-      ⛔ Menu ini hanya dapat diakses dan dilihat oleh Admin.
-    </div>
-    <h5 style="font-size:.84rem;font-weight:700;margin-bottom:8px">Menambah User Baru</h5>
-    <ol style="padding-left:18px;font-size:.84rem;line-height:2">
-      <li>Klik <b>"+ Tambah User"</b></li>
-      <li>Isi Nama, pilih Role (Admin / Asisten), dan PIN (opsional)</li>
-      <li>Klik <b>"💾 Simpan"</b></li>
-    </ol>
-    <table style="margin-top:10px">
-      <thead><tr><th>Role</th><th>Akses</th></tr></thead>
-      <tbody>
-        <tr><td><span class="badge" style="background:#ede9fe;color:#7c3aed">Admin / Akuntan</span></td><td>Akses penuh ke semua menu, data klien, manajemen user, dan seluruh pekerjaan</td></tr>
-        <tr><td><span class="badge" style="background:#dbeafe;color:#2563eb">Asisten</span></td><td>Akses terbatas — tidak melihat menu Klien & Users, hanya bisa edit pekerjaan milik sendiri</td></tr>
+        <tr><td><b>Kirim Kepada (Centang User) *</b></td><td>Daftar checkbox pengguna tujuan; hanya user yang dicentang (serta Superadmin) yang menerima pemberitahuan ini.</td></tr>
+        <tr><td><b>Kaitkan ke Pekerjaan Harian</b></td><td>Opsional; dapat dikaitkan ke tindakan tertentu atau dibiarkan sebagai Pemberitahuan Umum.</td></tr>
+        <tr><td><b>📌 Arahan Penting / Isi Pesan *</b></td><td>Penanda arahan khusus (Admin) dan teks isi pemberitahuan yang dikirimkan.</td></tr>
+        <tr><td><b>Kolom Pengirim &amp; Kepada</b></td><td>Menampilkan pengirim pesan dan daftar user tujuan yang dicentang.</td></tr>
+        <tr><td><b>Kolom Diketahui Oleh</b></td><td>Menampilkan status <i>Belum Diketahui</i> / <i>Sudah Diketahui</i> beserta daftar nama user yang sudah menekan <b>✓ Diketahui</b>.</td></tr>
+        <tr><td><b>Aksi</b></td><td>Tombol <b>✓ Diketahui</b> (mengirim konfirmasi baca ke pengirim) dan <b>👁️ Buka</b> (membuka diskusi tindakan terkait).</td></tr>
       </tbody>
     </table>
   </div>
 
-  <!-- 9. NOTIFIKASI -->
-  <div class="section">
-    <div class="secHead"><h4>9️⃣ Notifikasi</h4></div>
-    <p style="font-size:.84rem;color:var(--sub);margin-bottom:12px">Klik ikon 🔔 di pojok kanan atas topbar untuk melihat notifikasi aktif.</p>
+  <!-- 8. KLIEN -->
+  <div class="section" id="mn-klien">
+    <div class="secHead"><h4>8️⃣ Menu Sidebar: 🏢 Klien (Manajemen Klien / Rekanan — Admin)</h4></div>
+    ${manualShotHtml('10-klien.png', 'Halaman Manajemen Klien / Rekanan')}
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:10px">Mengelola data perusahaan klien/rekanan beserta pencarian nama/NPWP/PIC dan paginasi <b>5 / 10 / 25 / 50 baris</b>.</p>
     <table>
-      <thead><tr><th>Notifikasi</th><th>Keterangan</th></tr></thead>
+      <thead><tr><th>Kolom Datatable / Field Form</th><th>Keterangan</th></tr></thead>
       <tbody>
-        <tr><td>⚠️ Melewati Deadline</td><td>Pekerjaan yang sudah melewati tanggal deadline</td></tr>
-        <tr><td>⏰ Deadline Mendekat</td><td>Pekerjaan dengan deadline dalam 3 hari ke depan</td></tr>
-        <tr><td>🔴 Urgent</td><td>Pekerjaan dengan prioritas Urgent yang belum selesai</td></tr>
+        <tr><td><b>Nama Perusahaan</b></td><td>Nama resmi perusahaan klien atau rekanan.</td></tr>
+        <tr><td><b>NPWP &amp; Bidang Usaha</b></td><td>Nomor Pokok Wajib Pajak dan sektor usaha klien.</td></tr>
+        <tr><td><b>PIC, No. Kontak &amp; Email</b></td><td>Nama penanggung jawab di pihak klien beserta nomor telepon/WA dan email.</td></tr>
+        <tr><td><b>Progres &amp; Aksi</b></td><td>Ringkasan progres pekerjaan klien serta tombol <b>✏️ Edit</b> dan <b>🗑️ Hapus</b> (dengan tooltip).</td></tr>
       </tbody>
     </table>
   </div>
 
-  <!-- 10. HAK AKSES -->
-  <div class="section">
-    <div class="secHead"><h4>🔟 Ringkasan Hak Akses</h4></div>
+  <!-- 9. MASTER DATA -->
+  <div class="section" id="mn-master">
+    <div class="secHead"><h4>9️⃣ Menu Sidebar: ⚙️ Master Data (Sistem &amp; Tindakan — Admin)</h4></div>
+    ${manualShotHtml('11-master-data.png', 'Halaman Master Data Sistem Kerja & Jenis Tindakan')}
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:10px">Digunakan Superadmin untuk mengatur daftar Sistem Kerja dan Jenis Tindakan yang muncul pada form Pekerjaan Harian.</p>
     <table>
-      <thead><tr><th>Fitur</th><th style="text-align:center">Admin</th><th style="text-align:center">Asisten</th></tr></thead>
+      <thead><tr><th>Kolom Datatable</th><th>Keterangan</th></tr></thead>
       <tbody>
-        <tr><td>Dashboard</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
-        <tr><td>Pekerjaan — Lihat</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
-        <tr><td>Pekerjaan — Tambah</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
-        <tr><td>Pekerjaan — Edit/Hapus milik sendiri</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
-        <tr><td>Pekerjaan — Edit/Hapus milik orang lain</td><td style="text-align:center">✅</td><td style="text-align:center">🔒</td></tr>
-        <tr><td>Docs</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
-        <tr><td>Absensi</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
-        <tr><td>Klien — Lihat/Tambah/Edit/Hapus</td><td style="text-align:center">✅</td><td style="text-align:center">🔒</td></tr>
-        <tr><td>Manajemen User</td><td style="text-align:center">✅</td><td style="text-align:center">🔒</td></tr>
+        <tr><td><b>Master Sistem Kerja</b></td><td>Kolom <b>Kode</b>, <b>Nama Sistem</b>, <b>Urutan</b>, <b>Status</b> (Aktif/Nonaktif), dan <b>Aksi</b> (Edit / Aktifkan-Nonaktifkan).</td></tr>
+        <tr><td><b>Master Jenis Tindakan</b></td><td>Kolom <b>Kode</b>, <b>Nama Tindakan</b>, <b>Boleh Diulang?</b> (Ya/Tidak — mengatur apakah tindakan boleh diulang pada periode buku yang sama), <b>Bobot</b>, <b>Status</b>, dan <b>Aksi</b>.</td></tr>
       </tbody>
     </table>
-    <div style="background:#d1fae5;border-left:4px solid #10b981;border-radius:6px;padding:10px 14px;margin-top:12px;font-size:.82rem;color:#065f46">
-      💡 Logout dengan klik tombol <b>"🚪 Keluar"</b> di bagian bawah sidebar.
-    </div>
+  </div>
+
+  <!-- 10. USERS & HAK AKSES -->
+  <div class="section" id="mn-users">
+    <div class="secHead"><h4>🔟 Menu Sidebar: 👥 Users (Manajemen User) &amp; Ringkasan Hak Akses</h4></div>
+    ${manualShotHtml('12-users.png', 'Halaman Manajemen User')}
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:10px">Mengelola akun pengguna aplikasi (Superadmin &amp; Asisten), PIN login, serta memantau total pekerjaan dan akumulasi waktu kerja tiap user.</p>
+    <table style="margin-bottom:14px">
+      <thead><tr><th>Kolom Datatable Users</th><th>Keterangan</th></tr></thead>
+      <tbody>
+        <tr><td><b>Nama &amp; Role</b></td><td>Nama tampilan pengguna saat login/laporan dan peran akses (<code>superadmin</code> / <code>asisten</code>).</td></tr>
+        <tr><td><b>Pekerjaan &amp; Total Waktu</b></td><td>Jumlah pekerjaan dan total durasi kerja yang tercatat atas user tersebut.</td></tr>
+        <tr><td><b>Aksi</b></td><td>Tombol <b>✏️ Edit</b> (ubah nama, role, atau PIN) dan <b>🗑️ Hapus</b> user.</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>Menu / Fitur</th><th style="text-align:center">Superadmin</th><th style="text-align:center">Asisten</th></tr></thead>
+      <tbody>
+        <tr><td>🏠 Dashboard &amp; KPI</td><td style="text-align:center">✅ Penuh (Tim &amp; Klien)</td><td style="text-align:center">✅ Pribadi &amp; Tren</td></tr>
+        <tr><td>🗓️ Pekerjaan Harian (+ Tambah, Mulai, Closing, Edit Keterangan)</td><td style="text-align:center">✅ Semua Karyawan</td><td style="text-align:center">✅ Milik Sendiri</td></tr>
+        <tr><td>📋 Rekap Pekerjaan &amp; Export CSV</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
+        <tr><td>🕐 Absensi (Otomatis Login &amp; Closing Akhir Hari)</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
+        <tr><td>📝 Docs</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
+        <tr><td>🔔 Pemberitahuan (Kirim Manual &amp; ✓ Diketahui)</td><td style="text-align:center">✅ Semua Tanggapan Tim</td><td style="text-align:center">✅ Terkait / Dicentang</td></tr>
+        <tr><td>🏢 Klien / Rekanan</td><td style="text-align:center">✅ Kelola Penuh</td><td style="text-align:center">🔒 Khusus Admin</td></tr>
+        <tr><td>⚙️ Master Data (Sistem &amp; Tindakan)</td><td style="text-align:center">✅ Kelola Penuh</td><td style="text-align:center">🔒 Khusus Admin</td></tr>
+        <tr><td>👥 Manajemen User</td><td style="text-align:center">✅ Kelola Penuh</td><td style="text-align:center">🔒 Khusus Admin</td></tr>
+      </tbody>
+    </table>
   </div>
 
   </div>`;
@@ -3569,12 +3598,219 @@ function getNotifs(){
   });
   return notifs;
 }
+function buildNotifItems(){
+  if(!currentUser || !migrationReady || !CACHE.tcomments) return [];
+  const items = [];
+  const uName = id => CACHE.users.find(u=>u.id===id)?.nama || 'User';
+
+  CACHE.tcomments.forEach(c=>{
+    const isOwn = c.user_id === currentUser.id;
+    const t = c.tindakan_id ? CACHE.tindakan.find(x=>x.id===c.tindakan_id) : null;
+    const mentions = Array.isArray(c.mention_ids) ? c.mention_ids : [];
+    const isTargeted = isAdmin() || isOwn || mentions.includes(currentUser.id) || (t && t.user_id === currentUser.id);
+    if(!isTargeted) return;
+
+    const readers = (Array.isArray(c.sudah_dibaca) ? c.sudah_dibaca : []).filter(id=>id && id!==c.user_id);
+    const isAck = isOwn || readers.includes(currentUser.id);
+    let objLabel = 'Pemberitahuan Umum';
+    if(t){
+      const k = CACHE.klien.find(x=>x.id===t.klien_id)?.nama || '-';
+      const j = CACHE.jenis.find(x=>x.id===t.jenis_id)?.nama || '-';
+      objLabel = `${k} · ${j}`;
+    }
+    items.push({
+      uid: 'cmt_' + c.id,
+      kind: 'tanggapan',
+      rawId: c.id,
+      targetId: t ? t.id : '',
+      createdAt: c.created_at || (t ? t.created_at : '') || '',
+      senderId: c.user_id,
+      senderName: uName(c.user_id),
+      toNames: mentions.map(uName),
+      jenisLabel: c.is_instruksi ? '📌 Arahan' : (t ? '💬 Tanggapan' : '✉️ Pemberitahuan'),
+      objLabel,
+      isi: c.pesan || '',
+      ackNames: readers.map(uName),
+      isAck,
+      isOwn,
+      openJs: t ? `openTindakanDiskusi('${t.id}')` : ''
+    });
+  });
+
+  items.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  return items;
+}
+
+function modalKirimNotif(){
+  const otherUsers = CACHE.users.filter(u=>u.id!==currentUser.id);
+  const chkUsers = otherUsers.map(u=>`<label class="mentionOpt"><input type="checkbox" class="knUserChk" value="${u.id}"/> ${esc(u.nama)} <span style="font-size:.68rem;color:var(--sub)">(${u.role})</span></label>`).join('');
+  const recentT = [...(CACHE.tindakan||[])].sort((a,b)=>(b.tanggal_kerja||'').localeCompare(a.tanggal_kerja||'')).slice(0,40);
+  const tOpts = recentT.map(t=>{
+    const k = CACHE.klien.find(x=>x.id===t.klien_id)?.nama || '-';
+    const j = CACHE.jenis.find(x=>x.id===t.jenis_id)?.nama || '-';
+    const u = CACHE.users.find(x=>x.id===t.user_id)?.nama || '-';
+    return `<option value="${t.id}">${fmtDate(t.tanggal_kerja)} · ${esc(u)} · ${esc(k)} (${esc(j)})</option>`;
+  }).join('');
+
+  document.getElementById('modalBox').innerHTML = `<h4>✉️ Kirim Pemberitahuan Manual</h4>
+    <div class="formGrid">
+      <div class="formGroup full">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <label>Kirim Kepada (Centang User Tujuan) *</label>
+          <div class="flex" style="gap:4px">
+            <button type="button" class="btnSm btnGray" style="padding:2px 8px;font-size:.7rem" onclick="document.querySelectorAll('.knUserChk').forEach(x=>x.checked=true)">Pilih Semua</button>
+            <button type="button" class="btnSm btnGray" style="padding:2px 8px;font-size:.7rem" onclick="document.querySelectorAll('.knUserChk').forEach(x=>x.checked=false)">Reset</button>
+          </div>
+        </div>
+        <div class="mentionGrid">${chkUsers || '<span style="color:var(--sub);font-size:.8rem">Tidak ada user lain.</span>'}</div>
+      </div>
+      <div class="formGroup full"><label>Kaitkan ke Pekerjaan Harian (Opsional)</label>
+        <select id="knTindakan"><option value="">-- Pemberitahuan Umum (Tanpa Pekerjaan Tertentu) --</option>${tOpts}</select>
+      </div>
+      ${isAdmin()?`<div class="formGroup full"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="knInstruksi" style="width:15px;height:15px"/> Tandai sebagai <b>📌 Arahan Penting</b></label></div>`:''}
+      <div class="formGroup full"><label>Isi Pemberitahuan / Pesan *</label>
+        <textarea id="knPesan" style="min-height:90px" placeholder="Tulis pemberitahuan atau tanggapan untuk user yang dicentang..."></textarea>
+      </div>
+    </div>
+    <div class="flex mt10">
+      <button class="btnPrimary" onclick="sendManualNotif()">📤 Kirim Pemberitahuan</button>
+      <button onclick="closeModal()" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">Batal</button>
+    </div>`;
+  document.getElementById('modalWrap').classList.remove('hidden');
+}
+
+async function sendManualNotif(){
+  const mention_ids = [...document.querySelectorAll('.knUserChk:checked')].map(x=>x.value);
+  const pesan = document.getElementById('knPesan')?.value.trim() || '';
+  const tindakan_id = document.getElementById('knTindakan')?.value || null;
+  const is_instruksi = !!document.getElementById('knInstruksi')?.checked;
+  if(!mention_ids.length) return alert('Centang minimal 1 user penerima pemberitahuan!');
+  if(!pesan) return alert('Isi pemberitahuan wajib diisi!');
+
+  const { error } = await sb.from('tindakan_comments').insert({
+    tindakan_id,
+    user_id: currentUser.id,
+    pesan,
+    is_instruksi,
+    mention_ids,
+    sudah_dibaca: [currentUser.id]
+  });
+  if(error) return alert('Gagal mengirim pemberitahuan: '+error.message);
+  closeModal();
+  await loadAll();
+  renderNotifs();
+  showPage('notifikasi');
+  toast(`✅ Pemberitahuan terkirim ke ${mention_ids.length} user!`);
+}
+
+async function markNotifAck(kind, id){
+  if(!currentUser) return;
+  const c = (CACHE.tcomments||[]).find(x=>x.id===id);
+  if(!c) return;
+  const nextRead = [...new Set([...(c.sudah_dibaca||[]), currentUser.id])];
+  const { error } = await sb.from('tindakan_comments').update({ sudah_dibaca: nextRead }).eq('id', id);
+  if(error) return alert('Gagal menandai diketahui: '+error.message);
+  await loadAll();
+  renderNotifs();
+  if(currentPage === 'notifikasi') showPage('notifikasi');
+  toast('✅ Ditandai sudah diketahui!');
+}
+
+function renderNotifikasiPage(){
+  const allItems = buildNotifItems();
+  let list = allItems;
+  if(notifFilter.jenis==='inbox') list = list.filter(x=>!x.isOwn);
+  else if(notifFilter.jenis==='sent') list = list.filter(x=>x.isOwn);
+  if(notifFilter.status==='unread') list = list.filter(x=>!x.isAck);
+  else if(notifFilter.status==='read') list = list.filter(x=>x.isAck);
+  if(notifFilter.q){
+    const q = notifFilter.q.toLowerCase();
+    list = list.filter(x=>(x.senderName+' '+x.toNames.join(' ')+' '+x.objLabel+' '+x.isi).toLowerCase().includes(q));
+  }
+
+  const total = list.length;
+  const unreadCount = allItems.filter(x=>!x.isOwn && !x.isAck).length;
+  const totalPages = Math.max(1, Math.ceil(total / notifPerPage));
+  if(notifPage > totalPages) notifPage = totalPages;
+  if(notifPage < 1) notifPage = 1;
+  const start = (notifPage - 1) * notifPerPage;
+  const paged = list.slice(start, start + notifPerPage);
+
+  const rows = paged.length ? paged.map((it,idx)=>{
+    const dt = it.createdAt ? `${fmtDate(it.createdAt.slice(0,10))} ${fmtTimeWita(it.createdAt)}` : '-';
+    const toTxt = it.toNames.length ? it.toNames.join(', ') : (it.targetId ? 'Pemilik Pekerjaan' : '-');
+    const stHtml = it.isAck
+      ? `<span class="badge b-done">✅ Diketahui</span>${it.ackNames.length?`<div style="font-size:.71rem;color:var(--sub);margin-top:3px">Oleh: <b>${esc(it.ackNames.join(', '))}</b></div>`:`<div style="font-size:.7rem;color:var(--sub);margin-top:2px">${it.isOwn?'Belum ada yang baca':'Anda'}</div>`}`
+      : `<span class="badge b-urgent">🔴 Belum Diketahui</span>${it.ackNames.length?`<div style="font-size:.71rem;color:var(--sub);margin-top:3px">Sudah: ${esc(it.ackNames.join(', '))}</div>`:''}`;
+    const btnAck = (!it.isOwn && !it.isAck)
+      ? `<button class="btnSm btnEdit" title="Tandai sudah diketahui / dibaca agar pengirim mengetahui" onclick="markNotifAck('${it.kind}','${it.rawId}')">✓ Diketahui</button>`
+      : '';
+    const btnOpen = it.openJs
+      ? `<button class="btnSm btnGray" title="Buka detail &amp; diskusi pekerjaan" onclick="${it.openJs}">👁️ Buka</button>`
+      : '';
+    return `<tr>
+      <td>${start+idx+1}</td>
+      <td style="white-space:nowrap;font-size:.75rem">${dt}</td>
+      <td><b>${esc(it.senderName)}</b>${it.isOwn?' <span class="badge b-info">Saya</span>':''}</td>
+      <td>${esc(toTxt)}</td>
+      <td style="white-space:nowrap">${it.jenisLabel}</td>
+      <td><b>${esc(it.objLabel)}</b></td>
+      <td style="max-width:250px">${esc(it.isi)}</td>
+      <td>${stHtml}</td>
+      <td><div class="flex">${btnAck}${btnOpen||'-'}</div></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--sub);padding:24px">Belum ada pemberitahuan pada filter ini.</td></tr>`;
+
+  return `<div class="section" style="position:relative;z-index:1">
+    <div class="secHead">
+      <h4>🔔 Pemberitahuan Manual &amp; Tanggapan (${unreadCount} belum diketahui)</h4>
+      <button class="btnPrimary" onclick="modalKirimNotif()">✉️ Kirim Pemberitahuan</button>
+    </div>
+    <div class="filterBar">
+      <select onchange="notifFilter.jenis=this.value;notifPage=1;showPage('notifikasi')">
+        <option value="" ${notifFilter.jenis===''?'selected':''}>📥 Masuk &amp; Terkirim</option>
+        <option value="inbox" ${notifFilter.jenis==='inbox'?'selected':''}>📥 Masuk dari User Lain</option>
+        <option value="sent" ${notifFilter.jenis==='sent'?'selected':''}>📤 Dikirim Saya</option>
+      </select>
+      <select onchange="notifFilter.status=this.value;notifPage=1;showPage('notifikasi')">
+        <option value="" ${notifFilter.status===''?'selected':''}>Semua Status</option>
+        <option value="unread" ${notifFilter.status==='unread'?'selected':''}>🔴 Belum Diketahui</option>
+        <option value="read" ${notifFilter.status==='read'?'selected':''}>✅ Sudah Diketahui</option>
+      </select>
+      <input placeholder="Cari pengirim, tujuan, isi..." value="${esc(notifFilter.q)}" oninput="notifFilter.q=this.value;notifPage=1;showPage('notifikasi')" style="width:220px"/>
+    </div>
+    <div style="overflow-x:auto">
+      <table><thead><tr><th>#</th><th>Waktu</th><th>Pengirim</th><th>Kepada</th><th>Jenis</th><th>Pekerjaan / Topik</th><th>Isi Pemberitahuan</th><th>Diketahui Oleh</th><th>Aksi</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    </div>
+    ${renderPgBar(total, notifPage, notifPerPage, 'pemberitahuan', 'notifPerPage=+this.value;notifPage=1;showPage(\'notifikasi\')', 'notifPage=__P__;showPage(\'notifikasi\')')}
+  </div>`;
+}
+
+function renderSidebarNotifs(){
+  const box = document.getElementById('sideNotifAlert');
+  const badge = document.getElementById('navNotifBadge');
+  if(!currentUser){ if(box) box.innerHTML=''; if(badge) badge.style.display='none'; return; }
+  const unread = buildNotifItems().filter(x=>!x.isAck);
+  if(badge){
+    badge.textContent = unread.length;
+    badge.style.display = unread.length ? 'inline-block' : 'none';
+  }
+  if(!box) return;
+  if(unread.length){
+    box.innerHTML = `<div class="sideNotifBox hasAlert"><b>🔔 Pemberitahuan (${unread.length})</b>${unread.slice(0,4).map(it=>`<div class="sideNotifItem" onclick="showPage('notifikasi')"><div><b>${it.jenisLabel} · ${esc(it.senderName)}</b></div><div style="opacity:.88">${esc((it.isi||it.objLabel).slice(0,45))}</div></div>`).join('')}</div>`;
+  } else {
+    box.innerHTML = `<div class="sideNotifBox" style="cursor:pointer" onclick="showPage('notifikasi')"><b>🔔 Pemberitahuan</b><br><span style="opacity:.85">Semua tanggapan &amp; tugas sudah diketahui.</span></div>`;
+  }
+}
+
 function renderNotifs(){
   const notifs=getNotifs();
   document.getElementById('notifDot').style.display=notifs.length?'inline-block':'none';
   document.getElementById('notifList').innerHTML=notifs.length
     ?notifs.slice(0,10).map(n=>`<div class="notifItem" onclick="${n.action};closeNotif()"><div class="ni-title">${n.title}</div><div class="ni-sub">${n.sub}</div></div>`).join('')
     :'<div style="padding:14px 16px;color:var(--sub);font-size:.82rem">Tidak ada notifikasi 🎉</div>';
+  renderSidebarNotifs();
 }
 function toggleNotif(){renderNotifs();document.getElementById('notifList').classList.toggle('open');}
 function closeNotif(){document.getElementById('notifList').classList.remove('open');}
