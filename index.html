@@ -224,6 +224,13 @@ textarea{resize:vertical;min-height:60px}
 .mentionOpt input{width:13px;height:13px;accent-color:var(--blue)}
 .mentionChip{display:inline-block;background:#dbeafe;color:#1d4ed8;padding:1px 7px;border-radius:12px;font-size:.7rem;font-weight:600;margin-right:3px}
 .cmtInstruksi{background:#fef3c7!important;border-left:4px solid #f59e0b}
+.pgBar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--gray2);padding:12px 4px 2px;margin-top:14px}
+.pgLeft{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--sub)}
+.pgLeft select{border:1.5px solid var(--gray2);border-radius:8px;padding:4px 8px;font-size:.78rem;color:var(--text)}
+.pgNums{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.pgBtn{border:none;background:transparent;color:var(--sub);border-radius:8px;padding:5px 11px;font-size:.78rem;font-weight:600;cursor:pointer;transition:.15s}
+.pgBtn:hover{background:var(--gray)}
+.pgBtn.active{background:var(--blue);color:#fff}
 </style>
 </head>
 <body>
@@ -1271,9 +1278,11 @@ function renderKlien(q='',pg=1,rpp=rowsPerPageKlien){
   if(!isAdmin()) return`<div class="accessDenied"><div class="icon">⛔</div><p>Halaman ini hanya dapat diakses oleh <b>Admin</b>.</p></div>`;
   let list=CACHE.klien.filter(k=>!q||(k.nama+' '+(k.npwp||'')+(k.nama_kontak||'')).toLowerCase().includes(q.toLowerCase()));
   const total=list.length;
-  const totalPages=Math.ceil(total/rpp)||1;
-  pg=Math.min(pg,totalPages);
-  const paged=list.slice((pg-1)*rpp, pg*rpp);
+  const totalPages=rpp>=999999?1:(Math.ceil(total/rpp)||1);
+  pg=Math.max(1,Math.min(pg,totalPages));
+  pageKlien=pg;
+  const start=(pg-1)*rpp;
+  const paged=rpp>=999999?list:list.slice(start, start+rpp);
   const rows=paged.length?paged.map(k=>{
     const jml=CACHE.pekerjaan.filter(p=>p.klien_id===k.id&&!p.parent_id).length;
     const done=CACHE.pekerjaan.filter(p=>p.klien_id===k.id&&p.status==='Selesai'&&!p.parent_id).length;
@@ -1292,24 +1301,32 @@ function renderKlien(q='',pg=1,rpp=rowsPerPageKlien){
         <button class="btnSm btnDanger" onclick="delKlien('${k.id}')">🗑️</button>
       </td></tr>`;
   }).join(''):`<tr><td colspan="8" style="color:var(--sub);text-align:center;padding:20px">Belum ada klien</td></tr>`;
+
+  const pgButtons = totalPages>1
+    ? `<div class="pgNums">${Array.from({length:totalPages},(_,i)=>i+1).map(p=>`<button class="pgBtn ${p===pg?'active':''}" onclick="pageKlien=${p};renderKlienPage()">${p}</button>`).join('')}</div>`
+    : '';
+  const pgFooter = total>0 ? `
+    <div class="pgBar">
+      <div class="pgLeft">
+        <span>Tampilkan</span>
+        <select onchange="rowsPerPageKlien=+this.value;pageKlien=1;renderKlienPage()">
+          <option value="10" ${rpp===10?'selected':''}>10</option>
+          <option value="20" ${rpp===20?'selected':''}>20</option>
+          <option value="999999" ${rpp>=999999?'selected':''}>Semua</option>
+        </select>
+        <span>Menampilkan ${start+1}-${Math.min(start+rpp,total)} dari ${total} data</span>
+      </div>
+      ${pgButtons}
+    </div>` : '';
+
   return`<div class="section" style="position:relative;z-index:1">
     <div class="secHead"><h4>Daftar Klien</h4>
     <div class="flex">
-      <input style="padding:7px 10px;border:1.5px solid var(--gray2);border-radius:7px;font-size:.8rem;width:200px" placeholder="Cari nama / NPWP / kontak..." id="srchKlien" value="${q}" oninput="pageKlien=1;document.getElementById('pageContent').innerHTML=renderKlien(this.value,1,rowsPerPageKlien)"/>
+      <input style="padding:7px 10px;border:1.5px solid var(--gray2);border-radius:7px;font-size:.8rem;width:200px" placeholder="Cari nama / NPWP / kontak..." id="srchKlien" value="${esc(q)}" oninput="pageKlien=1;document.getElementById('pageContent').innerHTML=renderKlien(this.value,1,rowsPerPageKlien)"/>
       <button class="btnPrimary" onclick="modalKlien()">+ Tambah Klien</button>
     </div></div>
     <div style="overflow-x:auto"><table><thead><tr><th>Nama Perusahaan</th><th>NPWP</th><th>Bidang Usaha</th><th>PIC</th><th>No. Kontak</th><th>Email</th><th>Progres</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div class="pagination">
-      <span class="rowsLabel">Baris per halaman:</span>
-      <select onchange="rowsPerPageKlien=+this.value;pageKlien=1;renderKlienPage()">
-        <option value="10" ${rpp===10?'selected':''}>10</option>
-        <option value="15" ${rpp===15?'selected':''}>15</option>
-        <option value="20" ${rpp===20?'selected':''}>20</option>
-      </select>
-      <button class="btnSm btnGray" onclick="pageKlien--;renderKlienPage()" ${pg<=1?'disabled':''}>‹</button>
-      <span>Hal ${pg} / ${totalPages} (${total} data)</span>
-      <button class="btnSm btnGray" onclick="pageKlien++;renderKlienPage()" ${pg>=totalPages?'disabled':''}>›</button>
-    </div>
+    ${pgFooter}
   </div>`;
 }
 
@@ -1337,8 +1354,11 @@ async function saveKlien(id){
   if(!nama) return alert('Nama wajib!');
   const data={nama, nama_kontak:document.getElementById('fkNK').value, npwp:document.getElementById('fkNPWP').value, bidang:document.getElementById('fkB').value, kontak:document.getElementById('fkK').value, email:document.getElementById('fkE').value, catatan:document.getElementById('fkC').value};
   if(id) await sb.from('klien').update(data).eq('id',id);
-  else   await sb.from('klien').insert(data);
-  await loadAll(); closeModal(); showPage('klien'); toast('✅ Klien tersimpan!');
+  else { await sb.from('klien').insert(data); pageKlien=1; }
+  await loadAll(); closeModal();
+  const qK=document.getElementById('srchKlien')?.value||'';
+  document.getElementById('pageContent').innerHTML=renderKlien(qK,pageKlien,rowsPerPageKlien);
+  toast('✅ Klien tersimpan!');
 }
 
 async function delKlien(id){
