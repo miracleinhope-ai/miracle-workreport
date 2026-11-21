@@ -47,7 +47,11 @@
   .loginRight{padding:28px 24px}
 }
 body{display:flex;height:100vh;overflow:hidden;background:var(--gray)}
-#sidebar{width:240px;min-width:240px;background:#3B1B4F;display:flex;flex-direction:column;z-index:10;transition:width .22s ease,min-width .22s ease}
+#sidebar{width:240px;min-width:240px;height:100vh;background:#3B1B4F;display:flex;flex-direction:column;z-index:10;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(244,215,212,.45) transparent;transition:width .22s ease,min-width .22s ease}
+#sidebar::-webkit-scrollbar{width:6px}
+#sidebar::-webkit-scrollbar-track{background:transparent}
+#sidebar::-webkit-scrollbar-thumb{background:rgba(244,215,212,.38);border-radius:999px}
+#sidebar::-webkit-scrollbar-thumb:hover{background:rgba(214,89,143,.75)}
 #sidebar.collapsed{width:0;min-width:0;overflow:hidden;border:none}
 .sideTop{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:space-between;gap:8px}
 .sideTop h2{color:#fff;font-size:.98rem;font-weight:700;line-height:1.2}
@@ -60,6 +64,9 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--gray)}
 .sideNotifItem:hover{background:rgba(255,107,107,.28)}
 .sideLateBox{margin:6px 12px 2px;padding:9px 11px;border-radius:10px;font-size:.73rem;line-height:1.45;background:rgba(244,215,212,.14);border:1px solid rgba(244,215,212,.25);color:#F4D7D4;max-height:145px;overflow-y:auto}
 .sideLateBox.late{background:rgba(255,107,107,.22);border-color:#FF6B6B;color:#fff}
+.sideRefBox{margin:6px 12px 2px;padding:9px 11px;border-radius:10px;font-size:.71rem;line-height:1.45;background:rgba(26,15,46,.42);border:1px solid rgba(244,215,212,.22);color:#F4D7D4}
+.sideRefBox b{color:#fff}
+.sideRefItem{margin-top:5px;padding-top:5px;border-top:1px dashed rgba(244,215,212,.2)}
 .userBadge{margin:8px 12px 6px;background:rgba(255,255,255,.15);border-radius:10px;padding:9px 11px;display:flex;align-items:center;gap:9px}
 .userAvatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.88rem;flex-shrink:0}
 .userInfo p{color:#fff;font-size:.82rem;font-weight:600}
@@ -73,7 +80,7 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--gray)}
 .floatSep{width:26px;height:1px;background:rgba(255,255,255,.2);margin:3px 0}
 body.side-collapsed #main .content{padding-left:68px}
 /* SIDEBAR SCROLL */
-nav{flex:1;padding:6px 10px;overflow-y:auto;scroll-behavior:smooth}
+nav{flex:1 0 auto;padding:6px 10px}
 nav a{display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:9px;color:rgba(255,255,255,.8);text-decoration:none;font-size:.85rem;margin-bottom:1px;cursor:pointer;transition:.15s}
 nav a:hover,nav a.active{background:rgba(255,255,255,.2);color:#fff}
 nav a .ico{font-size:1rem;width:20px;text-align:center}
@@ -335,6 +342,7 @@ table thead th:last-child,.tblNeonBlue thead th:last-child{border-radius:0 8px 8
   </nav>
   <div id="sideNotifAlert"></div>
   <div id="sideLateAlert"></div>
+  <div id="sideKpiRef"></div>
   <div class="userBadge">
     <div class="userAvatar" id="sideAvatar">?</div>
     <div class="userInfo"><p id="sideName">-</p><span id="sideRole">-</span></div>
@@ -920,8 +928,10 @@ function computeKPIs(bulan, tahun, filterUserId='', filterKlienId=''){
 // ===== DASHBOARD =====
 function renderSidebarLateAlert(kpi){
   const box = document.getElementById('sideLateAlert');
-  if(!box || !currentUser){ if(box) box.innerHTML=''; return; }
+  const refBox = document.getElementById('sideKpiRef');
+  if(!box || !currentUser){ if(box) box.innerHTML=''; if(refBox) refBox.innerHTML=''; return; }
   if(!isAdmin()){
+    if(refBox) refBox.innerHTML='';
     if(!loginLateInfo){ box.innerHTML=''; return; }
     if(loginLateInfo.isLate){
       box.innerHTML = `<div class="sideLateBox late"><b>⏰ Terlambat Masuk</b><br>Login: <b>${loginLateInfo.jam} WITA</b> (+${loginLateInfo.menitTerlambat}m)<br>Bulan ini: <b>${loginLateInfo.lateMonth}x</b> (total ${loginLateInfo.lateTotal}x)</div>`;
@@ -937,6 +947,58 @@ function renderSidebarLateAlert(kpi){
   } else {
     box.innerHTML = `<div class="sideLateBox"><b>✅ Kedisiplinan Masuk</b><br>Semua karyawan tepat waktu bulan ini.</div>`;
   }
+  renderSidebarKpiRef(k);
+}
+
+function renderSidebarKpiRef(){
+  const refBox = document.getElementById('sideKpiRef');
+  if(!refBox) return;
+  if(!currentUser || !isAdmin()){ refBox.innerHTML=''; return; }
+  refBox.innerHTML = `<div style="margin:6px 12px 2px">
+    <button class="btnSm btnGray" style="width:100%;margin:0;padding:8px 11px;font-size:.76rem;display:flex;align-items:center;justify-content:space-between;border-radius:9px" title="Lihat formula SRK, Risiko Klien, IKU &amp; SKU Tim" onclick="modalKpiRef()">
+      <span>📘 Referensi KPI (SRK · IKU · SKU)</span>
+      <span>▸</span>
+    </button>
+  </div>`;
+}
+
+function modalKpiRef(){
+  if(!isAdmin()) return;
+  const k = computeKPIs(dashFilter.bulan, dashFilter.tahun, dashFilter.userId, dashFilter.klienId);
+  const staffRows = (k.userRows||[]).filter(u=>u.role!=='superadmin').map(u=>`<tr>
+    <td><b>${esc(u.nama)}</b></td>
+    <td style="text-align:center">${u.total}</td>
+    <td style="text-align:center">${u.ulang}</td>
+    <td style="text-align:center">${u.lateMonth}x</td>
+    <td style="text-align:center"><span class="badge ${u.sku>=85?'b-done':u.sku>=70?'b-warn':'b-urgent'}">${u.sku}</span></td>
+  </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--sub)">Belum ada data karyawan</td></tr>';
+
+  document.getElementById('modalBox').style.width = '680px';
+  document.getElementById('modalBox').innerHTML = `<h4>📘 Referensi KPI Superadmin — ${BULAN_NAMA[dashFilter.bulan-1]} ${dashFilter.tahun}</h4>
+    <div style="display:grid;gap:10px;font-size:.82rem;line-height:1.55">
+      <div style="background:var(--gray);border-radius:10px;padding:10px 13px;border-left:4px solid #3B1B4F">
+        <b>1. SRK — Skor Risiko Klien (Skala 0–100)</b><br>
+        <b>Formula:</b> <code>100 × (35% Rasio Ulang + 30% Rasio Kendala + 20% Durasi Relatif + 15% Frekuensi Relatif)</code><br>
+        <b>Kategori Risiko:</b> <span class="badge b-done">&lt; 30 Normal</span> <span class="badge b-warn">30–49 Perhatian</span> <span class="badge b-urgent">≥ 50 Kritis</span>
+      </div>
+      <div style="background:var(--gray);border-radius:10px;padding:10px 13px;border-left:4px solid #7A2E6F">
+        <b>2. IKU — Indeks Kelalaian / Ketidaktelitian User</b><br>
+        <b>Formula:</b> <code>ErrUser / (ErrLain + 0,05)</code> (rasio ulang + kendala internal user dibanding rekan lain / baseline 0,10)<br>
+        <b>Fungsi:</b> Membedakan apakah skor SRK tinggi berasal dari <i>klien sulit/data bermasalah</i> atau <i>ketidaktelitian user tertentu</i> (<b>IKU ≥ 1,5</b> = indikasi kelalaian).
+      </div>
+      <div style="background:var(--gray);border-radius:10px;padding:10px 13px;border-left:4px solid #D6598F">
+        <b>3. SKU — Skor Kualitas User (Skala 0–100)</b><br>
+        <b>Formula:</b> <code>100 − 100 × (40% Ulang + 30% Kendala Internal + 20% Telat Closing + 10% Telat Masuk)</code>
+        <table style="margin-top:8px">
+          <thead><tr><th>Karyawan</th><th style="text-align:center">Tindakan</th><th style="text-align:center">Ulang</th><th style="text-align:center">Telat Bln</th><th style="text-align:center">SKU</th></tr></thead>
+          <tbody>${staffRows}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="flex mt10" style="justify-content:flex-end">
+      <button onclick="document.getElementById('modalBox').style.width='580px';closeModal()" class="btnSm btnGray" style="padding:8px 16px">Tutup</button>
+    </div>`;
+  document.getElementById('modalWrap').classList.remove('hidden');
 }
 
 function renderDashboard(){
@@ -1238,7 +1300,28 @@ function renderDashboard(){
 function initDashboardCharts(){
   if(typeof Chart==='undefined') return;
   const kpi = computeKPIs(dashFilter.bulan, dashFilter.tahun, dashFilter.userId, dashFilter.klienId);
-  const PALETTE = ['#2563eb','#ec4899','#10b981','#f59e0b','#8b5cf6','#06b6d4','#ef4444','#14b8a6','#6366f1','#f97316','#64748b'];
+  const PALETTE = ['#10b981','#2563eb','#facc15','#0ea5e9','#34d399','#eab308','#0284c7','#059669','#38bdf8','#fde047'];
+  const makeGBYGrad = (context, variant=0, horiz=false) => {
+    const ch = context.chart;
+    const { ctx, chartArea } = ch;
+    if(!chartArea) return PALETTE[variant % PALETTE.length];
+    const g = horiz
+      ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
+      : ctx.createLinearGradient(0, chartArea.bottom, chartArea.right, chartArea.top);
+    const presets = [
+      ['#10b981','#2563eb','#facc15'],
+      ['#059669','#0ea5e9','#fde047'],
+      ['#34d399','#38bdf8','#eab308'],
+      ['#2563eb','#10b981','#facc15'],
+      ['#facc15','#10b981','#2563eb'],
+      ['#0ea5e9','#34d399','#facc15']
+    ];
+    const cols = presets[variant % presets.length];
+    g.addColorStop(0, cols[0]);
+    g.addColorStop(0.52, cols[1]);
+    g.addColorStop(1, cols[2]);
+    return g;
+  };
 
   // Jika asisten: grafik tren pribadi (1 bulan berjalan / 1 minggu terakhir / bulan sebelumnya)
   const elUserTrend = document.getElementById('chUserTrend');
@@ -1320,7 +1403,7 @@ function initDashboardCharts(){
     const entries = Object.entries(map);
     dashCharts.jd = new Chart(elJD, {
       type:'doughnut',
-      data:{ labels: entries.length?entries.map(e=>e[0]):['Belum ada data'], datasets:[{ data: entries.length?entries.map(e=>e[1]):[1], backgroundColor: entries.length?PALETTE:['#e2e8f0'] }] },
+      data:{ labels: entries.length?entries.map(e=>e[0]):['Belum ada data'], datasets:[{ data: entries.length?entries.map(e=>e[1]):[1], backgroundColor: entries.length?(ctx=>makeGBYGrad(ctx,ctx.dataIndex)):['#e2e8f0'], borderColor:'#fff', borderWidth:2 }] },
       options:{ responsive:true, maintainAspectRatio:false, cutout:'62%', plugins:{ legend:{ position:'bottom', labels:{ boxWidth:11, font:{ size:11 } } } } }
     });
   }
@@ -1334,8 +1417,8 @@ function initDashboardCharts(){
       data:{
         labels: top10.length?top10.map(r=>r.nama):['Belum ada data'],
         datasets:[
-          { label:'Normal', data: top10.length?top10.map(r=>r.normalCount):[0], backgroundColor:'#2563eb' },
-          { label:'Pengulangan', data: top10.length?top10.map(r=>r.ulang):[0], backgroundColor:'#f59e0b' }
+          { label:'Normal', data: top10.length?top10.map(r=>r.normalCount):[0], backgroundColor:ctx=>makeGBYGrad(ctx,0,true), borderRadius:5 },
+          { label:'Pengulangan', data: top10.length?top10.map(r=>r.ulang):[0], backgroundColor:ctx=>makeGBYGrad(ctx,4,true), borderRadius:5 }
         ]
       },
       options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ x:{ stacked:true, beginAtZero:true, ticks:{ precision:0 } }, y:{ stacked:true } } }
@@ -1350,7 +1433,7 @@ function initDashboardCharts(){
     const entries = Object.entries(map);
     dashCharts.sd = new Chart(elSD, {
       type:'doughnut',
-      data:{ labels: entries.length?entries.map(e=>e[0]):['Belum ada data'], datasets:[{ data: entries.length?entries.map(e=>e[1]):[1], backgroundColor: entries.length?PALETTE:['#e2e8f0'] }] },
+      data:{ labels: entries.length?entries.map(e=>e[0]):['Belum ada data'], datasets:[{ data: entries.length?entries.map(e=>e[1]):[1], backgroundColor: entries.length?(ctx=>makeGBYGrad(ctx,ctx.dataIndex)):['#e2e8f0'], borderColor:'#fff', borderWidth:2 }] },
       options:{ responsive:true, maintainAspectRatio:false, cutout:'62%', plugins:{ legend:{ position:'bottom', labels:{ boxWidth:11, font:{ size:11 } } } } }
     });
   }
@@ -1364,9 +1447,9 @@ function initDashboardCharts(){
       data:{
         labels: uList.map(u=>u.nama),
         datasets:[
-          { label:'Selesai', data:uList.map(u=>u.done), backgroundColor:'#10b981' },
-          { label:'Pengulangan', data:uList.map(u=>u.ulang), backgroundColor:'#f59e0b' },
-          { label:'Kendala', data:uList.map(u=>u.kendala), backgroundColor:'#ef4444' }
+          { label:'Selesai', data:uList.map(u=>u.done), backgroundColor:ctx=>makeGBYGrad(ctx,0,false), borderRadius:5 },
+          { label:'Pengulangan', data:uList.map(u=>u.ulang), backgroundColor:ctx=>makeGBYGrad(ctx,4,false), borderRadius:5 },
+          { label:'Kendala', data:uList.map(u=>u.kendala), backgroundColor:ctx=>makeGBYGrad(ctx,3,false), borderRadius:5 }
         ]
       },
       options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
@@ -1695,8 +1778,8 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
   const total=list.length;
   const totalPages=Math.ceil(total/rpp)||1;
   pg=Math.min(pg,totalPages);
-  const klienOpts=CACHE.klien.map(k=>`<option value="${k.id}" ${fK===k.id?'selected':''}>${k.nama}</option>`).join('');
-  const userOpts=CACHE.users.map(u=>`<option value="${u.id}" ${fU===u.id?'selected':''}>${u.nama}</option>`).join('');
+  const klienOpts=CACHE.klien.map(k=>`<option value="${k.id}" ${fK===k.id?'selected':''}>${esc(k.nama)}</option>`).join('');
+  const userOpts=CACHE.users.map(u=>`<option value="${u.id}" ${fU===u.id?'selected':''}>${esc(u.nama)}</option>`).join('');
   let viewContent='';
   if(currentView==='list'){
     const paged=list.slice((pg-1)*rpp,pg*rpp);
@@ -1710,13 +1793,13 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
       const canEdit=canEditPek(p);
       const creator=CACHE.users.find(u=>u.id===p.created_by);
       return`<tr style="cursor:pointer" onclick="openDetail('${p.id}')">
-        <td><b>${p.judul}</b>${late?'<br><span style="color:var(--red);font-size:.7rem">⚠️ Terlambat</span>':''}
+        <td><b>${esc(p.judul)}</b>${late?'<br><span style="color:var(--red);font-size:.7rem">⚠️ Terlambat</span>':''}
           ${subs.length?`<br><span style="font-size:.7rem;color:var(--sub)">${doneSub}/${subs.length} subtask</span>`:''}
           ${!canEdit?'<span class="lockBadge">🔒</span>':''}</td>
-        <td>${k?k.nama:'-'}</td><td>${p.kategori||'-'}</td>
+        <td>${esc(k?k.nama:'-')}</td><td>${esc(p.kategori||'-')}</td>
         <td><span class="badge ${badgeSt(p.status)}">${p.status}</span></td>
         <td><span class="badge ${p.prioritas==='Urgent'?'b-urgent':'b-normal'}">${p.prioritas}</span></td>
-        <td>${u?u.nama:'-'}</td><td>${fmtDate(p.tanggal)}</td><td>${fmtDate(p.deadline)}</td>
+        <td>${esc(u?u.nama:'-')}</td><td>${fmtDate(p.tanggal)}</td><td>${fmtDate(p.deadline)}</td>
         <td>${totalT?'⏱️ '+fmtDur(totalT):'-'}</td>
         <td onclick="event.stopPropagation()">
           ${canEdit?`<button class="btnSm btnEdit" title="Edit pekerjaan" onclick="modalPek('${p.id}')">✏️</button><button class="btnSm btnDanger" title="Hapus pekerjaan" onclick="delPek('${p.id}')">🗑️</button>`:'<span style="font-size:.74rem;color:var(--sub)">🔒</span>'}
@@ -1731,7 +1814,7 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
       return`<div class="kanbanCol" ondragover="event.preventDefault()" ondrop="dropKanban(event,'${col}')">
         <h5>${col==='Belum Dimulai'?'📋':col==='Dalam Proses'?'🔄':'✅'} ${col} <span style="background:rgba(0,0,0,.08);border-radius:10px;padding:1px 7px;font-size:.74rem">${items.length}</span></h5>
         ${items.map(p=>{const k=CACHE.klien.find(k=>k.id===p.klien_id);return`<div class="kanbanCard ${p.prioritas.toLowerCase()}" draggable="true" ondragstart="dragKanban(event,'${p.id}')" onclick="openDetail('${p.id}')">
-          <h6>${p.judul}${!canEditPek(p)?'<span class="lockBadge">🔒</span>':''}</h6><p>${k?k.nama:'-'}</p>
+          <h6>${esc(p.judul)}${!canEditPek(p)?'<span class="lockBadge">🔒</span>':''}</h6><p>${esc(k?k.nama:'-')}</p>
           <div class="cardMeta"><span class="badge ${p.prioritas==='Urgent'?'b-urgent':'b-normal'}" style="font-size:.68rem">${p.prioritas}</span>
           ${p.deadline?`<span style="font-size:.7rem;color:var(--sub)">${fmtDate(p.deadline)}</span>`:''}
           </div></div>`;}).join('')}
@@ -1918,9 +2001,9 @@ function backToCurrentMonth(){
 function modalPek(id=''){
   const p=id?CACHE.pekerjaan.find(x=>x.id===id):null;
   if(p&&!canEditPek(p)){ toast('⛔ Anda tidak memiliki akses untuk mengubah pekerjaan ini'); return; }
-  const klienOpts=CACHE.klien.map(k=>`<option value="${k.id}" ${p&&p.klien_id===k.id?'selected':''}>${k.nama}</option>`).join('');
-  const userOpts=CACHE.users.map(u=>`<option value="${u.id}" ${p&&p.user_id===u.id?'selected':''}>${u.nama}</option>`).join('');
-  const asOpts='<option value="">-- Tidak Ada --</option>'+CACHE.users.map(u=>`<option value="${u.id}" ${p&&p.asisten_id===u.id?'selected':''}>${u.nama}</option>`).join('');
+  const klienOpts=CACHE.klien.map(k=>`<option value="${k.id}" ${p&&p.klien_id===k.id?'selected':''}>${esc(k.nama)}</option>`).join('');
+  const userOpts=CACHE.users.map(u=>`<option value="${u.id}" ${p&&p.user_id===u.id?'selected':''}>${esc(u.nama)}</option>`).join('');
+  const asOpts='<option value="">-- Tidak Ada --</option>'+CACHE.users.map(u=>`<option value="${u.id}" ${p&&p.asisten_id===u.id?'selected':''}>${esc(u.nama)}</option>`).join('');
   const katOpts=KATEGORI.map(k=>`<option ${p&&p.kategori===k?'selected':''}>${k}</option>`).join('');
   const tgl=p&&p.tanggal?p.tanggal.split('T')[0]:todayStr();
   const dl=p&&p.deadline?p.deadline.split('T')[0]:'';
@@ -2009,15 +2092,15 @@ async function openDetail(pId){
         ${!canEdit?'<span class="badge" style="background:#f1f5f9;color:var(--sub)">🔒 Terkunci</span>':''}
       </div>
       <table style="font-size:.8rem"><tbody>
-        <tr><td style="color:var(--sub);width:90px;padding:4px 0">Klien</td><td><b>${k?k.nama:'-'}</b></td></tr>
-        <tr><td style="color:var(--sub);padding:4px 0">Penanggung jawab</td><td>${u?u.nama:'-'}</td></tr>
-        ${a?`<tr><td style="color:var(--sub);padding:4px 0">Asisten</td><td>${a.nama}</td></tr>`:''}
-        <tr><td style="color:var(--sub);padding:4px 0">Dibuat oleh</td><td>${creator?creator.nama:'-'}</td></tr>
+        <tr><td style="color:var(--sub);width:90px;padding:4px 0">Klien</td><td><b>${esc(k?k.nama:'-')}</b></td></tr>
+        <tr><td style="color:var(--sub);padding:4px 0">Penanggung jawab</td><td>${esc(u?u.nama:'-')}</td></tr>
+        ${a?`<tr><td style="color:var(--sub);padding:4px 0">Asisten</td><td>${esc(a.nama)}</td></tr>`:''}
+        <tr><td style="color:var(--sub);padding:4px 0">Dibuat oleh</td><td>${esc(creator?creator.nama:'-')}</td></tr>
         <tr><td style="color:var(--sub);padding:4px 0">Tanggal</td><td>${fmtDateL(p.tanggal)}</td></tr>
         <tr><td style="color:var(--sub);padding:4px 0">Deadline</td><td>${p.deadline?fmtDateL(p.deadline):'-'}</td></tr>
         <tr><td style="color:var(--sub);padding:4px 0">Total Waktu</td><td>⏱️ ${fmtDur(totalT)}</td></tr>
       </tbody></table>
-      ${p.catatan?`<div style="margin-top:8px;padding:8px;background:var(--gray);border-radius:6px;font-size:.8rem">${p.catatan}</div>`:''}
+      ${p.catatan?`<div style="margin-top:8px;padding:8px;background:var(--gray);border-radius:6px;font-size:.8rem;white-space:pre-wrap">${esc(p.catatan)}</div>`:''}
       ${canEdit?`<div class="flex mt10">
         <button class="btnPrimary" style="font-size:.78rem;padding:7px 14px" onclick="modalPek('${pId}');closeDetail()">✏️ Edit</button>
         <button class="btnSm btnGray" style="padding:7px 12px;font-size:.78rem" onclick="changeStatus('${pId}')">🔄 Ubah Status</button>
@@ -2037,7 +2120,7 @@ async function openDetail(pId){
       <div class="subtaskList">
         ${subs.map(st=>`<div class="subtaskItem">
           <input type="checkbox" ${st.status==='Selesai'?'checked':''} onchange="toggleSubtask('${st.id}',this.checked,'${pId}')"/>
-          <span class="${st.status==='Selesai'?'done':''}">${st.judul}</span>
+          <span class="${st.status==='Selesai'?'done':''}">${esc(st.judul)}</span>
           ${canEdit?`<button class="btnSm btnDanger" title="Hapus subtugas" style="margin-left:auto;padding:2px 7px;font-size:.7rem" onclick="delSubtask('${st.id}','${pId}')">✕</button>`:''}
         </div>`).join('')}
       </div>
@@ -2051,7 +2134,7 @@ async function openDetail(pId){
       <div class="commentList">
         ${comments.map(c=>{const cu=CACHE.users.find(u=>u.id===c.user_id);return`<div class="commentItem">
           <div class="commentAvatar">${cu?cu.nama.charAt(0).toUpperCase():'?'}</div>
-          <div class="commentBody"><div class="cmeta">${cu?cu.nama:'-'} · ${c.waktu}</div><p>${c.teks}</p></div>
+          <div class="commentBody"><div class="cmeta">${esc(cu?cu.nama:'-')} · ${c.waktu}</div><p>${esc(c.teks)}</p></div>
         </div>`;}).join('')}
       </div>
       <div class="commentInput">
@@ -2065,8 +2148,8 @@ async function openDetail(pId){
       ${relDocs.length?relDocs.map(d=>`
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--gray);border-radius:7px;margin-bottom:6px;font-size:.82rem">
           <div>
-            <b>${d.judul||'Tanpa Judul'}</b>
-            ${d.nama_file?`<br><span style="color:var(--sub);font-size:.75rem">📄 ${d.nama_file}</span>`:''}
+            <b>${esc(d.judul||'Tanpa Judul')}</b>
+            ${d.nama_file?`<br><span style="color:var(--sub);font-size:.75rem">📄 ${esc(d.nama_file)}</span>`:''}
           </div>
           ${d.link_dokumen?`<a href="${safeUrl(d.link_dokumen)}" target="_blank" rel="noopener noreferrer" style="color:var(--blue);font-weight:600;font-size:.8rem;text-decoration:none;white-space:nowrap;margin-left:10px">🔗 Buka</a>`:''}
         </div>`).join(''):`<p style="color:var(--sub);font-size:.82rem">Belum ada dokumen terlampir</p>`}
@@ -2139,7 +2222,7 @@ let currentDocId=null;
 function renderDocs(){
   const pekOpts=CACHE.pekerjaan.filter(p=>!p.parent_id).map(p=>{
     const k=CACHE.klien.find(k=>k.id===p.klien_id);
-    return`<option value="${p.id}">${p.judul}${k?' — '+k.nama:''}`;
+    return`<option value="${p.id}">${esc(p.judul)}${k?' — '+esc(k.nama):''}`;
   }).join('');
   return`<div style="position:relative;z-index:1">
     <div class="section">
@@ -2153,10 +2236,10 @@ function renderDocs(){
             const p=CACHE.pekerjaan.find(x=>x.id===d.pek_id);
             const k=p?CACHE.klien.find(x=>x.id===p.klien_id):d.klien_id?CACHE.klien.find(x=>x.id===d.klien_id):null;
             return`<tr>
-              <td><b>${d.judul||'Tanpa Judul'}</b></td>
-              <td>${d.nama_file||'-'}</td>
-              <td>${p?p.judul:'-'}</td>
-              <td>${k?k.nama:'-'}</td>
+              <td><b>${esc(d.judul||'Tanpa Judul')}</b></td>
+              <td>${esc(d.nama_file||'-')}</td>
+              <td>${esc(p?p.judul:'-')}</td>
+              <td>${esc(k?k.nama:'-')}</td>
               <td>${d.link_dokumen?`<a href="${safeUrl(d.link_dokumen)}" target="_blank" rel="noopener noreferrer" style="color:var(--blue);font-size:.8rem;text-decoration:none">🔗 Buka File</a>`:'-'}</td>
               <td>${fmtDateL(d.updated_at)}</td>
               <td>
@@ -2568,8 +2651,26 @@ function renderRencana(){
       <button class="btnPrimary" onclick="closingAkhirHari(false,'${unclosedAbPrev[0].tanggal}')">🏁 Closing Akhir Hari (${fmtDate(unclosedAbPrev[0].tanggal)})</button>
     </div>` : '';
 
+  const upcomingPlans = !isAdmin()
+    ? CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja>today && t.status==='rencana').sort((a,b)=>a.tanggal_kerja.localeCompare(b.tanggal_kerja))
+    : [];
+  const upcomingHtml = upcomingPlans.length ? `
+    <div class="alertBanner info">
+      <div style="font-size:1.2rem">📅</div>
+      <div style="flex:1">
+        <b>Rencana Pekerjaan Mendatang (${upcomingPlans.length} jadwal)</b> — Tidak memengaruhi Closing Akhir Hari ini:
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+          ${upcomingPlans.map(t=>{
+            const k=CACHE.klien.find(x=>x.id===t.klien_id);
+            const j=CACHE.jenis.find(x=>x.id===t.jenis_id);
+            return `<button type="button" class="btnSm btnGray" style="font-size:.74rem" title="Lihat jadwal tanggal ${fmtDate(t.tanggal_kerja)}" onclick="tindakanFilter.tanggal='${t.tanggal_kerja}';rencanaPage=1;showPage('rencana')">${fmtDate(t.tanggal_kerja)} · ${esc(k?k.nama:'-')} (${esc(j?j.nama:'-')})</button>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>` : '';
+
   // Unclosed previous tasks (non-blocking, lintas hari)
-  const unclosedHtml = unclosedAbHtml + (unclosedPrev.length ? `
+  const unclosedHtml = unclosedAbHtml + upcomingHtml + (unclosedPrev.length ? `
     <div class="alertBanner info">
       <div style="font-size:1.3rem">📌</div>
       <div style="flex:1">
@@ -2688,6 +2789,7 @@ function renderRencana(){
 function buildTindakanFormHtml(prefix){
   const curMY = witaMonthYear();
   const klienOpts = CACHE.klien.map(k=>`<option value="${k.id}">${esc(k.nama)}</option>`).join('');
+  const userOpts = CACHE.users.map(u=>`<option value="${u.id}" ${currentUser&&u.id===currentUser.id?'selected':''}>${esc(u.nama)}${currentUser&&u.id===currentUser.id?' (Saya)':''}</option>`).join('');
   const sisOpts = CACHE.sistem.filter(s=>s.aktif).map(s=>`<option value="${s.id}">${esc(s.nama)}</option>`).join('');
   const jenOpts = CACHE.jenis.filter(j=>j.aktif).map(j=>`<option value="${j.id}">${esc(j.nama)}${!j.boleh_diulang?' (1x saja)':''}</option>`).join('');
   const blnOpts = BULAN_NAMA.map((b,i)=>`<option value="${i+1}" ${curMY.bulan===i+1?'selected':''}>${b}</option>`).join('');
@@ -2695,8 +2797,17 @@ function buildTindakanFormHtml(prefix){
   const alasanOpts = ALASAN_ULANG.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
 
   return `<div class="formGrid">
-    <div class="formGroup full"><label>Klien / Rekanan *</label>
+    <div class="formGroup"><label>Klien / Rekanan *</label>
       <select id="${prefix}Klien" onchange="cekRiwayatTindakan('${prefix}')"><option value="">-- Pilih Klien --</option>${klienOpts}</select></div>
+    <div class="formGroup"><label>Tanggal Pelaksanaan / Rencana *</label>
+      <input type="date" id="${prefix}TglKerja" value="${todayStr()}" min="${todayStr()}"/></div>
+    <div class="formGroup"><label>Ditugaskan Kepada (Pelaksana) *</label>
+      <select id="${prefix}Pelaksana" onchange="const w=document.getElementById('${prefix}NotifWrap');if(w)w.style.display=(this.value&&this.value!=='${currentUser?currentUser.id:''}')?'flex':'none'">${userOpts}</select></div>
+    <div class="formGroup" id="${prefix}NotifWrap" style="display:none;justify-content:center">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:16px;color:#3B1B4F">
+        <input type="checkbox" id="${prefix}KirimNotif" checked style="width:15px;height:15px"/> 🔔 Kirim notifikasi ke user tujuan
+      </label>
+    </div>
     <div class="formGroup"><label>Periode Buku (Bulan) *</label>
       <select id="${prefix}Bulan" onchange="cekRiwayatTindakan('${prefix}')">${blnOpts}</select></div>
     <div class="formGroup"><label>Periode Buku (Tahun) *</label>
@@ -2808,31 +2919,54 @@ async function submitTindakan(prefix, isForced){
 
   await syncServerTime();
   const nowIso = nowWitaDate().toISOString();
+  const today = todayStr();
+  const tanggal_kerja = document.getElementById(prefix+'TglKerja')?.value || today;
+  const targetUserId = document.getElementById(prefix+'Pelaksana')?.value || currentUser.id;
+  const isOtherUser = targetUserId !== currentUser.id;
+  const kirimNotif = isOtherUser && !!document.getElementById(prefix+'KirimNotif')?.checked;
+  const isFuturePlan = tanggal_kerja > today || isOtherUser;
+  const startNow = isForced && !isFuturePlan;
   const payload = {
-    user_id: currentUser.id,
-    tanggal_kerja: todayStr(),
+    user_id: targetUserId,
+    tanggal_kerja,
     klien_id, periode_bulan, periode_tahun, sistem_id, jenis_id, uraian,
     is_ulang, ulang_ke, ulang_dari_id, alasan_ulang,
-    mulai_at: isForced ? nowIso : null,
-    status: isForced ? 'dikerjakan' : 'rencana'
+    mulai_at: startNow ? nowIso : null,
+    status: startNow ? 'dikerjakan' : 'rencana'
   };
-  const { error } = await sb.from('tindakan_harian').insert(payload);
+  const { data: insT, error } = await sb.from('tindakan_harian').insert(payload).select('id').single();
   if(error) return alert('Gagal menyimpan: ' + error.message);
 
-  const todayAb = CACHE.absensi.find(a=>a.user_id===currentUser.id && a.tanggal===todayStr());
-  if(todayAb && (todayAb.jam_keluar || todayAb.closing_hari_at)){
-    await sb.from('absensi').update({ jam_keluar: null, closing_hari_at: null }).eq('id', todayAb.id);
+  if(kirimNotif && insT?.id){
+    const kNm = CACHE.klien.find(x=>x.id===klien_id)?.nama || '-';
+    const jNm = jen ? jen.nama : '-';
+    const msg = `📋 Rencana pekerjaan baru untuk tgl ${fmtDate(tanggal_kerja)} (${kNm} · ${jNm})${uraian?': '+uraian:''}`;
+    await sb.from('tindakan_comments').insert({
+      tindakan_id: insT.id,
+      user_id: currentUser.id,
+      pesan: msg,
+      is_instruksi: false,
+      mention_ids: [targetUserId],
+      sudah_dibaca: [currentUser.id]
+    });
+  }
+
+  if(!isFuturePlan){
+    const todayAb = CACHE.absensi.find(a=>a.user_id===currentUser.id && a.tanggal===today);
+    if(todayAb && (todayAb.jam_keluar || todayAb.closing_hari_at)){
+      await sb.from('absensi').update({ jam_keluar: null, closing_hari_at: null }).eq('id', todayAb.id);
+    }
   }
 
   await loadAll();
   if(isForced){
     document.getElementById('rencanaForceOverlay')?.remove();
     showPage('rencana');
-    toast(`✅ Rencana dimulai pukul ${fmtTimeWita(nowIso)}!`);
+    toast(isFuturePlan ? `📅 Rencana dijadwalkan untuk ${fmtDate(tanggal_kerja)}!` : `✅ Rencana dimulai pukul ${fmtTimeWita(nowIso)}!`);
   } else {
     closeModal();
     showPage('rencana');
-    toast('✅ Tindakan ditambahkan!');
+    toast(isFuturePlan ? `📅 Rencana dijadwalkan untuk ${fmtDate(tanggal_kerja)}!` : '✅ Tindakan ditambahkan!');
   }
 }
 
@@ -3018,11 +3152,14 @@ async function selesaiTindakan(id){
           <option value="bermasalah">⚠️ Bermasalah / Tertunda</option>
         </select>
       </div>
+      <div class="formGroup full"><label>Hasil / Nomor Dokumen Output (Opsional — bukan kendala)</label>
+        <textarea id="clHasil" style="min-height:58px" placeholder="Contoh: Diperoleh PPBJ 00026101274809 atau Terbit SKP LB 00001/411/24/087/CT/26 tgl 04-02-2026"></textarea>
+      </div>
       <div class="formGroup full"><label>Kategori Permasalahan (Kosongkan jika kondisi normal)</label>
         <select id="clKat"><option value="">-- Normal / Tidak Ada Masalah --</option>${katOpts}</select>
       </div>
-      <div class="formGroup full"><label>Informasi Permasalahan / Catatan (Opsional — kosongkan jika normal)</label>
-        <textarea id="clKendala" style="min-height:80px" placeholder="Kosongkan jika tidak ada kendala. Jika ada masalah, jelaskan temuan atau kendalanya..."></textarea>
+      <div class="formGroup full"><label>Informasi Permasalahan / Kendala (Opsional — kosongkan jika normal)</label>
+        <textarea id="clKendala" style="min-height:70px" placeholder="Kosongkan jika tidak ada kendala. Isi hanya jika ada hambatan/masalah..."></textarea>
       </div>
     </div>
     <div class="flex mt10">
@@ -3034,6 +3171,7 @@ async function selesaiTindakan(id){
 
 async function saveClosingTindakan(id, mulaiIso, selesaiIso, durasi){
   const status = document.getElementById('clStatus').value;
+  const hasil = (document.getElementById('clHasil')?.value || '').trim();
   const katRaw = document.getElementById('clKat').value;
   const kendala = document.getElementById('clKendala').value.trim();
   let sifat_kendala = null, kategori_kendala = null;
@@ -3043,11 +3181,15 @@ async function saveClosingTindakan(id, mulaiIso, selesaiIso, durasi){
     kategori_kendala = parts[1];
   }
   const finalKendala = kendala || (kategori_kendala || null);
+  const tOrig = CACHE.tindakan.find(x=>x.id===id);
+  const baseUraian = (tOrig?.uraian || '').trim();
+  const finalUraian = hasil ? (baseUraian ? `${baseUraian}\n[Hasil: ${hasil}]` : `[Hasil: ${hasil}]`) : (tOrig?.uraian ?? null);
   const { error } = await sb.from('tindakan_harian').update({
     mulai_at: mulaiIso,
     selesai_at: selesaiIso,
     durasi_detik: durasi,
     status,
+    uraian: finalUraian,
     kategori_kendala,
     sifat_kendala,
     kendala: finalKendala,
@@ -3808,7 +3950,7 @@ function renderNotifs(){
   const notifs=getNotifs();
   document.getElementById('notifDot').style.display=notifs.length?'inline-block':'none';
   document.getElementById('notifList').innerHTML=notifs.length
-    ?notifs.slice(0,10).map(n=>`<div class="notifItem" onclick="${n.action};closeNotif()"><div class="ni-title">${n.title}</div><div class="ni-sub">${n.sub}</div></div>`).join('')
+    ?notifs.slice(0,10).map(n=>`<div class="notifItem" onclick="${n.action};closeNotif()"><div class="ni-title">${esc(n.title)}</div><div class="ni-sub">${esc(n.sub)}</div></div>`).join('')
     :'<div style="padding:14px 16px;color:var(--sub);font-size:.82rem">Tidak ada notifikasi 🎉</div>';
   renderSidebarNotifs();
 }
