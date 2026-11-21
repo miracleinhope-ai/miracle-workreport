@@ -54,6 +54,8 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--gray)}
 .sideTop p{color:rgba(255,255,255,.65);font-size:.7rem;margin-top:2px}
 .btnSideHide{background:#FF6B6B;border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:.82rem;flex-shrink:0}
 .btnSideHide:hover{filter:brightness(.92)}
+.sideLateBox{margin:6px 12px 2px;padding:9px 11px;border-radius:10px;font-size:.73rem;line-height:1.45;background:rgba(244,215,212,.14);border:1px solid rgba(244,215,212,.25);color:#F4D7D4;max-height:145px;overflow-y:auto}
+.sideLateBox.late{background:rgba(255,107,107,.22);border-color:#FF6B6B;color:#fff}
 .userBadge{margin:8px 12px 6px;background:rgba(255,255,255,.15);border-radius:10px;padding:9px 11px;display:flex;align-items:center;gap:9px}
 .userAvatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.88rem;flex-shrink:0}
 .userInfo p{color:#fff;font-size:.82rem;font-weight:600}
@@ -160,7 +162,7 @@ textarea{resize:vertical;min-height:60px}
 .docEditor textarea.docBody{width:100%;min-height:300px;border:none;outline:none;font-size:.88rem;color:var(--text);resize:none;line-height:1.7}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center}
 .modalBox{background:#fff;border-radius:16px;padding:24px;width:580px;max-width:96vw;max-height:92vh;overflow-y:auto}
-.modalBox h4{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:16px}
+.modalBox h4{font-size:.95rem;font-weight:700;color:#fff;background:#3B1B4F;padding:11px 16px;border-radius:10px;margin-bottom:16px}
 .abToday{display:flex;flex-wrap:wrap;gap:8px}
 .abCard{background:var(--gray);border-radius:9px;padding:9px 12px;font-size:.79rem;display:flex;align-items:center;gap:7px}
 .abCard .dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
@@ -220,7 +222,7 @@ textarea{resize:vertical;min-height:60px}
 /* Lock overlay */
 .rLockOverlay{position:fixed;inset:0;background:rgba(15,23,42,.75);z-index:400;display:flex;align-items:center;justify-content:center}
 .rLockBox{background:#fff;border-radius:16px;padding:28px 32px;width:540px;max-width:95vw;max-height:92vh;overflow-y:auto}
-.rLockBox h3{font-size:1.05rem;font-weight:800;color:var(--text);margin-bottom:6px}
+.rLockBox h3{font-size:1.02rem;font-weight:800;color:#fff;background:#3B1B4F;padding:11px 16px;border-radius:10px;margin-bottom:10px}
 .rLockBox .rLockSub{font-size:.84rem;color:var(--sub);margin-bottom:18px}
 /* ===== DASHBOARD MODERN & CHARTS ===== */
 .dashFilter{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05);margin-bottom:16px;position:relative;z-index:1}
@@ -314,7 +316,7 @@ table thead th:last-child,.tblNeonBlue thead th:last-child{border-radius:0 8px 8
   <nav id="sideNav">
     <a data-page="dashboard" onclick="showPage('dashboard')" class="active"><span class="ico">🏠</span> Dashboard</a>
     <a data-page="rencana" onclick="showPage('rencana')" id="navRencana"><span class="ico">🗓️</span> Pekerjaan Harian</a>
-    <a data-page="pekerjaan" onclick="showPage('pekerjaan')"><span class="ico">📋</span> Pekerjaan</a>
+    <a data-page="pekerjaan" onclick="showPage('pekerjaan')"><span class="ico">📋</span> Rekap Pekerjaan</a>
     <a data-page="absensi" onclick="showPage('absensi')"><span class="ico">🕐</span> Absensi</a>
     <a data-page="docs" onclick="showPage('docs')"><span class="ico">📝</span> Docs</a>
     <a data-page="klien" onclick="showPage('klien')" id="navKlien"><span class="ico">🏢</span> Klien</a>
@@ -322,6 +324,7 @@ table thead th:last-child,.tblNeonBlue thead th:last-child{border-radius:0 8px 8
     <a data-page="users" onclick="showPage('users')" id="navUsers"><span class="ico">👥</span> Users</a>
     <a data-page="manual" onclick="showPage('manual')"><span class="ico">📖</span> Manual</a>
   </nav>
+  <div id="sideLateAlert"></div>
   <div class="userBadge">
     <div class="userAvatar" id="sideAvatar">?</div>
     <div class="userInfo"><p id="sideName">-</p><span id="sideRole">-</span></div>
@@ -334,7 +337,7 @@ table thead th:last-child,.tblNeonBlue thead th:last-child{border-radius:0 8px 8
   <div class="floatSep"></div>
   <a data-page="dashboard" data-label="Dashboard" onclick="showPage('dashboard')" class="active">🏠</a>
   <a data-page="rencana" data-label="Pekerjaan Harian" onclick="showPage('rencana')">🗓️</a>
-  <a data-page="pekerjaan" data-label="Pekerjaan" onclick="showPage('pekerjaan')">📋</a>
+  <a data-page="pekerjaan" data-label="Rekap Pekerjaan" onclick="showPage('pekerjaan')">📋</a>
   <a data-page="absensi" data-label="Absensi" onclick="showPage('absensi')">🕐</a>
   <a data-page="docs" data-label="Docs" onclick="showPage('docs')">📝</a>
   <a data-page="klien" id="fNavKlien" data-label="Klien" onclick="showPage('klien')">🏢</a>
@@ -386,6 +389,10 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 let currentUser = null, currentPage = 'dashboard', currentView = 'list';
+let userTrendState = { mode: 'bulan_ini', bulan: null, tahun: null };
+let k3Page = 1, k3PerPage = 5;
+let rencanaPage = 1, rencanaPerPage = 10;
+let dashUserPage = 1, dashUserPerPage = 5;
 let timerInterval = null, timerStart = null, timerPekId = null, timerElapsed = 0;
 let dragId = null;
 let realtimeChannel = null;
@@ -646,31 +653,28 @@ async function doLogin(){
   showPage('dashboard');
 }
 
+function getUnclosedAbsensiPrev(uid){
+  const today = todayStr();
+  return CACHE.absensi
+    .filter(a=>a.user_id===uid && a.tanggal<today && !a.jam_keluar)
+    .sort((a,b)=>a.tanggal.localeCompare(b.tanggal));
+}
+
 function continueAssistantLoginFlow(){
   if(isAdmin() || !migrationReady) return false;
   const today = todayStr();
   const uid = currentUser.id;
-  // 1. Cek jika ada tindakan belum di-closing (hari ini atau hari sebelumnya)
-  const unclosed = CACHE.tindakan
-    .filter(t=>t.user_id===uid && (t.status==='rencana'||t.status==='dikerjakan'))
-    .sort((a,b)=>a.tanggal_kerja.localeCompare(b.tanggal_kerja)||(a.created_at||'').localeCompare(b.created_at||''));
-  if(unclosed.length){
-    showPage('dashboard');
-    setTimeout(()=>showForcedClosingModal(unclosed[0].id), 250);
+  // 1. Cek jika ada hari sebelumnya yang belum Closing Akhir Hari -> arahkan ke Pekerjaan Harian (non-blocking pop-up)
+  const unclosedAbPrev = getUnclosedAbsensiPrev(uid);
+  if(unclosedAbPrev.length){
+    showPage('rencana');
     return true;
   }
-  // 2. Belum ada tindakan sama sekali hari ini -> langsung buka pop-up form rencana awal hari
+  // 2. Belum ada tindakan sama sekali hari ini -> buka pop-up form rencana awal hari
   const todayTindakan = CACHE.tindakan.filter(t=>t.user_id===uid && t.tanggal_kerja===today);
   if(!todayTindakan.length){
     showPage('dashboard');
     setTimeout(()=>showForcedRencanaModal(), 250);
-    return true;
-  }
-  // 3. Sudah ada tindakan hari ini & semua sudah di-closing, tapi belum closing akhir hari -> tanyakan lanjut atau closing akhir hari
-  const todayAb = CACHE.absensi.find(a=>a.user_id===uid && a.tanggal===today);
-  if(!todayAb || !todayAb.jam_keluar){
-    showPage('dashboard');
-    setTimeout(()=>showAfterClosingChoiceModal(), 250);
     return true;
   }
   return false;
@@ -701,7 +705,7 @@ function showPage(p){
   document.querySelectorAll('#sideNav a, #floatingMenu a').forEach(a=>{
     a.classList.toggle('active', a.dataset.page===p);
   });
-  const titles={dashboard:'Dashboard & KPI',klien:'Manajemen Klien / Rekanan',pekerjaan:'Log Pekerjaan (Datatable)',rencana:'Pekerjaan Harian',docs:'Docs',absensi:'Kalender Absensi & Aktivitas',master:'Master Data (Sistem & Tindakan)',users:'Manajemen User',manual:'Manual Pengguna'};
+  const titles={dashboard:'Dashboard & KPI',klien:'Manajemen Klien / Rekanan',pekerjaan:'Rekap Pekerjaan',rencana:'Pekerjaan Harian',docs:'Docs',absensi:'Kalender Absensi & Aktivitas',master:'Master Data (Sistem & Tindakan)',users:'Manajemen User',manual:'Manual Pengguna'};
   document.getElementById('pageTitle').textContent=titles[p]||p;
   document.getElementById('pageDate').textContent=pageDate();
   closeDetail();
@@ -717,6 +721,7 @@ function showPage(p){
   else if(p==='users')     c.innerHTML=renderUsers();
   else if(p==='manual')    c.innerHTML=renderManual();
   renderNotifs();
+  renderSidebarLateAlert();
 }
 
 // ===== MESIN KPI (K1-K15, SRK, IKU, SKU) =====
@@ -899,11 +904,33 @@ function computeKPIs(bulan, tahun, filterUserId='', filterKlienId=''){
 }
 
 // ===== DASHBOARD =====
+function renderSidebarLateAlert(kpi){
+  const box = document.getElementById('sideLateAlert');
+  if(!box || !currentUser){ if(box) box.innerHTML=''; return; }
+  if(!isAdmin()){
+    if(!loginLateInfo){ box.innerHTML=''; return; }
+    if(loginLateInfo.isLate){
+      box.innerHTML = `<div class="sideLateBox late"><b>⏰ Terlambat Masuk</b><br>Login: <b>${loginLateInfo.jam} WITA</b> (+${loginLateInfo.menitTerlambat}m)<br>Bulan ini: <b>${loginLateInfo.lateMonth}x</b> (total ${loginLateInfo.lateTotal}x)</div>`;
+    } else {
+      box.innerHTML = `<div class="sideLateBox"><b>✅ Masuk Tepat Waktu</b><br>Login: <b>${loginLateInfo.jam} WITA</b> · Telat bln ini: <b>${loginLateInfo.lateMonth}x</b></div>`;
+    }
+    return;
+  }
+  const k = kpi || computeKPIs(dashFilter.bulan, dashFilter.tahun, dashFilter.userId, dashFilter.klienId);
+  const lateUsers = k.userRows.filter(u=>u.role!=='superadmin' && (u.lateMonth>0 || u.lateTotal>0));
+  if(lateUsers.length){
+    box.innerHTML = `<div class="sideLateBox late"><b>⏰ Terlambat (&gt;08:00 WITA)</b><div style="margin-top:4px">${lateUsers.map(u=>`<div>• <b>${esc(u.nama)}</b>: ${u.lateMonth}x bln ini (tot ${u.lateTotal}x)</div>`).join('')}</div></div>`;
+  } else {
+    box.innerHTML = `<div class="sideLateBox"><b>✅ Kedisiplinan Masuk</b><br>Semua karyawan tepat waktu bulan ini.</div>`;
+  }
+}
+
 function renderDashboard(){
   const today = todayStr();
   const abHariIni = CACHE.absensi.filter(a=>a.tanggal===today);
   const isRowLate = a => a.terlambat===true || a.tipe==='Terlambat' || (a.jam && a.jam>'08:00');
   const kpi = computeKPIs(dashFilter.bulan, dashFilter.tahun, dashFilter.userId, dashFilter.klienId);
+  renderSidebarLateAlert(kpi);
 
   // ===== TAMPILAN ASISTEN / KARYAWAN =====
   if(!isAdmin()){
@@ -913,33 +940,45 @@ function renderDashboard(){
     const myDur = myToday.reduce((s,t)=>s+(t.durasi_detik||0),0);
     const myRow = kpi.userRows.find(u=>u.id===currentUser.id);
     const mySku = myRow ? myRow.sku : 100;
+    const lateBanner = '';
 
-    let lateBanner = '';
-    if(loginLateInfo && loginLateInfo.isLate){
-      lateBanner = `<div class="alertBanner danger">
-        <div style="font-size:1.3rem">⏰</div>
-        <div><b>Peringatan Keterlambatan Masuk Kerja!</b><br>
-        Hari ini Anda login pukul <b>${loginLateInfo.jam} WITA</b> (terlambat <b>${loginLateInfo.menitTerlambat} menit</b> melewati batas 08:00 WITA).<br>
-        Anda telah mengalami keterlambatan sebanyak <b>${loginLateInfo.lateMonth} kali bulan ini</b> (<b>${loginLateInfo.lateTotal} kali</b> total). Mohon jaga kedisiplinan waktu.</div>
-      </div>`;
-    } else if(loginLateInfo && loginLateInfo.lateMonth > 0){
-      lateBanner = `<div class="alertBanner info">
-        <div style="font-size:1.2rem">✅</div>
-        <div>Hari ini Anda login tepat waktu pukul <b>${loginLateInfo.jam} WITA</b>. Catatan keterlambatan bulan ini: <b>${loginLateInfo.lateMonth} kali</b>.</div>
-      </div>`;
-    }
-
+    const unclosedAbPrev = getUnclosedAbsensiPrev(currentUser.id);
     let prevBanner = '';
+    if(unclosedAbPrev.length){
+      const prevTgl = unclosedAbPrev[0].tanggal;
+      prevBanner += `<div class="alertBanner danger">
+        <div style="font-size:1.3rem">🔒</div>
+        <div style="flex:1"><b>Belum Closing Akhir Hari (${fmtDate(prevTgl)})!</b><br>
+        Anda wajib melakukan <b>Closing Akhir Hari</b> untuk hari kerja sebelumnya sebelum dapat menambah rencana baru hari ini.</div>
+        <button class="btnPrimary" style="font-size:.78rem" onclick="closingAkhirHari(false,'${prevTgl}')">🏁 Closing Akhir Hari</button>
+      </div>`;
+    }
     if(myUnclosedPrev.length){
-      prevBanner = `<div class="alertBanner warn">
-        <div style="font-size:1.3rem">⚠️</div>
-        <div style="flex:1"><b>Wajib Closing Pekerjaan Sebelumnya!</b><br>
-        Ada <b>${myUnclosedPrev.length} tindakan</b> dari tanggal sebelumnya yang belum di-closing. Selesaikan closing sebelum menambah rencana baru.</div>
-        <button class="btnPrimary" style="font-size:.78rem" onclick="showPage('rencana')">Closing Sekarang →</button>
+      const prevRows = myUnclosedPrev.map(t=>{
+        const k = CACHE.klien.find(x=>x.id===t.klien_id);
+        const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
+        const b = t.status==='rencana'
+          ? `<button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button>`
+          : `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;padding:6px 10px;border-radius:6px;margin-top:5px;color:var(--text)">
+          <span><b>${fmtDate(t.tanggal_kerja)}</b> · ${esc(k?k.nama:'-')} · ${esc(j?j.nama:'-')} (${t.status})</span>
+          ${b}
+        </div>`;
+      }).join('');
+      prevBanner += `<div class="alertBanner info">
+        <div style="font-size:1.3rem">📌</div>
+        <div style="flex:1"><b>Pekerjaan Belum Selesai Lintas Hari (${myUnclosedPrev.length} tindakan open)</b> — Dapat dibiarkan tetap open hingga benar-benar tuntas.${prevRows}</div>
       </div>`;
     }
 
-    const todayListHtml = myToday.length ? myToday.map((t,i)=>{
+    const totalDU = myToday.length;
+    const totalPagesDU = Math.max(1, Math.ceil(totalDU / dashUserPerPage));
+    if(dashUserPage > totalPagesDU) dashUserPage = totalPagesDU;
+    if(dashUserPage < 1) dashUserPage = 1;
+    const startDU = (dashUserPage - 1) * dashUserPerPage;
+    const pagedDU = myToday.slice(startDU, startDU + dashUserPerPage);
+
+    const todayListHtml = pagedDU.length ? pagedDU.map((t,i)=>{
       const k = CACHE.klien.find(x=>x.id===t.klien_id);
       const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
       const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
@@ -949,7 +988,7 @@ function renderDashboard(){
         ? `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`
         : `<span class="badge ${t.status==='selesai'?'b-done':t.status==='bermasalah'?'b-urgent':'b-warn'}">${t.status}</span>`;
       return `<tr>
-        <td>${i+1}</td>
+        <td>${startDU+i+1}</td>
         <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.72rem;color:var(--sub)">${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}</span></td>
         <td>${esc(s?s.nama:'-')}</td>
         <td>${esc(j?j.nama:'-')}${t.is_ulang?` <span class="badge b-warn">Ulang #${t.ulang_ke}</span>`:''}</td>
@@ -960,6 +999,22 @@ function renderDashboard(){
       </tr>`;
     }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--sub);padding:20px">Belum ada tindakan hari ini.</td></tr>`;
 
+    const nowW = witaMonthYear();
+    if(!userTrendState.bulan){
+      const prevM = nowW.bulan === 1 ? 12 : nowW.bulan - 1;
+      const prevY = nowW.bulan === 1 ? nowW.tahun - 1 : nowW.tahun;
+      userTrendState.bulan = prevM;
+      userTrendState.tahun = prevY;
+    }
+    const utMode = userTrendState.mode || 'bulan_ini';
+    const utTitle = utMode==='minggu_ini'
+      ? '1 Minggu Terakhir'
+      : utMode==='bulan_lalu'
+      ? `${BULAN_NAMA[userTrendState.bulan-1]} ${userTrendState.tahun}`
+      : `${BULAN_NAMA[nowW.bulan-1]} ${nowW.tahun} (Bulan Berjalan)`;
+    const utBulanOpts = BULAN_NAMA.map((b,i)=>`<option value="${i+1}" ${userTrendState.bulan===i+1?'selected':''}>${b}</option>`).join('');
+    const utTahunOpts = [nowW.tahun-1, nowW.tahun].map(y=>`<option value="${y}" ${userTrendState.tahun===y?'selected':''}>${y}</option>`).join('');
+
     return `
     ${lateBanner}
     ${prevBanner}
@@ -969,24 +1024,35 @@ function renderDashboard(){
       <div class="card"><div class="cardIcon">⏱️</div><div class="cardVal" style="font-size:1.25rem">${fmtDurHM(myDur)}</div><div class="cardLabel">Total Durasi Hari Ini</div><div class="cardAccent acc-pink"></div></div>
       <div class="card"><div class="cardIcon">⭐</div><div class="cardVal">${mySku}</div><div class="cardLabel">Skor Kualitas Anda (${BULAN_SINGKAT[dashFilter.bulan-1]})</div><div class="cardAccent acc-orange"></div></div>
     </div>
+    <div class="chartGrid">
+      <div class="chartCard span-12">
+        <div class="secHead">
+          <h4>📈 Tren Tindakan Anda — ${utTitle}</h4>
+          <div class="flex" style="flex-wrap:wrap">
+            <select style="padding:5px 9px;font-size:.78rem" onchange="userTrendState.mode=this.value;showPage('dashboard')">
+              <option value="bulan_ini" ${utMode==='bulan_ini'?'selected':''}>📅 1 Bulan Berjalan</option>
+              <option value="minggu_ini" ${utMode==='minggu_ini'?'selected':''}>📆 1 Minggu Terakhir</option>
+              <option value="bulan_lalu" ${utMode==='bulan_lalu'?'selected':''}>🗓️ Filter Bulan Sebelumnya</option>
+            </select>
+            ${utMode==='bulan_lalu' ? `<select style="padding:5px 9px;font-size:.78rem" onchange="userTrendState.bulan=+this.value;showPage('dashboard')">${utBulanOpts}</select><select style="padding:5px 9px;font-size:.78rem" onchange="userTrendState.tahun=+this.value;showPage('dashboard')">${utTahunOpts}</select>` : ''}
+          </div>
+        </div>
+        <div class="chartWrap"><canvas id="chUserTrend"></canvas></div>
+      </div>
+    </div>
     <div class="section">
       <div class="secHead">
         <h4>🗓️ Pekerjaan Harian Anda — ${fmtDateL(today)}</h4>
         <div class="flex">
           <button class="btnPrimary" style="font-size:.8rem" onclick="showForcedRencanaModal()">+ Rencanakan Pekerjaan</button>
-          <button class="btnSm btnGray" style="padding:8px 12px;font-size:.8rem" onclick="showPage('rencana')">Kelola Pekerjaan Harian →</button>
+          <button class="btnSm btnGray" title="Buka halaman Pekerjaan Harian" style="padding:8px 12px;font-size:.8rem" onclick="showPage('rencana')">Kelola Pekerjaan Harian →</button>
         </div>
       </div>
       <div style="overflow-x:auto">
         <table><thead><tr><th>#</th><th>Klien &amp; Periode</th><th>Sistem</th><th>Jenis Tindakan</th><th>Uraian</th><th>Mulai</th><th>Durasi</th><th>Aksi</th></tr></thead>
         <tbody>${todayListHtml}</tbody></table>
       </div>
-    </div>
-    <div class="chartGrid">
-      <div class="chartCard span-12">
-        <div class="secHead"><h4>📈 Tren Tindakan Anda (14 Hari Terakhir)</h4></div>
-        <div class="chartWrap"><canvas id="chUserTrend"></canvas></div>
-      </div>
+      ${renderPgBar(totalDU, dashUserPage, dashUserPerPage, 'tindakan', 'dashUserPerPage=+this.value;dashUserPage=1;showPage(\'dashboard\')', 'dashUserPage=__P__;showPage(\'dashboard\')')}
     </div>`;
   }
 
@@ -1027,19 +1093,17 @@ function renderDashboard(){
     </div>`).join('')
     : `<div style="color:var(--sub);font-size:.82rem;padding:8px 0">✅ Tidak ada klien dengan indikasi masalah atau kelalaian pada periode ini.</div>`;
 
-  // Panel Peringatan Keterlambatan Karyawan
-  const lateUsers = kpi.userRows.filter(u=>u.role!=='superadmin' && (u.lateMonth>0 || u.lateTotal>0));
-  const lateWarnHtml = lateUsers.length ? lateUsers.map(u=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#fef2f2;border-radius:7px;margin-bottom:6px;font-size:.8rem">
-      <div><b>👤 ${esc(u.nama)}</b> — <span style="color:#dc2626"><b>${u.lateMonth}x</b> terlambat bulan ini</span> (total: ${u.lateTotal}x)</div>
-      <span class="badge ${u.sku>=85?'b-done':u.sku>=70?'b-warn':'b-urgent'}">SKU: ${u.sku}</span>
-    </div>`).join('')
-    : `<div style="color:var(--sub);font-size:.82rem">✅ Semua karyawan masuk tepat waktu (≤ 08:00 WITA) bulan ini.</div>`;
+  // Tabel K3: Klien per periode + daftar tanggal (dengan paginasi 5/10/25/50)
+  const totalK3 = kpi.clientRows.length;
+  const totalPagesK3 = Math.max(1, Math.ceil(totalK3 / k3PerPage));
+  if(k3Page > totalPagesK3) k3Page = totalPagesK3;
+  if(k3Page < 1) k3Page = 1;
+  const startK3 = (k3Page - 1) * k3PerPage;
+  const pagedK3 = kpi.clientRows.slice(startK3, startK3 + k3PerPage);
 
-  // Tabel K3: Klien per periode + daftar tanggal
-  const k3Rows = kpi.clientRows.length ? kpi.clientRows.map((r,idx)=>`
+  const k3Rows = pagedK3.length ? pagedK3.map((r,idx)=>`
     <tr style="cursor:pointer" onclick="showClientKpiModal('${r.klien_id}')">
-      <td>${idx+1}</td>
+      <td>${startK3+idx+1}</td>
       <td><b>${esc(r.nama)}</b></td>
       <td><b>${r.count}x</b> ${r.ulang?`<span class="badge b-warn">${r.ulang} ulang</span>`:''}</td>
       <td style="font-size:.75rem;color:var(--sub)">${r.dates.map(d=>fmtDateL(d).slice(0,6)).join(', ')}</td>
@@ -1048,6 +1112,26 @@ function renderDashboard(){
       <td style="font-size:.76rem">${r.diagnosis}</td>
     </tr>`).join('')
     : `<tr><td colspan="7" style="text-align:center;color:var(--sub);padding:18px">Belum ada transaksi tindakan pada ${BULAN_NAMA[dashFilter.bulan-1]} ${dashFilter.tahun}.</td></tr>`;
+
+  const k3PageNums = [];
+  for(let i=1;i<=totalPagesK3;i++){
+    if(i===1||i===totalPagesK3||(i>=k3Page-1&&i<=k3Page+1)) k3PageNums.push(i);
+    else if(k3PageNums[k3PageNums.length-1]!=='...') k3PageNums.push('...');
+  }
+  const k3PgBar = totalK3 > 0 ? `<div class="pgBar">
+    <div class="pgLeft">
+      <span>Tampilkan</span>
+      <select onchange="k3PerPage=+this.value;k3Page=1;showPage('dashboard')">
+        ${[5,10,25,50].map(n=>`<option value="${n}" ${k3PerPage===n?'selected':''}>${n} baris</option>`).join('')}
+      </select>
+      <span>${startK3+1}-${Math.min(startK3+k3PerPage,totalK3)} dari ${totalK3} klien</span>
+    </div>
+    <div class="pgNums">
+      <button class="pgBtn" title="Halaman sebelumnya" onclick="k3Page--;showPage('dashboard')" ${k3Page<=1?'disabled style="opacity:.4;cursor:not-allowed"':''}>‹</button>
+      ${k3PageNums.map(n=>n==='...'?'<span style="padding:0 4px;color:var(--sub)">…</span>':`<button class="pgBtn ${n===k3Page?'active':''}" onclick="k3Page=${n};showPage('dashboard')">${n}</button>`).join('')}
+      <button class="pgBtn" title="Halaman berikutnya" onclick="k3Page++;showPage('dashboard')" ${k3Page>=totalPagesK3?'disabled style="opacity:.4;cursor:not-allowed"':''}>›</button>
+    </div>
+  </div>` : '';
 
   const soon = nowWitaDate(); soon.setDate(soon.getDate()+7);
   const soonList = CACHE.pekerjaan.filter(p=>p.deadline&&p.status!=='Selesai'&&new Date(p.deadline)<=soon&&new Date(p.deadline)>=nowWitaDate()&&!p.parent_id).slice(0,4);
@@ -1058,10 +1142,10 @@ function renderDashboard(){
 
   <div class="dashFilter">
     <b style="font-size:.82rem;color:var(--text)">📅 Periode KPI:</b>
-    <select onchange="dashFilter.bulan=+this.value;showPage('dashboard')">${bulanOpts}</select>
-    <select onchange="dashFilter.tahun=+this.value;showPage('dashboard')">${tahunOpts}</select>
-    <select onchange="dashFilter.userId=this.value;showPage('dashboard')"><option value="">Semua Karyawan</option>${userOpts}</select>
-    <select onchange="dashFilter.klienId=this.value;showPage('dashboard')"><option value="">Semua Klien</option>${klienOpts}</select>
+    <select onchange="dashFilter.bulan=+this.value;k3Page=1;showPage('dashboard')">${bulanOpts}</select>
+    <select onchange="dashFilter.tahun=+this.value;k3Page=1;showPage('dashboard')">${tahunOpts}</select>
+    <select onchange="dashFilter.userId=this.value;k3Page=1;showPage('dashboard')"><option value="">Semua Karyawan</option>${userOpts}</select>
+    <select onchange="dashFilter.klienId=this.value;k3Page=1;showPage('dashboard')"><option value="">Semua Klien</option>${klienOpts}</select>
     <button class="btnPrimary" style="margin-left:auto;font-size:.78rem;padding:7px 14px" onclick="showPage('rencana')">Lihat Pekerjaan Harian →</button>
   </div>
 
@@ -1074,15 +1158,9 @@ function renderDashboard(){
     <div class="card"><div class="cardIcon">🔁</div><div class="cardVal" style="color:${kpi.rrPct>15?'var(--red)':'var(--text)'}">${kpi.rrPct}%</div><div class="cardLabel">Rasio Pengulangan (${kpi.prPct}% kendala)</div><div class="cardAccent acc-orange"></div></div>
   </div>
 
-  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px;position:relative;z-index:1;margin-bottom:14px">
-    <div class="section" style="margin-bottom:0">
-      <div class="secHead"><h4>🚨 Peringatan Klien &amp; Indikasi Kelalaian (SRK / IKU)</h4></div>
-      ${alertHtml}
-    </div>
-    <div class="section" style="margin-bottom:0">
-      <div class="secHead"><h4>⏰ Rekap Keterlambatan Karyawan (&gt; 08:00 WITA)</h4></div>
-      ${lateWarnHtml}
-    </div>
+  <div class="section">
+    <div class="secHead"><h4>🚨 Peringatan Klien &amp; Indikasi Kelalaian (SRK / IKU)</h4></div>
+    ${alertHtml}
   </div>
 
   <div class="chartGrid">
@@ -1119,6 +1197,7 @@ function renderDashboard(){
       <table><thead><tr><th>#</th><th>Klien / Rekanan</th><th>Frekuensi</th><th>Tanggal Dikerjakan</th><th>Total Waktu</th><th>SRK</th><th>Analisis Penyebab</th></tr></thead>
       <tbody>${k3Rows}</tbody></table>
     </div>
+    ${k3PgBar}
   </div>
 
   <div class="section">
@@ -1147,23 +1226,48 @@ function initDashboardCharts(){
   const kpi = computeKPIs(dashFilter.bulan, dashFilter.tahun, dashFilter.userId, dashFilter.klienId);
   const PALETTE = ['#2563eb','#ec4899','#10b981','#f59e0b','#8b5cf6','#06b6d4','#ef4444','#14b8a6','#6366f1','#f97316','#64748b'];
 
-  // Jika asisten: grafik 14 hari pribadi
+  // Jika asisten: grafik tren pribadi (1 bulan berjalan / 1 minggu terakhir / bulan sebelumnya)
   const elUserTrend = document.getElementById('chUserTrend');
   if(elUserTrend && currentUser){
     const labels=[], tot=[], ulg=[];
-    for(let i=13;i>=0;i--){
-      const d = nowWitaDate(); d.setDate(d.getDate()-i);
-      const ds = todayStr(d);
-      labels.push(fmtDateL(ds).slice(0,6));
-      const list = CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja===ds);
-      tot.push(list.length);
-      ulg.push(list.filter(t=>t.is_ulang).length);
+    const utMode = userTrendState.mode || 'bulan_ini';
+    const nowW = witaMonthYear();
+    if(utMode === 'minggu_ini'){
+      for(let i=6;i>=0;i--){
+        const d = nowWitaDate(); d.setDate(d.getDate()-i);
+        const ds = todayStr(d);
+        labels.push(fmtDateL(ds).slice(0,6));
+        const list = CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja===ds);
+        tot.push(list.length);
+        ulg.push(list.filter(t=>t.is_ulang).length);
+      }
+    } else if(utMode === 'bulan_lalu'){
+      const m = userTrendState.bulan || (nowW.bulan===1?12:nowW.bulan-1);
+      const y = userTrendState.tahun || (nowW.bulan===1?nowW.tahun-1:nowW.tahun);
+      const daysInMonth = new Date(y, m, 0).getDate();
+      for(let day=1; day<=daysInMonth; day++){
+        const ds = `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        labels.push(String(day).padStart(2,'0')+'/'+String(m).padStart(2,'0'));
+        const list = CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja===ds);
+        tot.push(list.length);
+        ulg.push(list.filter(t=>t.is_ulang).length);
+      }
+    } else {
+      const m = nowW.bulan, y = nowW.tahun;
+      const curDay = nowWitaDate().getDate();
+      for(let day=1; day<=curDay; day++){
+        const ds = `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        labels.push(String(day).padStart(2,'0')+'/'+String(m).padStart(2,'0'));
+        const list = CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja===ds);
+        tot.push(list.length);
+        ulg.push(list.filter(t=>t.is_ulang).length);
+      }
     }
     dashCharts.userTrend = new Chart(elUserTrend, {
       type:'line',
       data:{ labels, datasets:[
-        { label:'Total Tindakan', data:tot, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.12)', fill:true, tension:.35 },
-        { label:'Pengulangan', data:ulg, borderColor:'#f59e0b', tension:.35 }
+        { label:'Total Tindakan', data:tot, borderColor:'#7A2E6F', backgroundColor:'rgba(214,89,143,.16)', fill:true, tension:.35 },
+        { label:'Pengulangan', data:ulg, borderColor:'#FF6B6B', tension:.35 }
       ]},
       options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
     });
@@ -1436,6 +1540,34 @@ async function delKlien(id){
 const KATEGORI=['Laporan Keuangan','SPT Tahunan','SPT Masa','Rekonsiliasi','Audit','Payroll','Pembukuan','Lainnya'];
 let pekMode = 'datatable'; // 'datatable' | 'proyek'
 
+function renderPgBar(total, pg, rpp, unitLabel, onPerPageJs, onPageTpl){
+  if(total <= 0) return '';
+  const totalPages = Math.max(1, Math.ceil(total / rpp));
+  const cur = Math.min(Math.max(1, pg), totalPages);
+  const start = (cur - 1) * rpp;
+  const nums = [];
+  for(let i=1;i<=totalPages;i++){
+    if(i===1||i===totalPages||(i>=cur-1&&i<=cur+1)) nums.push(i);
+    else if(nums[nums.length-1]!=='...') nums.push('...');
+  }
+  const prevJs = onPageTpl.replace('__P__', String(cur-1));
+  const nextJs = onPageTpl.replace('__P__', String(cur+1));
+  return `<div class="pgBar">
+    <div class="pgLeft">
+      <span>Tampilkan</span>
+      <select onchange="${onPerPageJs}">
+        ${[5,10,25,50].map(n=>`<option value="${n}" ${rpp===n?'selected':''}>${n} baris</option>`).join('')}
+      </select>
+      <span>${start+1}-${Math.min(start+rpp,total)} dari ${total} ${unitLabel}</span>
+    </div>
+    <div class="pgNums">
+      <button class="pgBtn" title="Halaman sebelumnya" onclick="${prevJs}" ${cur<=1?'disabled style="opacity:.4;cursor:not-allowed"':''}>‹</button>
+      ${nums.map(n=>n==='...'?'<span style="padding:0 4px;color:var(--sub)">…</span>':`<button class="pgBtn ${n===cur?'active':''}" onclick="${onPageTpl.replace('__P__', String(n))}">${n}</button>`).join('')}
+      <button class="pgBtn" title="Halaman berikutnya" onclick="${nextJs}" ${cur>=totalPages?'disabled style="opacity:.4;cursor:not-allowed"':''}>›</button>
+    </div>
+  </div>`;
+}
+
 function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
   if(pekMode === 'datatable'){
     const dari = pekFilter.dari || '';
@@ -1535,17 +1667,7 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
         <table><thead><tr><th>#</th><th>Tanggal</th><th>Nama User</th><th>Rekanan / Klien</th><th>Sistem</th><th>Jenis Tindakan</th><th>Uraian</th><th>Mulai</th><th>Selesai</th><th>Lama Pekerjaan</th><th>Status &amp; Kendala</th><th>Diskusi</th></tr></thead>
         <tbody>${trs}</tbody></table>
       </div>
-      <div class="pagination">
-        <span class="rowsLabel">Baris per halaman:</span>
-        <select onchange="rowsPerPagePek=+this.value;pagePek=1;showPage('pekerjaan')">
-          <option value="10" ${rpp===10?'selected':''}>10</option>
-          <option value="20" ${rpp===20?'selected':''}>20</option>
-          <option value="50" ${rpp===50?'selected':''}>50</option>
-        </select>
-        <button class="btnSm btnGray" title="Halaman sebelumnya" onclick="pagePek--;document.getElementById('pageContent').innerHTML=renderPekerjaan('','','','','',pagePek,rowsPerPagePek)" ${pg<=1?'disabled':''}>‹</button>
-        <span>Hal ${pg} / ${totalPages} (${total} data)</span>
-        <button class="btnSm btnGray" title="Halaman berikutnya" onclick="pagePek++;document.getElementById('pageContent').innerHTML=renderPekerjaan('','','','','',pagePek,rowsPerPagePek)" ${pg>=totalPages?'disabled':''}>›</button>
-      </div>
+      ${renderPgBar(total, pg, rpp, 'data', 'rowsPerPagePek=+this.value;pagePek=1;showPage(\'pekerjaan\')', 'pagePek=__P__;showPage(\'pekerjaan\')')}
     </div>`;
   }
 
@@ -1586,17 +1708,7 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=1,rpp=rowsPerPagePek){
           ${canEdit?`<button class="btnSm btnEdit" title="Edit pekerjaan" onclick="modalPek('${p.id}')">✏️</button><button class="btnSm btnDanger" title="Hapus pekerjaan" onclick="delPek('${p.id}')">🗑️</button>`:'<span style="font-size:.74rem;color:var(--sub)">🔒</span>'}
         </td></tr>`;
     }).join(''):`<tr><td colspan="10" style="color:var(--sub);text-align:center;padding:20px">Tidak ada data</td></tr>`;
-    const pagination=`<div class="pagination">
-      <span class="rowsLabel">Baris per halaman:</span>
-      <select onchange="rowsPerPagePek=+this.value;pagePek=1;renderPekerjaanPage()">
-        <option value="10" ${rpp===10?'selected':''}>10</option>
-        <option value="15" ${rpp===15?'selected':''}>15</option>
-        <option value="20" ${rpp===20?'selected':''}>20</option>
-      </select>
-      <button class="btnSm btnGray" title="Halaman sebelumnya" onclick="pagePek--;renderPekerjaanPage()" ${pg<=1?'disabled':''}>‹</button>
-      <span>Hal ${pg} / ${totalPages} (${total} data)</span>
-      <button class="btnSm btnGray" title="Halaman berikutnya" onclick="pagePek++;renderPekerjaanPage()" ${pg>=totalPages?'disabled':''}>›</button>
-    </div>`;
+    const pagination = renderPgBar(total, pg, rpp, 'data', 'rowsPerPagePek=+this.value;pagePek=1;renderPekerjaanPage()', 'pagePek=__P__;renderPekerjaanPage()');
     viewContent=`<div style="overflow-x:auto"><table><thead><tr><th>Pekerjaan</th><th>Klien</th><th>Kategori</th><th>Status</th><th>Prioritas</th><th>Dikerjakan</th><th>Tgl</th><th>Deadline</th><th>Waktu</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>${pagination}`;
   } else if(currentView==='board'){
     const cols=['Belum Dimulai','Dalam Proses','Selesai'];
@@ -2206,7 +2318,7 @@ function showAbsensiDayDetailModal(uid, ds){
     const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
     const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
     return `<tr>
-      <td>${i+1}</td>
+      <td>${startRen+i+1}</td>
       <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.7rem;color:var(--sub)">${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}</span></td>
       <td>${esc(s?s.nama:'-')}</td>
       <td>${esc(j?j.nama:'-')}${t.is_ulang?` <span class="badge b-warn">Ulang</span>`:''}</td>
@@ -2421,10 +2533,11 @@ function renderRencana(){
   const fltKlien = tindakanFilter.klienId || '';
   const fltUser = isAdmin() ? (tindakanFilter.userId || '') : currentUser.id;
 
-  // Cek baris belum closing dari hari sebelumnya (untuk asisten)
+  // Cek tindakan masih open lintas hari & absensi hari sebelumnya yang belum Closing Akhir Hari (untuk asisten)
   const unclosedPrev = !isAdmin()
     ? CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja<today && (t.status==='rencana'||t.status==='dikerjakan'))
     : [];
+  const unclosedAbPrev = !isAdmin() ? getUnclosedAbsensiPrev(currentUser.id) : [];
 
   let list = CACHE.tindakan.filter(t=>t.tanggal_kerja===fltTgl);
   if(fltUser) list = list.filter(t=>t.user_id===fltUser);
@@ -2456,27 +2569,46 @@ function renderRencana(){
     </div>`;
   }).join('') || `<div style="color:var(--sub);font-size:.82rem">Belum ada tindakan pada tanggal ${fmtDateL(fltTgl)}.</div>`;
 
-  // Unclosed previous banner
-  const unclosedHtml = unclosedPrev.length ? `
+  const unclosedAbHtml = unclosedAbPrev.length ? `
     <div class="alertBanner danger">
       <div style="font-size:1.3rem">🔒</div>
       <div style="flex:1">
-        <b>Ada ${unclosedPrev.length} Tindakan Hari Sebelumnya Belum Di-Closing!</b><br>
-        Anda wajib melakukan closing untuk pekerjaan tanggal sebelumnya sebelum menambah rencana hari ini:
+        <b>Belum Closing Akhir Hari (${fmtDate(unclosedAbPrev[0].tanggal)})!</b><br>
+        Anda tidak dapat menambah rencana baru hari ini sebelum melakukan <b>Closing Akhir Hari</b> untuk tanggal tersebut (pekerjaan yang masih open boleh tetap dibiarkan open).
+      </div>
+      <button class="btnPrimary" onclick="closingAkhirHari(false,'${unclosedAbPrev[0].tanggal}')">🏁 Closing Akhir Hari (${fmtDate(unclosedAbPrev[0].tanggal)})</button>
+    </div>` : '';
+
+  // Unclosed previous tasks (non-blocking, lintas hari)
+  const unclosedHtml = unclosedAbHtml + (unclosedPrev.length ? `
+    <div class="alertBanner info">
+      <div style="font-size:1.3rem">📌</div>
+      <div style="flex:1">
+        <b>Pekerjaan Belum Selesai Lintas Hari (${unclosedPrev.length} Tindakan Open)</b><br>
+        Tindakan berikut tetap open lintas hari dan baru perlu di-closing saat sudah benar-benar tuntas:
         <div style="margin-top:8px">
           ${unclosedPrev.map(t=>{
             const k=CACHE.klien.find(x=>x.id===t.klien_id);
             const j=CACHE.jenis.find(x=>x.id===t.jenis_id);
-            return `<div style="display:flex;justify-content:space-between;align-items:center;background:#fff;padding:6px 10px;border-radius:6px;margin-bottom:4px;color:var(--text)">
-              <span><b>${fmtDate(t.tanggal_kerja)}</b> · ${esc(k?k.nama:'-')} · ${esc(j?j.nama:'-')}</span>
-              <button class="btnTiny" title="Closing tindakan ini sekarang" onclick="selesaiTindakan('${t.id}')">⏹ Closing Sekarang</button>
+            const act = t.status==='rencana'
+              ? `<button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button> <button class="btnTiny" title="Closing tindakan ini sekarang" onclick="selesaiTindakan('${t.id}')">⏹ Closing</button>`
+              : `<button class="btnTiny" title="Closing tindakan ini sekarang" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`;
+            return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;padding:6px 10px;border-radius:6px;margin-bottom:4px;color:var(--text)">
+              <span><b>${fmtDate(t.tanggal_kerja)}</b> · ${esc(k?k.nama:'-')} · ${esc(j?j.nama:'-')} (${t.status})</span>
+              <div>${act}</div>
             </div>`;
           }).join('')}
         </div>
       </div>
-    </div>` : '';
+    </div>` : '');
 
-  const rowsHtml = list.length ? list.map((t,i)=>{
+  const totalPagesRen = Math.max(1, Math.ceil(total / rencanaPerPage));
+  if(rencanaPage > totalPagesRen) rencanaPage = totalPagesRen;
+  if(rencanaPage < 1) rencanaPage = 1;
+  const startRen = (rencanaPage - 1) * rencanaPerPage;
+  const pagedRen = list.slice(startRen, startRen + rencanaPerPage);
+
+  const rowsHtml = pagedRen.length ? pagedRen.map((t,i)=>{
     const u = CACHE.users.find(x=>x.id===t.user_id);
     const k = CACHE.klien.find(x=>x.id===t.klien_id);
     const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
@@ -2497,12 +2629,13 @@ function renderRencana(){
       } else if(t.status==='dikerjakan'){
         actBtns = `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`;
       } else {
-        actBtns = `<span style="font-size:.72rem;color:var(--sub)">Tutup ${t.closing_at?fmtTimeWita(t.closing_at):''}</span>`;
+        actBtns = `<span style="font-size:.72rem;color:var(--sub)">Tutup ${t.closing_at?fmtTimeWita(t.closing_at):''}</span>
+          <button class="btnSm btnEdit" title="Ubah keterangan pekerjaan (jam mulai &amp; selesai tidak dapat diubah)" onclick="modalEditKeteranganTindakan('${t.id}')">✏️ Keterangan</button>`;
       }
     }
 
     return `<tr>
-      <td>${i+1}</td>
+      <td>${startRen+i+1}</td>
       ${isAdmin()?`<td><b>${esc(u?u.nama:'-')}</b></td>`:''}
       <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.72rem;color:var(--sub)">Periode: ${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}</span></td>
       <td>${esc(s?s.nama:'-')}</td>
@@ -2517,13 +2650,16 @@ function renderRencana(){
   }).join('') : `<tr><td colspan="${isAdmin()?11:10}" style="text-align:center;color:var(--sub);padding:24px">Belum ada tindakan pada tanggal ini.</td></tr>`;
 
   const todayAb = !isAdmin() ? CACHE.absensi.find(a=>a.user_id===currentUser.id && a.tanggal===today) : null;
-  const endDayBtn = (!isAdmin() && !unclosedPrev.length && total>0 && !rProc && (!todayAb || !todayAb.jam_keluar))
-    ? `<button class="btnSm" style="background:#059669;color:#fff;padding:9px 14px;font-size:.82rem;font-weight:600" onclick="closingAkhirHari()">🏁 Closing Akhir Hari</button>`
+  const todayOpenCount = !isAdmin() ? CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja===today && (t.status==='rencana'||t.status==='dikerjakan')).length : 0;
+  const endDayBtn = (!isAdmin() && !unclosedAbPrev.length && total>0 && (!todayAb || !todayAb.jam_keluar))
+    ? (todayOpenCount > 0
+        ? `<button class="btnPrimary" style="opacity:.5;cursor:not-allowed" disabled title="Selesaikan/closing semua pekerjaan hari ini terlebih dahulu">🏁 Closing Akhir Hari (${todayOpenCount} belum selesai)</button>`
+        : `<button class="btnPrimary" title="Akhiri pekerjaan hari ini &amp; catat jam keluar" onclick="closingAkhirHari()">🏁 Closing Akhir Hari</button>`)
     : (todayAb && todayAb.jam_keluar ? `<span class="badge b-done">🏁 Selesai Hari Ini (${todayAb.jam_keluar} WITA)</span>` : '');
 
-  const addBtn = unclosedPrev.length
-    ? `<button class="btnPrimary" style="opacity:.5;cursor:not-allowed" disabled>+ Tambah Tindakan (Closing kemarin dulu)</button>`
-    : `<div class="flex">${endDayBtn}<button class="btnPrimary" onclick="modalTambahRencana()">+ Tambah Tindakan Harian</button></div>`;
+  const addBtn = unclosedAbPrev.length
+    ? `<button class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem;opacity:.5;cursor:not-allowed" disabled title="Lakukan Closing Akhir Hari sebelumnya terlebih dahulu">+ Tambah Tindakan (Closing Akhir Hari kemarin dulu)</button>`
+    : `<div class="flex">${endDayBtn}<button class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem" title="Tambah rencana tindakan harian baru" onclick="modalTambahRencana()">+ Tambah Tindakan Harian</button></div>`;
 
   const klienOpts = CACHE.klien.map(k=>`<option value="${k.id}" ${fltKlien===k.id?'selected':''}>${esc(k.nama)}</option>`).join('');
   const userOpts = CACHE.users.filter(u=>u.role!=='superadmin').map(u=>`<option value="${u.id}" ${fltUser===u.id?'selected':''}>${esc(u.nama)}</option>`).join('');
@@ -2536,9 +2672,9 @@ function renderRencana(){
         ${addBtn}
       </div>
       <div class="filterBar">
-        <input type="date" value="${fltTgl}" onchange="tindakanFilter.tanggal=this.value;showPage('rencana')"/>
-        <select onchange="tindakanFilter.klienId=this.value;showPage('rencana')"><option value="">Semua Klien</option>${klienOpts}</select>
-        ${isAdmin()?`<select onchange="tindakanFilter.userId=this.value;showPage('rencana')"><option value="">Semua Karyawan</option>${userOpts}</select>`:''}
+        <input type="date" value="${fltTgl}" onchange="tindakanFilter.tanggal=this.value;rencanaPage=1;showPage('rencana')"/>
+        <select onchange="tindakanFilter.klienId=this.value;rencanaPage=1;showPage('rencana')"><option value="">Semua Klien</option>${klienOpts}</select>
+        ${isAdmin()?`<select onchange="tindakanFilter.userId=this.value;rencanaPage=1;showPage('rencana')"><option value="">Semua Karyawan</option>${userOpts}</select>`:''}
       </div>
       <div class="kpiRow">
         <div class="kpiBox"><span class="kv">${total}</span><span class="kl">Total Tindakan</span></div>
@@ -2555,6 +2691,7 @@ function renderRencana(){
         <table><thead><tr><th>#</th>${isAdmin()?'<th>User</th>':''}<th>Klien &amp; Periode</th><th>Sistem</th><th>Jenis Tindakan</th><th>Uraian</th><th>Mulai</th><th>Selesai</th><th>Durasi</th><th>Status &amp; Kendala</th><th>Aksi</th></tr></thead>
         <tbody>${rowsHtml}</tbody></table>
       </div>
+      ${renderPgBar(total, rencanaPage, rencanaPerPage, 'tindakan', 'rencanaPerPage=+this.value;rencanaPage=1;showPage(\'rencana\')', 'rencanaPage=__P__;showPage(\'rencana\')')}
     </div>
   </div>`;
 }
@@ -2624,6 +2761,11 @@ function cekRiwayatTindakan(prefix){
 }
 
 function showForcedRencanaModal(){
+  if(!isAdmin() && getUnclosedAbsensiPrev(currentUser.id).length){
+    toast('⛔ Lakukan Closing Akhir Hari sebelumnya terlebih dahulu!');
+    showPage('rencana');
+    return;
+  }
   document.getElementById('rencanaForceOverlay')?.remove();
   const overlay=document.createElement('div');
   overlay.className='rLockOverlay'; overlay.id='rencanaForceOverlay';
@@ -2643,10 +2785,8 @@ function showForcedRencanaModal(){
 }
 
 function modalTambahRencana(){
-  const today = todayStr();
-  const unclosedPrev = !isAdmin() ? CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja<today && (t.status==='rencana'||t.status==='dikerjakan')) : [];
-  if(unclosedPrev.length){
-    toast('⛔ Selesaikan closing hari sebelumnya terlebih dahulu!'); return;
+  if(!isAdmin() && getUnclosedAbsensiPrev(currentUser.id).length){
+    toast('⛔ Lakukan Closing Akhir Hari sebelumnya terlebih dahulu!'); return;
   }
   document.getElementById('modalBox').innerHTML=`<h4>➕ Tambah Tindakan Harian</h4>
     ${buildTindakanFormHtml('mr')}
@@ -2689,6 +2829,11 @@ async function submitTindakan(prefix, isForced){
   };
   const { error } = await sb.from('tindakan_harian').insert(payload);
   if(error) return alert('Gagal menyimpan: ' + error.message);
+
+  const todayAb = CACHE.absensi.find(a=>a.user_id===currentUser.id && a.tanggal===todayStr());
+  if(todayAb && (todayAb.jam_keluar || todayAb.closing_hari_at)){
+    await sb.from('absensi').update({ jam_keluar: null, closing_hari_at: null }).eq('id', todayAb.id);
+  }
 
   await loadAll();
   if(isForced){
@@ -2790,21 +2935,52 @@ function showAfterClosingChoiceModal(){
   document.body.appendChild(overlay);
 }
 
-async function closingAkhirHari(fromOverlay=false){
+function modalEditKeteranganTindakan(id){
+  const t = CACHE.tindakan.find(x=>x.id===id); if(!t) return;
+  const k = CACHE.klien.find(x=>x.id===t.klien_id);
+  const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
+  const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
+  document.getElementById('modalBox').innerHTML = `<h4>✏️ Ubah Keterangan Pekerjaan</h4>
+    <div style="background:var(--gray);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:.82rem">
+      <b>${esc(k?k.nama:'-')}</b> — ${esc(s?s.nama:'-')} · ${esc(j?j.nama:'-')}<br>
+      Mulai: <b>${t.mulai_at?fmtTimeWita(t.mulai_at):'-'}</b> · Selesai: <b>${t.selesai_at?fmtTimeWita(t.selesai_at):'-'}</b> · Durasi: <b>${t.durasi_detik?fmtDurHM(t.durasi_detik):'-'}</b><br>
+      <span style="font-size:.73rem;color:var(--sub)">Jam mulai, jam selesai, dan durasi terkunci dan tidak dapat diubah.</span>
+    </div>
+    <div class="formGrid">
+      <div class="formGroup full"><label>Keterangan / Uraian Pekerjaan</label>
+        <textarea id="ekUraian" style="min-height:90px" placeholder="Tulis keterangan pekerjaan...">${esc(t.uraian||'')}</textarea>
+      </div>
+    </div>
+    <div class="flex mt10">
+      <button class="btnPrimary" onclick="saveEditKeteranganTindakan('${id}')">💾 Simpan Keterangan</button>
+      <button onclick="closeModal()" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">Batal</button>
+    </div>`;
+  document.getElementById('modalWrap').classList.remove('hidden');
+}
+
+async function saveEditKeteranganTindakan(id){
+  const uraian = document.getElementById('ekUraian').value.trim();
+  const { error } = await sb.from('tindakan_harian').update({ uraian }).eq('id', id);
+  if(error) return alert('Gagal mengubah keterangan: '+error.message);
+  closeModal();
+  await loadAll();
+  showPage(currentPage);
+  toast('✅ Keterangan pekerjaan diperbarui!');
+}
+
+async function closingAkhirHari(fromOverlay=false, targetTanggal=null){
   await syncServerTime();
-  const today = todayStr();
+  const tgl = targetTanggal || todayStr();
   const jamKeluar = nowTime();
   const nowIso = nowWitaDate().toISOString();
 
-  // Pastikan tidak ada yang masih terbuka
-  const openTasks = CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja<=today && (t.status==='rencana'||t.status==='dikerjakan'));
-  if(openTasks.length){
-    toast('⚠️ Masih ada tindakan yang belum di-closing!');
-    if(fromOverlay){ document.getElementById('rencanaForceOverlay')?.remove(); showForcedClosingModal(openTasks[0].id); }
+  const openForDay = CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja===tgl && (t.status==='rencana'||t.status==='dikerjakan'));
+  if(openForDay.length){
+    toast('⚠️ Masih ada pekerjaan di tanggal tersebut yang belum selesai/closing!');
     return;
   }
 
-  const ab = CACHE.absensi.find(a=>a.user_id===currentUser.id && a.tanggal===today);
+  const ab = CACHE.absensi.find(a=>a.user_id===currentUser.id && a.tanggal===tgl);
   if(ab){
     const { error } = await sb.from('absensi').update({ jam_keluar: jamKeluar, closing_hari_at: nowIso }).eq('id', ab.id);
     if(error){
