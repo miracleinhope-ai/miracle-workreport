@@ -2517,7 +2517,7 @@ function showAbsensiDayDetailModal(uid, ds, fromSummary=false){
     const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
     const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
     return `<tr>
-      <td>${startRen+i+1}</td>
+      <td>${i+1}</td>
       <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.7rem;color:var(--sub)">${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}</span></td>
       <td>${esc(s?s.nama:'-')}</td>
       <td>${esc(j?j.nama:'-')}${t.is_ulang?` <span class="badge b-warn">Ulang</span>`:''}</td>
