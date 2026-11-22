@@ -3685,6 +3685,71 @@ function renderManual(){
         <tr><td><b>Dashboard User / Asisten</b></td><td>Menampilkan 4 Kartu KPI pribadi, <b>Grafik Tren Tindakan</b> (dengan filter <i>1 Bulan Berjalan</i>, <i>1 Minggu Terakhir</i>, &amp; <i>Filter Bulan Sebelumnya</i>), kotak <b>Pekerjaan Belum Selesai Lintas Hari</b>, dan datatable <b>Pekerjaan Harian Anda</b> lengkap dengan paginasi.</td></tr>
       </tbody>
     </table>
+
+    <h5 style="font-size:.9rem;font-weight:700;margin:16px 0 8px;color:var(--text)">📐 Rumus &amp; Logika Perhitungan KPI (User &amp; Klien Bulanan)</h5>
+    <p style="font-size:.82rem;color:var(--sub);margin-bottom:10px">Sistem Miracle Work Report menghitung performa staf dan tingkat risiko klien secara otomatis setiap bulan berdasarkan tindakan pekerjaan yang dicatat:</p>
+    <table>
+      <thead><tr><th>Metrik / KPI</th><th>Rumus &amp; Logika Perhitungan</th><th>Tujuan &amp; Interpretasi</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>1. SKU (Skor Kualitas User)</b><br><span style="font-size:.71rem;color:var(--sub)">Skala 0 – 100</span></td>
+          <td><code>100 - 100 × [ (0.4 × RR) + (0.3 × PR_int) + (0.2 × (1 - K7)) + (0.1 × (1 - K5)) ]</code><br>
+            <ul style="padding-left:14px;margin:4px 0 0;font-size:.73rem">
+              <li><b>RR (40%):</b> Rasio Tindakan Berulang / Total Tindakan staf.</li>
+              <li><b>PR_int (30%):</b> Rasio Kendala Internal (Kelalaian) / Total Tindakan staf.</li>
+              <li><b>K7 (20%):</b> Persentase Same-Day Closing (pekerjaan selesai di hari kerja yang sama).</li>
+              <li><b>K5 (10%):</b> Kepatuhan Jam Masuk Absensi (≤ 08:00 WITA).</li>
+            </ul>
+          </td>
+          <td>Mengukur kedisiplinan, ketelitian, dan efisiensi kerja staf secara objektif setiap bulan. Semakin tinggi skor mendekati 100, semakin berkualitas hasil kerja staf.</td>
+        </tr>
+        <tr>
+          <td><b>2. K3 (Rincian Klien Dikerjakan)</b></td>
+          <td>
+            <ul style="padding-left:14px;margin:2px 0 0;font-size:.73rem">
+              <li><b>Frekuensi:</b> Jumlah seluruh sesi tindakan pekerjaan untuk klien tersebut dalam bulan terpilih.</li>
+              <li><b>Tanggal Dikerjakan:</b> Daftar tanggal unik saat pekerjaan klien tersebut dilakukan.</li>
+              <li><b>Total Waktu:</b> Akumulasi durasi riil (jam &amp; menit) seluruh sesi tindakan pada klien.</li>
+            </ul>
+          </td>
+          <td>Mengetahui intensitas dan total waktu kerja operasional kantor yang dihabiskan untuk melayani masing-masing klien/rekanan setiap bulan.</td>
+        </tr>
+        <tr>
+          <td><b>3. SRK (Skor Risiko Klien)</b><br><span style="font-size:.71rem;color:var(--sub)">Skala 0 – 100</span></td>
+          <td><code>100 × [ (0.35 × RR) + (0.30 × PR) + (0.20 × RelDur) + (0.15 × FRel) ]</code><br>
+            <ul style="padding-left:14px;margin:4px 0 0;font-size:.73rem">
+              <li><b>RR (35%):</b> Rasio Pengulangan Tindakan pada klien terkait.</li>
+              <li><b>PR (30%):</b> Rasio Kendala / Masalah yang dilaporkan pada klien.</li>
+              <li><b>RelDur (20%):</b> Durasi rata-rata pengerjaan klien relatif terhadap median kantor.</li>
+              <li><b>FRel (15%):</b> Frekuensi tindakan klien relatif terhadap klien paling sering dikerjakan.</li>
+            </ul>
+          </td>
+          <td>
+            Mendeteksi klien yang memakan waktu berlebih dan berisiko:<br>
+            <span class="badge b-urgent">🔴 Kritis (SRK ≥ 50)</span><br>
+            <span class="badge b-warn">🟡 Perhatian (SRK ≥ 30)</span><br>
+            <span class="badge b-done">🟢 Normal (SRK &lt; 30)</span>
+          </td>
+        </tr>
+        <tr>
+          <td><b>4. IKU (Indikator Kelalaian User) &amp; Diagnosis Penyebab</b></td>
+          <td>
+            <code>Error Rate Staf / (Error Rate Staf Lain + 0.05)</code><br>
+            <span style="font-size:.73rem">Error Rate = (Pengulangan + Kendala Internal) / Total Tindakan pada Klien.</span><br>
+            <ul style="padding-left:14px;margin:4px 0 0;font-size:.73rem">
+              <li>Jika <b>IKU ≥ 1.5:</b> Kesalahan terpusat pada staf tertentu → Diagnosis: <b>👤 Indikasi kelalaian staf</b>.</li>
+              <li>Jika <b>IKU &lt; 1.5:</b> Kendala tersebar merata / berasal dari data klien → Diagnosis: <b>🏢 Klien sulit / data bermasalah</b>.</li>
+            </ul>
+          </td>
+          <td>Memisahkan secara objektif dan adil apakah kendala pekerjaan bersumber dari kelalaian internal staf atau karakteristik data klien yang rumit.</td>
+        </tr>
+        <tr>
+          <td><b>5. FTR (First-Time-Right / K9)</b></td>
+          <td><code>(Jumlah Kombinasi Klien+Sistem+Periode yang Selesai Tanpa Pengulangan / Total Kombinasi) × 100%</code></td>
+          <td>Mengukur persentase pekerjaan yang berhasil tuntas dalam satu kali jalan tanpa perlu revisi atau pengulangan tindakan.</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- 3. PEKERJAAN HARIAN -->
