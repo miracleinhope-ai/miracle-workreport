@@ -232,9 +232,12 @@ textarea{resize:vertical;min-height:60px}
 .calUserBadge{background:var(--blue);color:#fff;border-radius:3px;padding:1px 5px;font-size:.65rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px;display:block}
 /* Lock overlay */
 .rLockOverlay{position:fixed;inset:0;background:rgba(15,23,42,.75);z-index:400;display:flex;align-items:center;justify-content:center}
-.rLockBox{background:#fff;border-radius:16px;padding:28px 32px;width:540px;max-width:95vw;max-height:92vh;overflow-y:auto}
-.rLockBox h3{font-size:1.02rem;font-weight:800;color:#fff;background:#3B1B4F;padding:11px 16px;border-radius:10px;margin-bottom:10px}
-.rLockBox .rLockSub{font-size:.84rem;color:var(--sub);margin-bottom:18px}
+.rLockBox{background:#fff;border-radius:16px;padding:26px 30px;width:740px;max-width:95vw;max-height:92vh;overflow-y:auto;box-shadow:0 20px 45px rgba(0,0,0,.25)}
+.rLockBox h3{font-size:1.02rem;font-weight:700;color:#fff;background:#3B1B4F;padding:12px 18px;border-radius:10px;margin-bottom:12px}
+.rLockBox .rLockSub{font-size:.84rem;color:var(--sub);margin-bottom:16px}
+.modalCloseBtn{background:rgba(255,255,255,.16);border:none;font-size:1.15rem;cursor:pointer;color:#fff;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;line-height:1;transition:background .15s,transform .1s;flex-shrink:0}
+.modalCloseBtn:hover{background:rgba(255,255,255,.32);color:#fff;transform:scale(1.05)}
+.modalCloseBtn:active{transform:scale(.95)}
 /* ===== DASHBOARD MODERN & CHARTS ===== */
 .dashFilter{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05);margin-bottom:16px;position:relative;z-index:1}
 .dashFilter select,.dashFilter input{padding:6px 10px;font-size:.8rem;border-radius:7px}
@@ -2994,20 +2997,24 @@ function buildTindakanFormHtml(prefix){
       <select id="${prefix}Klien" onchange="cekRiwayatTindakan('${prefix}')"><option value="">-- Pilih Klien --</option>${klienOpts}</select></div>
     <div class="formGroup"><label>Tanggal Pelaksanaan / Rencana *</label>
       <input type="date" id="${prefix}TglKerja" value="${todayStr()}" min="${todayStr()}"/></div>
-    <div class="formGroup"><label>Ditugaskan Kepada (Pelaksana) *</label>
-      <select id="${prefix}Pelaksana" onchange="const w=document.getElementById('${prefix}NotifWrap');if(w)w.style.display=(this.value&&this.value!=='${currentUser?currentUser.id:''}')?'flex':'none'">${userOpts}</select></div>
-    <div class="formGroup" id="${prefix}NotifWrap" style="display:none;justify-content:center">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:16px;color:#3B1B4F">
-        <input type="checkbox" id="${prefix}KirimNotif" checked style="width:15px;height:15px"/> 🔔 Kirim notifikasi ke user tujuan
+    <div class="formGroup">
+      <label style="display:flex;justify-content:space-between;align-items:center">
+        <span>Ditugaskan Kepada (Pelaksana) *</span>
+        <span id="${prefix}NotifWrap" style="display:none;font-weight:normal;color:#3B1B4F;font-size:.73rem">
+          <label style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;color:#3B1B4F;font-weight:600">
+            <input type="checkbox" id="${prefix}KirimNotif" checked style="width:13px;height:13px;cursor:pointer"/> 🔔 Kirim notifikasi
+          </label>
+        </span>
       </label>
+      <select id="${prefix}Pelaksana" onchange="const w=document.getElementById('${prefix}NotifWrap');if(w)w.style.display=(this.value&&this.value!=='${currentUser?currentUser.id:''}')?'inline-flex':'none'">${userOpts}</select>
     </div>
+    <div class="formGroup"><label>Sistem Kerja *</label>
+      <select id="${prefix}Sistem" onchange="cekRiwayatTindakan('${prefix}')"><option value="">-- Pilih Sistem --</option>${sisOpts}</select></div>
     <div class="formGroup"><label>Periode Buku (Bulan) *</label>
       <select id="${prefix}Bulan" onchange="cekRiwayatTindakan('${prefix}')">${blnOpts}</select></div>
     <div class="formGroup"><label>Periode Buku (Tahun) *</label>
       <select id="${prefix}Tahun" onchange="cekRiwayatTindakan('${prefix}')">${thnOpts}</select></div>
-    <div class="formGroup"><label>Sistem Kerja *</label>
-      <select id="${prefix}Sistem" onchange="cekRiwayatTindakan('${prefix}')"><option value="">-- Pilih Sistem --</option>${sisOpts}</select></div>
-    <div class="formGroup"><label>Jenis Tindakan *</label>
+    <div class="formGroup full"><label>Jenis Tindakan *</label>
       <select id="${prefix}Jenis" onchange="cekRiwayatTindakan('${prefix}')"><option value="">-- Pilih Tindakan --</option>${jenOpts}</select></div>
     <div class="formGroup full" id="${prefix}WarnBox" style="display:none"></div>
     <div class="formGroup full" id="${prefix}AlasanWrap" style="display:none">
@@ -3015,7 +3022,7 @@ function buildTindakanFormHtml(prefix){
       <select id="${prefix}Alasan">${alasanOpts}</select>
     </div>
     <div class="formGroup full"><label>Uraian / Keterangan Tindakan</label>
-      <textarea id="${prefix}Uraian" style="min-height:60px" placeholder="Contoh: Laporan Keuangan Jan–Des 2022, cek mutasi bank, input faktur..."></textarea></div>
+      <textarea id="${prefix}Uraian" style="min-height:65px" placeholder="Contoh: Laporan Keuangan Jan–Des 2022, cek mutasi bank, input faktur..."></textarea></div>
   </div>`;
 }
 
@@ -3063,15 +3070,15 @@ function showForcedRencanaModal(){
   const overlay=document.createElement('div');
   overlay.className='rLockOverlay'; overlay.id='rencanaForceOverlay';
   overlay.innerHTML=`<div class="rLockBox">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-      <h3 style="margin:0">🗓️ Rencanakan Pekerjaan Hari Ini (${fmtDateL(todayStr())})</h3>
-      <button onclick="document.getElementById('rencanaForceOverlay')?.remove()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--sub)" title="Tutup sementara">✕</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#3B1B4F;color:#fff;padding:12px 18px;border-radius:10px;margin-bottom:12px">
+      <h3 style="margin:0;font-size:1.02rem;font-weight:700;color:#fff;background:none;padding:0">🗓️ Rencanakan Pekerjaan Hari Ini (${fmtDateL(todayStr())})</h3>
+      <button type="button" onclick="document.getElementById('rencanaForceOverlay')?.remove()" class="modalCloseBtn" title="Tutup sementara">✕</button>
     </div>
-    <p class="rLockSub">Sebelum mulai bekerja, buat minimal 1 rencana tindakan harian Anda (waktu tercatat dalam WITA).</p>
+    <p class="rLockSub" style="margin-bottom:14px">Sebelum mulai bekerja, buat minimal 1 rencana tindakan harian Anda (waktu tercatat dalam WITA).</p>
     ${buildTindakanFormHtml('rf')}
-    <div class="flex mt10">
+    <div class="flex mt10" style="gap:10px">
       <button class="btnPrimary" id="rfBtnSave" onclick="submitTindakan('rf', true)">✅ Simpan &amp; Mulai Kerja</button>
-      <button class="btnSm btnGray" style="padding:9px 14px;font-size:.82rem" onclick="document.getElementById('rencanaForceOverlay')?.remove()">Lihat Dashboard Dulu</button>
+      <button type="button" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem" onclick="document.getElementById('rencanaForceOverlay')?.remove()">Lihat Dashboard Dulu</button>
     </div>
   </div>`;
   document.body.appendChild(overlay);
@@ -3081,11 +3088,17 @@ function modalTambahRencana(){
   if(!isAdmin() && getUnclosedAbsensiPrev(currentUser.id).length){
     toast('⛔ Lakukan Closing Akhir Hari sebelumnya terlebih dahulu!'); return;
   }
-  document.getElementById('modalBox').innerHTML=`<h4>➕ Tambah Tindakan Harian</h4>
+  document.getElementById('modalBox').style.width = '740px';
+  document.getElementById('modalBox').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#3B1B4F;color:#fff;padding:12px 18px;border-radius:10px;margin-bottom:14px">
+      <h4 style="margin:0;font-size:1.02rem;font-weight:700;color:#fff;background:none;padding:0">➕ Tambah Tindakan Harian</h4>
+      <button type="button" onclick="document.getElementById('modalBox').style.width='';closeModal()" class="modalCloseBtn" title="Tutup">✕</button>
+    </div>
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:14px">Rencanakan pekerjaan harian Anda untuk hari ini atau tanggal mendatang (WITA).</p>
     ${buildTindakanFormHtml('mr')}
-    <div class="flex mt10">
+    <div class="flex mt10" style="gap:10px">
       <button class="btnPrimary" id="mrBtnSave" onclick="submitTindakan('mr', false)">💾 Simpan Rencana</button>
-      <button onclick="closeModal()" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">Batal</button>
+      <button type="button" onclick="document.getElementById('modalBox').style.width='';closeModal()" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">Batal</button>
     </div>`;
   document.getElementById('modalWrap').classList.remove('hidden');
 }
@@ -3178,8 +3191,11 @@ async function showForcedClosingModal(id){
   const overlay = document.createElement('div');
   overlay.className = 'rLockOverlay'; overlay.id = 'rencanaForceOverlay';
   overlay.innerHTML = `<div class="rLockBox">
-    <h3>⏹ Closing Kegiatan Sebelumnya</h3>
-    <p class="rLockSub">Sebelum melanjutkan, lakukan closing untuk kegiatan yang sudah Anda kerjakan sebelumnya:</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#3B1B4F;color:#fff;padding:12px 18px;border-radius:10px;margin-bottom:12px">
+      <h3 style="margin:0;font-size:1.02rem;font-weight:700;color:#fff;background:none;padding:0">⏹ Closing Kegiatan Sebelumnya</h3>
+      <button type="button" onclick="document.getElementById('rencanaForceOverlay')?.remove()" class="modalCloseBtn" title="Tutup">✕</button>
+    </div>
+    <p class="rLockSub" style="margin-bottom:14px">Sebelum melanjutkan, lakukan closing untuk kegiatan yang sudah Anda kerjakan sebelumnya:</p>
     <div style="background:var(--gray);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:.82rem">
       <b>🏢 ${esc(k?k.nama:'-')}</b> (${fmtPeriode(t.periode_bulan, t.periode_tahun, t.uraian)}) · ${esc(s?s.nama:'-')}<br>
       <b>🛠️ ${esc(j?j.nama:'-')}</b>${t.uraian?` — ${esc(t.uraian)}`:''}<br>
@@ -3240,8 +3256,11 @@ function showAfterClosingChoiceModal(){
   const overlay = document.createElement('div');
   overlay.className = 'rLockOverlay'; overlay.id = 'rencanaForceOverlay';
   overlay.innerHTML = `<div class="rLockBox">
-    <h3>✅ Closing Tindakan Tersimpan</h3>
-    <p class="rLockSub">Apakah Anda masih akan melanjutkan pekerjaan berikutnya hari ini (pekerjaan baru atau Checker → Review pekerjaan sebelumnya), atau mengakhiri pekerjaan hari ini?</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#3B1B4F;color:#fff;padding:12px 18px;border-radius:10px;margin-bottom:12px">
+      <h3 style="margin:0;font-size:1.02rem;font-weight:700;color:#fff;background:none;padding:0">✅ Closing Tindakan Tersimpan</h3>
+      <button type="button" onclick="document.getElementById('rencanaForceOverlay')?.remove()" class="modalCloseBtn" title="Tutup">✕</button>
+    </div>
+    <p class="rLockSub" style="margin-bottom:16px">Apakah Anda masih akan melanjutkan pekerjaan berikutnya hari ini (pekerjaan baru atau Checker → Review pekerjaan sebelumnya), atau mengakhiri pekerjaan hari ini?</p>
     <div style="display:flex;flex-direction:column;gap:10px">
       <button class="btnPrimary" style="padding:12px" onclick="document.getElementById('rencanaForceOverlay')?.remove();showForcedRencanaModal()">➕ Tambah Rencana Kerja Baru Berikutnya</button>
       <button class="btnSm" style="padding:12px;background:#059669;color:#fff;font-size:.9rem;font-weight:700;border-radius:8px" onclick="closingAkhirHari(true)">🏁 Closing Akhir Hari (Akhiri Pekerjaan Hari Ini)</button>
@@ -3256,7 +3275,11 @@ function modalEditKeteranganTindakan(id){
   const k = CACHE.klien.find(x=>x.id===t.klien_id);
   const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
   const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
-  document.getElementById('modalBox').innerHTML = `<h4>✏️ Ubah Keterangan Pekerjaan</h4>
+  document.getElementById('modalBox').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#3B1B4F;color:#fff;padding:12px 18px;border-radius:10px;margin-bottom:14px">
+      <h4 style="margin:0;font-size:1.02rem;font-weight:700;color:#fff;background:none;padding:0">✏️ Ubah Keterangan Pekerjaan</h4>
+      <button type="button" onclick="closeModal()" class="modalCloseBtn" title="Tutup">✕</button>
+    </div>
     <div style="background:var(--gray);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:.82rem">
       <b>${esc(k?k.nama:'-')}</b> — ${esc(s?s.nama:'-')} · ${esc(j?j.nama:'-')}<br>
       Mulai: <b>${t.mulai_at?fmtTimeWita(t.mulai_at):'-'}</b> · Selesai: <b>${t.selesai_at?fmtTimeWita(t.selesai_at):'-'}</b> · Durasi: <b>${t.durasi_detik?fmtDurHM(t.durasi_detik):'-'}</b><br>
