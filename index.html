@@ -2362,10 +2362,20 @@ function renderAbsensi(){
     const userPills = visibleUids.map(uid=>{
       const u = CACHE.users.find(x=>x.id===uid);
       const ab = abDay.find(a=>a.user_id===uid);
-      const cnt = tDay.filter(t=>t.user_id===uid).length;
-      const late = ab && isRowLate(ab);
-      const jamIn = ab?.jam || '';
-      const jamOut = ab?.jam_keluar || '';
+      const uTasks = tDay.filter(t=>t.user_id===uid);
+      const cnt = uTasks.length;
+      let jamIn = ab?.jam || '';
+      let jamOut = ab?.jam_keluar || '';
+      if(!jamIn && uTasks.length){
+        const vm = uTasks.map(t=>t.mulai_at).filter(Boolean).sort();
+        if(vm.length) jamIn = fmtTimeWita(vm[0]);
+      }
+      if(!jamOut && uTasks.length){
+        const allDone = uTasks.every(t=>t.status==='selesai');
+        const vs = uTasks.map(t=>t.selesai_at).filter(Boolean).sort();
+        if(allDone && vs.length) jamOut = fmtTimeWita(vs[vs.length - 1]);
+      }
+      const late = ab ? isRowLate(ab) : (jamIn && jamIn > '08:00');
       const bg = late ? '#dc2626' : (jamOut ? '#059669' : '#2563eb');
       const timeStr = jamIn ? ` · ${jamIn}${jamOut ? '–' + jamOut : ''}` : '';
       const uName = esc(u ? u.nama : (ab?.nama || '?'));
@@ -2423,20 +2433,29 @@ function showAbsensiDateSummaryModal(ds){
     const u = CACHE.users.find(x=>x.id===uid);
     const ab = abDay.find(a=>a.user_id===uid);
     const items = tDay.filter(t=>t.user_id===uid);
-    const late = isRowLate(ab);
+    let jamIn = ab?.jam || '';
+    let jamOut = ab?.jam_keluar || '';
+    if(!jamIn && items.length){
+      const vm = items.map(t=>t.mulai_at).filter(Boolean).sort();
+      if(vm.length) jamIn = fmtTimeWita(vm[0]);
+    }
+    if(!jamOut && items.length){
+      const allDone = items.every(t=>t.status==='selesai');
+      const vs = items.map(t=>t.selesai_at).filter(Boolean).sort();
+      if(allDone && vs.length) jamOut = fmtTimeWita(vs[vs.length - 1]);
+    }
+    const late = ab ? isRowLate(ab) : (jamIn && jamIn > '08:00');
     const totalDur = items.reduce((s,t)=>s+(t.durasi_detik||0),0);
-    const jamIn = ab?.jam || '-';
-    const jamOut = ab?.jam_keluar || '-';
     const stBadge = late
       ? `<span class="badge b-late">Terlambat</span>`
-      : (ab?.jam_keluar
+      : (jamOut
           ? `<span class="badge b-done">Selesai</span>`
-          : (ab ? `<span class="badge b-progress">Bekerja</span>` : `<span class="badge b-plan">Tanpa Absen</span>`));
+          : (jamIn ? `<span class="badge b-progress">Bekerja</span>` : `<span class="badge b-plan">Tanpa Absen</span>`));
 
     return `<tr>
       <td><b>${esc(u?u.nama:(ab?.nama||'?'))}</b></td>
-      <td>${jamIn !== '-' ? jamIn + ' WITA' : '-'} ${stBadge}</td>
-      <td>${jamOut !== '-' ? jamOut + ' WITA' : '-'}</td>
+      <td>${jamIn ? jamIn + ' WITA' : '-'} ${stBadge}</td>
+      <td>${jamOut ? jamOut + ' WITA' : '-'}</td>
       <td style="text-align:center"><b>${items.length}</b></td>
       <td><b>${totalDur ? fmtDurHM(totalDur) : '-'}</b></td>
       <td><button class="btnSm btnPrimary" style="padding:4px 9px;font-size:.74rem" onclick="showAbsensiDayDetailModal('${uid}','${ds}',true)">🔍 Rincian Tugas</button></td>
@@ -2461,8 +2480,19 @@ function showAbsensiDayDetailModal(uid, ds, fromSummary=false){
   const u = CACHE.users.find(x=>x.id===uid);
   const ab = CACHE.absensi.find(a=>a.user_id===uid && a.tanggal===ds);
   const items = CACHE.tindakan.filter(t=>t.user_id===uid && t.tanggal_kerja===ds).sort((a,b)=>(a.created_at||'').localeCompare(b.created_at||''));
+  let jamIn = ab?.jam || '';
+  let jamOut = ab?.jam_keluar || '';
+  if(!jamIn && items.length){
+    const vm = items.map(t=>t.mulai_at).filter(Boolean).sort();
+    if(vm.length) jamIn = fmtTimeWita(vm[0]);
+  }
+  if(!jamOut && items.length){
+    const allDone = items.every(t=>t.status==='selesai');
+    const vs = items.map(t=>t.selesai_at).filter(Boolean).sort();
+    if(allDone && vs.length) jamOut = fmtTimeWita(vs[vs.length - 1]);
+  }
   const isRowLate = a => a && (a.terlambat===true || a.tipe==='Terlambat' || (a.jam && a.jam>'08:00'));
-  const late = isRowLate(ab);
+  const late = ab ? isRowLate(ab) : (jamIn && jamIn > '08:00');
   const totalDur = items.reduce((s,t)=>s+(t.durasi_detik||0),0);
 
   const rowsHtml = items.length ? items.map((t,i)=>{
@@ -2488,8 +2518,8 @@ function showAbsensiDayDetailModal(uid, ds, fromSummary=false){
   document.getElementById('modalBox').innerHTML = `
     <h4>📅 Detail Absensi &amp; Kegiatan — ${esc(u?u.nama:(ab?.nama||'-'))} (${fmtDateL(ds)})</h4>
     <div style="display:flex;gap:10px;flex-wrap:wrap;background:var(--gray);padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:.82rem">
-      <span>🟢 Masuk: <b>${ab?ab.jam+' WITA':'Belum absen'}</b> ${late?`<span class="badge b-late">Terlambat</span>`:''}</span>
-      <span>🏁 Keluar: <b>${ab&&ab.jam_keluar?ab.jam_keluar+' WITA':'Belum closing akhir hari'}</b></span>
+      <span>🟢 Masuk: <b>${jamIn ? jamIn + ' WITA' : 'Belum absen'}</b> ${late?`<span class="badge b-late">Terlambat</span>`:''}</span>
+      <span>🏁 Keluar: <b>${jamOut ? jamOut + ' WITA' : 'Belum closing akhir hari'}</b></span>
       <span>📋 Total Tindakan: <b>${items.length}</b></span>
       <span>⏱️ Total Lama Kerja: <b>${fmtDurHM(totalDur)}</b></span>
     </div>
