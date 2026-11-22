@@ -247,6 +247,9 @@ textarea{resize:vertical;min-height:60px}
 @media(max-width:960px){.span-8,.span-4,.span-6{grid-column:span 12}}
 .chartWrap{position:relative;height:250px;width:100%}
 .chartWrap.tall{height:290px}
+.donut3dWrap{position:relative;perspective:850px;perspective-origin:50% 36%}
+.donut3dWrap canvas{transform:rotateX(20deg) translateY(-6px);transition:transform .4s cubic-bezier(0.34,1.56,0.64,1),filter .4s ease;filter:drop-shadow(0 14px 18px rgba(15,23,42,.18))}
+.donut3dWrap:hover canvas{transform:rotateX(12deg) translateY(-10px) scale(1.02);filter:drop-shadow(0 20px 26px rgba(15,23,42,.25))}
 .alertBanner{border-radius:11px;padding:12px 16px;margin-bottom:14px;font-size:.83rem;display:flex;align-items:flex-start;gap:10px;position:relative;z-index:1}
 .alertBanner.warn{background:#fef3c7;border-left:4px solid #f59e0b;color:#92400e}
 .alertBanner.danger{background:#fee2e2;border-left:4px solid #ef4444;color:#991b1b}
@@ -1268,7 +1271,7 @@ function renderDashboard(){
     </div>
     <div class="chartCard span-4">
       <div class="secHead"><h4>🍩 Komposisi Jenis Tindakan</h4></div>
-      <div class="chartWrap"><canvas id="chJenisDonut"></canvas></div>
+      <div class="chartWrap donut3dWrap"><canvas id="chJenisDonut"></canvas></div>
     </div>
     <div class="chartCard span-8">
       <div class="secHead"><h4>📊 Top 10 Klien Paling Sering Dikerjakan (K3)</h4></div>
@@ -1276,7 +1279,7 @@ function renderDashboard(){
     </div>
     <div class="chartCard span-4">
       <div class="secHead"><h4>🍩 Sistem Kerja Digunakan</h4></div>
-      <div class="chartWrap tall"><canvas id="chSistemDonut"></canvas></div>
+      <div class="chartWrap tall donut3dWrap"><canvas id="chSistemDonut"></canvas></div>
     </div>
     <div class="chartCard span-6">
       <div class="secHead"><h4>📊 Kinerja &amp; Masalah per User</h4></div>
@@ -1425,8 +1428,37 @@ function initDashboardCharts(){
     const entries = Object.entries(map);
     dashCharts.jd = new Chart(elJD, {
       type:'doughnut',
-      data:{ labels: entries.length?entries.map(e=>e[0]):['Belum ada data'], datasets:[{ data: entries.length?entries.map(e=>e[1]):[1], backgroundColor: entries.length?(ctx=>makeGBYGrad(ctx,ctx.dataIndex)):['#e2e8f0'], borderColor:'#fff', borderWidth:2 }] },
-      options:{ responsive:true, maintainAspectRatio:false, cutout:'62%', plugins:{ legend:{ position:'bottom', labels:{ boxWidth:11, font:{ size:11 } } } } }
+      data:{
+        labels: entries.length?entries.map(e=>e[0]):['Belum ada data'],
+        datasets:[{
+          data: entries.length?entries.map(e=>e[1]):[1],
+          backgroundColor: entries.length?(ctx=>makeGBYGrad(ctx,ctx.dataIndex)):['#e2e8f0'],
+          borderColor:'#ffffff',
+          borderWidth:2.5,
+          hoverBorderColor:'#ffffff',
+          hoverBorderWidth:3,
+          spacing: 4,
+          borderRadius: 6,
+          hoverOffset: 16
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        cutout:'56%',
+        animation:{
+          animateRotate: true,
+          animateScale: true,
+          duration: 1400,
+          easing: 'easeOutBack'
+        },
+        plugins:{
+          legend:{
+            position:'bottom',
+            labels:{ boxWidth:11, font:{ size:11, weight:'600' }, padding: 12 }
+          }
+        }
+      }
     });
   }
 
@@ -1455,8 +1487,37 @@ function initDashboardCharts(){
     const entries = Object.entries(map);
     dashCharts.sd = new Chart(elSD, {
       type:'doughnut',
-      data:{ labels: entries.length?entries.map(e=>e[0]):['Belum ada data'], datasets:[{ data: entries.length?entries.map(e=>e[1]):[1], backgroundColor: entries.length?(ctx=>makeGBYGrad(ctx,ctx.dataIndex)):['#e2e8f0'], borderColor:'#fff', borderWidth:2 }] },
-      options:{ responsive:true, maintainAspectRatio:false, cutout:'62%', plugins:{ legend:{ position:'bottom', labels:{ boxWidth:11, font:{ size:11 } } } } }
+      data:{
+        labels: entries.length?entries.map(e=>e[0]):['Belum ada data'],
+        datasets:[{
+          data: entries.length?entries.map(e=>e[1]):[1],
+          backgroundColor: entries.length?(ctx=>makeGBYGrad(ctx,ctx.dataIndex)):['#e2e8f0'],
+          borderColor:'#ffffff',
+          borderWidth:2.5,
+          hoverBorderColor:'#ffffff',
+          hoverBorderWidth:3,
+          spacing: 4,
+          borderRadius: 6,
+          hoverOffset: 16
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        cutout:'56%',
+        animation:{
+          animateRotate: true,
+          animateScale: true,
+          duration: 1400,
+          easing: 'easeOutBack'
+        },
+        plugins:{
+          legend:{
+            position:'bottom',
+            labels:{ boxWidth:11, font:{ size:11, weight:'600' }, padding: 12 }
+          }
+        }
+      }
     });
   }
 
