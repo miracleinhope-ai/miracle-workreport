@@ -742,7 +742,16 @@ function showPage(p){
   const c=document.getElementById('pageContent');
   if(p==='dashboard'){ c.innerHTML=renderDashboard(); setTimeout(initDashboardCharts, 30); }
   else if(p==='klien')     renderKlienPage();
-  else if(p==='pekerjaan') c.innerHTML=renderPekerjaan();
+  else if(p==='pekerjaan') {
+    c.innerHTML=renderPekerjaan();
+    if(pekFilter.q){
+      const el = document.getElementById('srchPekDatatable');
+      if(el && document.activeElement !== el){
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    }
+  }
   else if(p==='rencana')   c.innerHTML=renderRencana();
   else if(p==='docs')      c.innerHTML=renderDocs();
   else if(p==='notifikasi') c.innerHTML=renderNotifikasiPage();
@@ -1696,7 +1705,15 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=pagePek,rpp=rowsPerPage
         const u = CACHE.users.find(x=>x.id===t.user_id)?.nama || '';
         const s = CACHE.sistem.find(x=>x.id===t.sistem_id)?.nama || '';
         const j = CACHE.jenis.find(x=>x.id===t.jenis_id)?.nama || '';
-        return (k+' '+u+' '+s+' '+j+' '+(t.uraian||'')+' '+(t.kendala||'')).toLowerCase().includes(fq);
+        const bln = BULAN_NAMA[t.periode_bulan-1] || '';
+        const blnS = BULAN_SINGKAT[t.periode_bulan-1] || '';
+        const perStr = fmtPeriode(t.periode_bulan, t.periode_tahun, t.uraian);
+        const tglStr = fmtDate(t.tanggal_kerja);
+        const pool = [
+          k, u, s, j, t.uraian, t.kendala, t.alasan_ulang,
+          t.periode_tahun, bln, blnS, perStr, t.tanggal_kerja, tglStr, t.status
+        ].filter(Boolean).join(' ').toLowerCase();
+        return pool.includes(fq);
       });
     }
     rows.sort((a,b) => b.tanggal_kerja.localeCompare(a.tanggal_kerja) || (b.created_at||'').localeCompare(a.created_at||''));
@@ -1711,6 +1728,10 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=pagePek,rpp=rowsPerPage
 
     const klienOpts = CACHE.klien.map(k=>`<option value="${k.id}" ${fk===k.id?'selected':''}>${esc(k.nama)}</option>`).join('');
     const userOpts = CACHE.users.map(u=>`<option value="${u.id}" ${fu===u.id?'selected':''}>${esc(u.nama)}</option>`).join('');
+
+    const noDataMsg = fq
+      ? `Tidak ada data pekerjaan yang cocok dengan "<b>${esc(fq)}</b>"${(dari||sampai)?` pada rentang ${dari?fmtDate(dari):'awal'} s.d. ${sampai?fmtDate(sampai):'akhir'}`:''}.<br><button class="btnSm btnPrimary" style="margin-top:10px;padding:6px 14px" onclick="pekFilter.dari='';pekFilter.sampai='';pagePek=1;showPage('pekerjaan')">🔍 Cari di Semua Riwayat Tanggal</button>`
+      : `Tidak ada data pekerjaan pada rentang filter ini.`;
 
     const trs = paged.length ? paged.map((t,i)=>{
       const u = CACHE.users.find(x=>x.id===t.user_id);
@@ -1751,7 +1772,7 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=pagePek,rpp=rowsPerPage
         <td>${stBadge}${t.kendala?`<div style="font-size:.71rem;color:#dc2626;margin-top:2px">⚠️ ${esc(t.kendala)}</div>`:''}</td>
         <td>${chatBtnHtml(t.id)}</td>
       </tr>`;
-    }).join('') : `<tr><td colspan="12" style="text-align:center;color:var(--sub);padding:24px">Tidak ada data pekerjaan pada rentang filter ini.</td></tr>`;
+    }).join('') : `<tr><td colspan="12" style="text-align:center;color:var(--sub);padding:24px">${noDataMsg}</td></tr>`;
 
     return `<div class="section" style="position:relative;z-index:1">
       <div class="secHead">
@@ -1777,7 +1798,9 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=pagePek,rpp=rowsPerPage
           <option value="bermasalah" ${fs==='bermasalah'?'selected':''}>Bermasalah</option>
           <option value="rencana" ${fs==='rencana'?'selected':''}>Rencana</option>
         </select>
-        <input placeholder="Cari uraian / sistem..." value="${esc(pekFilter.q||'')}" oninput="pekFilter.q=this.value;pagePek=1;showPage('pekerjaan')" style="width:170px"/>
+        <input id="srchPekDatatable" placeholder="Cari uraian / sistem / klien / thn..." value="${esc(pekFilter.q||'')}" oninput="onPekSearch(this.value)" style="width:200px"/>
+        <button class="btnSm btnGray" style="padding:6px 10px;font-size:.73rem" title="Kosongkan tanggal Dari &amp; Sampai untuk mencari di seluruh riwayat lampau" onclick="pekFilter.dari='';pekFilter.sampai='';pagePek=1;showPage('pekerjaan')">Semua Tgl</button>
+        <button class="btnSm btnGray" style="padding:6px 10px;font-size:.73rem" title="Kembalikan rentang ke bulan berjalan" onclick="resetPekFilter()">Reset</button>
       </div>
       <div class="kpiRow">
         <div class="kpiBox"><span class="kv">${total}</span><span class="kl">Total Pekerjaan</span></div>
@@ -1889,6 +1912,28 @@ function applyFlt(){
   pagePek=1;
   document.getElementById('pageContent').innerHTML=renderPekerjaan(fK,fS,fP,fU,q,pagePek,rowsPerPagePek);
 }
+function onPekSearch(val){
+  pekFilter.q = val;
+  pagePek = 1;
+  const c = document.getElementById('pageContent');
+  if(currentPage === 'pekerjaan'){
+    c.innerHTML = renderPekerjaan();
+    const el = document.getElementById('srchPekDatatable');
+    if(el){
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    }
+  }
+}
+
+function resetPekFilter(){
+  const today = todayStr();
+  const firstDayOfMonth = today.substring(0, 8) + '01';
+  pekFilter = { dari: firstDayOfMonth, sampai: today, userId: '', klienId: '', status: '', q: '' };
+  pagePek = 1;
+  showPage('pekerjaan');
+}
+
 function exportPekerjaanCSV(){
   let rows = (CACHE.tindakan || []).slice();
   if(pekFilter.dari) rows = rows.filter(t=>t.tanggal_kerja>=pekFilter.dari);
@@ -1902,7 +1947,15 @@ function exportPekerjaanCSV(){
     const u = CACHE.users.find(x=>x.id===t.user_id)?.nama||'';
     const s = CACHE.sistem.find(x=>x.id===t.sistem_id)?.nama||'';
     const j = CACHE.jenis.find(x=>x.id===t.jenis_id)?.nama||'';
-    return (k+' '+u+' '+s+' '+j+' '+(t.uraian||'')+' '+(t.kendala||'')).toLowerCase().includes(q);
+    const bln = BULAN_NAMA[t.periode_bulan-1] || '';
+    const blnS = BULAN_SINGKAT[t.periode_bulan-1] || '';
+    const perStr = fmtPeriode(t.periode_bulan, t.periode_tahun, t.uraian);
+    const tglStr = fmtDate(t.tanggal_kerja);
+    const pool = [
+      k, u, s, j, t.uraian, t.kendala, t.alasan_ulang,
+      t.periode_tahun, bln, blnS, perStr, t.tanggal_kerja, tglStr, t.status
+    ].filter(Boolean).join(' ').toLowerCase();
+    return pool.includes(q);
   });
   const csvEsc = v => `"${String(v??'').replace(/"/g,'""')}"`;
   const lines = [['Tanggal','User','Klien','Periode','Sistem','Jenis Tindakan','Uraian','Mulai WITA','Selesai WITA','Lama Pekerjaan','Durasi (detik)','Status','Kendala'].map(csvEsc).join(',')];
