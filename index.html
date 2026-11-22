@@ -479,6 +479,11 @@ const fmtDateL   = s => { if(!s)return'-'; const[y,m,d]=s.split('T')[0].split('-
 const pageDate   = () => { const d=nowWitaDate(); const dy=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu']; const [y,m,day]=todayStr(d).split('-'); const wd=new Date(`${y}-${m}-${day}T12:00:00Z`).getUTCDay(); return`${dy[wd]}, ${+day} ${BULAN_NAMA[+m-1]} ${y}`; };
 const fmtDur     = s => { s=Math.max(0,Math.round(s||0)); const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60; return`${h>0?h+'j ':''}${m}m ${sc}s`.trim(); };
 const fmtDurHM   = s => { s=Math.max(0,Math.round(s||0)); const h=Math.floor(s/3600),m=Math.floor((s%3600)/60); return h>0?`${h}j ${m}m`:`${m}m`; };
+const fmtPeriode = (b, y, uraian='') => {
+  if(!b || !y) return '-';
+  const isJanDes = b === 12 && uraian && /(jan[\s\-_–]*des|tahunan|annual)/i.test(uraian);
+  return `${isJanDes ? 'Jan–Des' : (BULAN_SINGKAT[b-1] || b)} ${y}`;
+};
 const badgeSt    = s => s==='Selesai'?'b-done':s==='Dalam Proses'?'b-progress':'b-plan';
 const esc        = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const safeUrl    = u => { try{ const p=new URL(String(u||'')); return (p.protocol==='http:'||p.protocol==='https:') ? u : '#'; }catch(_){ return '#'; } };
@@ -1068,7 +1073,7 @@ function renderDashboard(){
         : `<span class="badge ${t.status==='selesai'?'b-done':t.status==='bermasalah'?'b-urgent':'b-warn'}">${t.status}</span>`;
       return `<tr>
         <td>${startDU+i+1}</td>
-        <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.72rem;color:var(--sub)">${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}</span></td>
+        <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.72rem;color:var(--sub)">${fmtPeriode(t.periode_bulan, t.periode_tahun, t.uraian)}</span></td>
         <td>${esc(s?s.nama:'-')}</td>
         <td>${esc(j?j.nama:'-')}${t.is_ulang?` <span class="badge b-warn">Ulang #${t.ulang_ke}</span>`:''}</td>
         <td>${esc(t.uraian||'-')}</td>
@@ -1138,7 +1143,9 @@ function renderDashboard(){
   // ===== TAMPILAN SUPERADMIN / ADMIN =====
   const bulanOpts = BULAN_NAMA.map((b,i)=>`<option value="${i+1}" ${dashFilter.bulan===i+1?'selected':''}>${b}</option>`).join('');
   const curY = witaMonthYear().tahun;
-  const tahunOpts = [curY-1, curY, curY+1].map(y=>`<option value="${y}" ${dashFilter.tahun===y?'selected':''}>${y}</option>`).join('');
+  const dashYears = [];
+  for(let y = curY + 2; y >= Math.min(2020, curY - 6); y--) dashYears.push(y);
+  const tahunOpts = dashYears.map(y=>`<option value="${y}" ${dashFilter.tahun===y?'selected':''}>${y}</option>`).join('');
   const userOpts = CACHE.users.filter(u=>u.role!=='superadmin').map(u=>`<option value="${u.id}" ${dashFilter.userId===u.id?'selected':''}>${esc(u.nama)}</option>`).join('');
   const klienOpts = CACHE.klien.map(k=>`<option value="${k.id}" ${dashFilter.klienId===k.id?'selected':''}>${esc(k.nama)}</option>`).join('');
 
@@ -1734,7 +1741,7 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=pagePek,rpp=rowsPerPage
         <td>${(pg-1)*rpp + i + 1}</td>
         <td style="white-space:nowrap">${tglHtml}</td>
         <td><b>${esc(u?u.nama:'-')}</b></td>
-        <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.71rem;color:var(--sub)">${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}</span></td>
+        <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.71rem;color:var(--sub)">${fmtPeriode(t.periode_bulan, t.periode_tahun, t.uraian)}</span></td>
         <td>${esc(s?s.nama:'-')}</td>
         <td>${esc(j?j.nama:'-')}${t.is_ulang?`<br><span class="badge b-warn" title="Pekerjaan lanjutan/pengulangan ke-${t.ulang_ke}">🔁 Lanjutan #${t.ulang_ke}</span>`:''}</td>
         <td style="max-width:210px">${esc(t.uraian||'-')}</td>
@@ -1904,7 +1911,7 @@ function exportPekerjaanCSV(){
     const k=CACHE.klien.find(x=>x.id===t.klien_id)?.nama||'';
     const s=CACHE.sistem.find(x=>x.id===t.sistem_id)?.nama||'';
     const j=CACHE.jenis.find(x=>x.id===t.jenis_id)?.nama||'';
-    lines.push([t.tanggal_kerja,u,k,`${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}`,s,j,t.uraian||'',t.mulai_at?fmtTimeWita(t.mulai_at):'',t.selesai_at?fmtTimeWita(t.selesai_at):'',t.durasi_detik?fmtDur(t.durasi_detik):'',t.durasi_detik||0,t.status,t.kendala||''].map(csvEsc).join(','));
+    lines.push([t.tanggal_kerja,u,k,fmtPeriode(t.periode_bulan, t.periode_tahun, t.uraian),s,j,t.uraian||'',t.mulai_at?fmtTimeWita(t.mulai_at):'',t.selesai_at?fmtTimeWita(t.selesai_at):'',t.durasi_detik?fmtDur(t.durasi_detik):'',t.durasi_detik||0,t.status,t.kendala||''].map(csvEsc).join(','));
   });
   const blob = new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`log-pekerjaan-${todayStr()}.csv`; a.click();
@@ -2518,7 +2525,7 @@ function showAbsensiDayDetailModal(uid, ds, fromSummary=false){
     const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
     return `<tr>
       <td>${i+1}</td>
-      <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.7rem;color:var(--sub)">${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}</span></td>
+      <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.7rem;color:var(--sub)">${fmtPeriode(t.periode_bulan, t.periode_tahun, t.uraian)}</span></td>
       <td>${esc(s?s.nama:'-')}</td>
       <td>${esc(j?j.nama:'-')}${t.is_ulang?` <span class="badge b-warn">Ulang</span>`:''}</td>
       <td>${esc(t.uraian||'-')}</td>
@@ -2846,7 +2853,7 @@ function renderRencana(){
     return `<tr>
       <td>${startRen+i+1}</td>
       ${isAdmin()?`<td><b>${esc(u?u.nama:'-')}</b></td>`:''}
-      <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.72rem;color:var(--sub)">Periode: ${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}</span></td>
+      <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.72rem;color:var(--sub)">Periode: ${fmtPeriode(t.periode_bulan, t.periode_tahun, t.uraian)}</span></td>
       <td>${esc(s?s.nama:'-')}</td>
       <td>${esc(j?j.nama:'-')}${t.is_ulang?`<br><span class="badge b-warn" title="Pekerjaan lanjutan/pengulangan ke-${t.ulang_ke}">🔁 Lanjutan #${t.ulang_ke}</span>`:''}</td>
       <td style="max-width:200px">${esc(t.uraian||'-')}${t.alasan_ulang?`<br><span style="font-size:.71rem;color:#b45309">Alasan lanjutan: ${esc(t.alasan_ulang)}</span>`:''}</td>
@@ -2923,8 +2930,10 @@ function buildTindakanFormHtml(prefix){
   const userOpts = CACHE.users.map(u=>`<option value="${u.id}" ${currentUser&&u.id===currentUser.id?'selected':''}>${esc(u.nama)}${currentUser&&u.id===currentUser.id?' (Saya)':''}</option>`).join('');
   const sisOpts = CACHE.sistem.filter(s=>s.aktif).map(s=>`<option value="${s.id}">${esc(s.nama)}</option>`).join('');
   const jenOpts = CACHE.jenis.filter(j=>j.aktif).map(j=>`<option value="${j.id}">${esc(j.nama)}${!j.boleh_diulang?' (1x saja)':''}</option>`).join('');
-  const blnOpts = BULAN_NAMA.map((b,i)=>`<option value="${i+1}" ${curMY.bulan===i+1?'selected':''}>${b}</option>`).join('');
-  const thnOpts = [curMY.tahun-1, curMY.tahun, curMY.tahun+1].map(y=>`<option value="${y}" ${curMY.tahun===y?'selected':''}>${y}</option>`).join('');
+  const blnOpts = BULAN_NAMA.map((b,i)=>`<option value="${i+1}" ${curMY.bulan===i+1?'selected':''}>${b}${i===11?' (atau Tahunan / Jan–Des)':''}</option>`).join('');
+  const formYears = [];
+  for(let y = curMY.tahun + 2; y >= Math.min(2020, curMY.tahun - 6); y--) formYears.push(y);
+  const thnOpts = formYears.map(y=>`<option value="${y}" ${curMY.tahun===y?'selected':''}>${y}</option>`).join('');
   const alasanOpts = ALASAN_ULANG.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
 
   return `<div class="formGrid">
@@ -2953,7 +2962,7 @@ function buildTindakanFormHtml(prefix){
       <select id="${prefix}Alasan">${alasanOpts}</select>
     </div>
     <div class="formGroup full"><label>Uraian / Keterangan Tindakan</label>
-      <textarea id="${prefix}Uraian" style="min-height:60px" placeholder="Contoh: Input faktur penjualan 1–15 Nov, cek mutasi bank BCA..."></textarea></div>
+      <textarea id="${prefix}Uraian" style="min-height:60px" placeholder="Contoh: Laporan Keuangan Jan–Des 2022, cek mutasi bank, input faktur..."></textarea></div>
   </div>`;
 }
 
@@ -3119,7 +3128,7 @@ async function showForcedClosingModal(id){
     <h3>⏹ Closing Kegiatan Sebelumnya</h3>
     <p class="rLockSub">Sebelum melanjutkan, lakukan closing untuk kegiatan yang sudah Anda kerjakan sebelumnya:</p>
     <div style="background:var(--gray);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:.82rem">
-      <b>🏢 ${esc(k?k.nama:'-')}</b> (${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}) · ${esc(s?s.nama:'-')}<br>
+      <b>🏢 ${esc(k?k.nama:'-')}</b> (${fmtPeriode(t.periode_bulan, t.periode_tahun, t.uraian)}) · ${esc(s?s.nama:'-')}<br>
       <b>🛠️ ${esc(j?j.nama:'-')}</b>${t.uraian?` — ${esc(t.uraian)}`:''}<br>
       Tanggal: <b>${fmtDateL(t.tanggal_kerja)}</b> · Mulai: <b>${fmtTimeWita(mulaiIso)}</b> · Selesai: <b>${fmtTimeWita(selesaiIso)}</b> · Durasi: <b>${fmtDur(durasi)}</b>
     </div>
@@ -3375,7 +3384,7 @@ function showForcedArahanModal(){
         <span style="font-size:.72rem;color:var(--sub)">${fmtDateL(c.created_at)} ${fmtTimeWita(c.created_at)}</span>
       </div>
       <div style="font-size:.75rem;color:var(--sub);margin-bottom:5px">
-        🏢 <b>${esc(k?k.nama:'-')}</b> ${t?`(${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun})`:''} · ${esc(j?j.nama:'-')}
+        🏢 <b>${esc(k?k.nama:'-')}</b> ${t?`(${fmtPeriode(t.periode_bulan, t.periode_tahun, t.uraian)})`:''} · ${esc(j?j.nama:'-')}
         ${mentions?`<br>👥 Ditujukan ke: <b>${mentions}</b>`:''}
       </div>
       <div style="color:var(--text);white-space:pre-wrap;margin-bottom:6px">${esc(c.pesan)}</div>
@@ -3497,7 +3506,7 @@ async function openTindakanDiskusi(tId){
   document.getElementById('modalBox').innerHTML = `
     <h4>💬 Diskusi &amp; Arahan Pekerjaan</h4>
     <div style="background:var(--gray);border-radius:9px;padding:10px 12px;margin-bottom:12px;font-size:.81rem">
-      <b>🏢 ${esc(k?k.nama:'-')}</b> (${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}) · ${esc(s?s.nama:'-')} · <b>${esc(j?j.nama:'-')}</b><br>
+      <b>🏢 ${esc(k?k.nama:'-')}</b> (${fmtPeriode(t.periode_bulan, t.periode_tahun, t.uraian)}) · ${esc(s?s.nama:'-')} · <b>${esc(j?j.nama:'-')}</b><br>
       Dikerjakan oleh: <b>${esc(u?u.nama:'-')}</b> · Tgl: ${fmtDateL(t.tanggal_kerja)} · Status: <b>${t.status}</b>
       ${t.uraian?`<div style="color:var(--sub);margin-top:4px">${esc(t.uraian)}</div>`:''}
     </div>
