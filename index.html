@@ -1710,6 +1710,21 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=pagePek,rpp=rowsPerPage
       const k = CACHE.klien.find(x=>x.id===t.klien_id);
       const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
       const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
+      const createdDate = t.created_at ? todayStr(new Date(t.created_at)) : '';
+      const isBackdated = createdDate && createdDate !== t.tanggal_kerja;
+      const tglHtml = `<span style="font-weight:600">${fmtDate(t.tanggal_kerja)}</span>${isBackdated ? `<br><span style="font-size:.68rem;color:var(--sub);cursor:help" title="Stempel audit sistem diinput pada: ${fmtDate(createdDate)} ${fmtTimeWita(t.created_at)}">🕒 Input ${fmtDate(createdDate)}</span>` : ''}`;
+
+      const relatedTasks = CACHE.tindakan.filter(x =>
+        x.klien_id === t.klien_id &&
+        x.sistem_id === t.sistem_id &&
+        x.periode_bulan === t.periode_bulan &&
+        x.periode_tahun === t.periode_tahun &&
+        x.jenis_id === t.jenis_id
+      );
+      const isSeries = relatedTasks.length > 1;
+      const seriesDur = isSeries ? relatedTasks.reduce((tot,x)=>tot+(x.durasi_detik||0),0) : 0;
+      const durHtml = `<b>${t.durasi_detik?fmtDur(t.durasi_detik):'-'}</b>${isSeries && seriesDur ? `<br><span style="font-size:.69rem;color:var(--blue);white-space:nowrap" title="Akumulasi seluruh ${relatedTasks.length} sesi pekerjaan untuk klien, periode &amp; tindakan ini">∑ Total: ${fmtDur(seriesDur)} (${relatedTasks.length} sesi)</span>` : ''}`;
+
       const stBadge = t.status==='selesai' ? `<span class="badge b-done">✅ Selesai</span>`
         : t.status==='dikerjakan' ? `<span class="badge b-progress">🔄 Dikerjakan</span>`
         : t.status==='lanjut' ? `<span class="badge b-warn">⏭️ Lanjut</span>`
@@ -1717,15 +1732,15 @@ function renderPekerjaan(fK='',fS='',fP='',fU='',q='',pg=pagePek,rpp=rowsPerPage
         : `<span class="badge b-plan">📋 Rencana</span>`;
       return `<tr>
         <td>${(pg-1)*rpp + i + 1}</td>
-        <td style="white-space:nowrap">${fmtDate(t.tanggal_kerja)}</td>
+        <td style="white-space:nowrap">${tglHtml}</td>
         <td><b>${esc(u?u.nama:'-')}</b></td>
         <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.71rem;color:var(--sub)">${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}</span></td>
         <td>${esc(s?s.nama:'-')}</td>
-        <td>${esc(j?j.nama:'-')}${t.is_ulang?`<br><span class="badge b-warn">🔁 Ulang #${t.ulang_ke}</span>`:''}</td>
+        <td>${esc(j?j.nama:'-')}${t.is_ulang?`<br><span class="badge b-warn" title="Pekerjaan lanjutan/pengulangan ke-${t.ulang_ke}">🔁 Lanjutan #${t.ulang_ke}</span>`:''}</td>
         <td style="max-width:210px">${esc(t.uraian||'-')}</td>
         <td style="white-space:nowrap">${t.mulai_at?fmtTimeWita(t.mulai_at):'-'}</td>
         <td style="white-space:nowrap">${t.selesai_at?fmtTimeWita(t.selesai_at):'-'}</td>
-        <td style="white-space:nowrap"><b>${t.durasi_detik?fmtDur(t.durasi_detik):'-'}</b></td>
+        <td style="white-space:nowrap">${durHtml}</td>
         <td>${stBadge}${t.kendala?`<div style="font-size:.71rem;color:#dc2626;margin-top:2px">⚠️ ${esc(t.kendala)}</div>`:''}</td>
         <td>${chatBtnHtml(t.id)}</td>
       </tr>`;
@@ -2364,6 +2379,7 @@ function renderAbsensi(){
       const ab = abDay.find(a=>a.user_id===uid);
       const uTasks = tDay.filter(t=>t.user_id===uid);
       const cnt = uTasks.length;
+      const totalDur = uTasks.reduce((s,t)=>s+(t.durasi_detik||0),0);
       let jamIn = ab?.jam || '';
       let jamOut = ab?.jam_keluar || '';
       if(!jamIn && uTasks.length){
@@ -2377,10 +2393,11 @@ function renderAbsensi(){
       }
       const late = ab ? isRowLate(ab) : (jamIn && jamIn > '08:00');
       const bg = late ? '#dc2626' : (jamOut ? '#059669' : '#2563eb');
+      const durStr = totalDur ? ` · ⏱️${fmtDurHM(totalDur)}` : '';
       const timeStr = jamIn ? ` · ${jamIn}${jamOut ? '–' + jamOut : ''}` : '';
       const uName = esc(u ? u.nama : (ab?.nama || '?'));
-      return `<div class="calUserBadge" style="background:${bg};cursor:pointer;padding:2px 5px;margin-bottom:2px;line-height:1.35" onclick="event.stopPropagation();showAbsensiDayDetailModal('${uid}','${ds}')" title="${uName} (${cnt} tind.) ${jamIn ? jamIn + (jamOut ? '–' + jamOut : '') + ' WITA' : ''} — Klik untuk detail">
-        <b>${uName}</b> (${cnt})${timeStr}
+      return `<div class="calUserBadge" style="background:${bg};cursor:pointer;padding:2px 5px;margin-bottom:2px;line-height:1.35" onclick="event.stopPropagation();showAbsensiDayDetailModal('${uid}','${ds}')" title="${uName} (${cnt} tind.${totalDur ? ' · ' + fmtDurHM(totalDur) : ''}) ${jamIn ? jamIn + (jamOut ? '–' + jamOut : '') + ' WITA' : ''} — Klik untuk detail">
+        <b>${uName}</b> (${cnt})${durStr}${timeStr}
       </div>`;
     }).join('');
 
@@ -2816,16 +2833,26 @@ function renderRencana(){
       }
     }
 
+    const relatedTasks = CACHE.tindakan.filter(x =>
+      x.klien_id === t.klien_id &&
+      x.sistem_id === t.sistem_id &&
+      x.periode_bulan === t.periode_bulan &&
+      x.periode_tahun === t.periode_tahun &&
+      x.jenis_id === t.jenis_id
+    );
+    const isSeries = relatedTasks.length > 1;
+    const seriesDur = isSeries ? relatedTasks.reduce((tot,x)=>tot+(x.durasi_detik||0),0) : 0;
+
     return `<tr>
       <td>${startRen+i+1}</td>
       ${isAdmin()?`<td><b>${esc(u?u.nama:'-')}</b></td>`:''}
       <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.72rem;color:var(--sub)">Periode: ${BULAN_SINGKAT[t.periode_bulan-1]} ${t.periode_tahun}</span></td>
       <td>${esc(s?s.nama:'-')}</td>
-      <td>${esc(j?j.nama:'-')}${t.is_ulang?`<br><span class="badge b-warn">🔁 Ulang #${t.ulang_ke}</span>`:''}</td>
-      <td style="max-width:200px">${esc(t.uraian||'-')}${t.alasan_ulang?`<br><span style="font-size:.71rem;color:#b45309">Alasan ulang: ${esc(t.alasan_ulang)}</span>`:''}</td>
+      <td>${esc(j?j.nama:'-')}${t.is_ulang?`<br><span class="badge b-warn" title="Pekerjaan lanjutan/pengulangan ke-${t.ulang_ke}">🔁 Lanjutan #${t.ulang_ke}</span>`:''}</td>
+      <td style="max-width:200px">${esc(t.uraian||'-')}${t.alasan_ulang?`<br><span style="font-size:.71rem;color:#b45309">Alasan lanjutan: ${esc(t.alasan_ulang)}</span>`:''}</td>
       <td style="white-space:nowrap">${t.mulai_at?fmtTimeWita(t.mulai_at):'-'}</td>
       <td style="white-space:nowrap">${t.selesai_at?fmtTimeWita(t.selesai_at):'-'}</td>
-      <td style="white-space:nowrap"><b>${t.durasi_detik?fmtDurHM(t.durasi_detik):'-'}</b></td>
+      <td style="white-space:nowrap"><b>${t.durasi_detik?fmtDurHM(t.durasi_detik):'-'}</b>${isSeries && seriesDur ? `<br><span style="font-size:.68rem;color:var(--blue);white-space:nowrap" title="Akumulasi seluruh ${relatedTasks.length} sesi pekerjaan">∑ Total: ${fmtDurHM(seriesDur)}</span>` : ''}</td>
       <td>${stBadge}${t.kendala?`<div style="font-size:.72rem;color:#dc2626;margin-top:3px">⚠️ ${esc(t.kendala)}</div>`:''}</td>
       <td><div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">${actBtns}${chatBtnHtml(t.id)}</div></td>
     </tr>`;
