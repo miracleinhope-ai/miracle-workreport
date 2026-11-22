@@ -2801,15 +2801,27 @@ function renderRencana(){
     </tr>`;
   }).join('') : `<tr><td colspan="${isAdmin()?11:10}" style="text-align:center;color:var(--sub);padding:24px">Belum ada tindakan pada tanggal ini.</td></tr>`;
 
-  const todayAb = !isAdmin() ? CACHE.absensi.find(a=>a.user_id===currentUser.id && a.tanggal===today) : null;
-  const todayOpenCount = !isAdmin() ? CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja===today && (t.status==='rencana'||t.status==='dikerjakan')).length : 0;
-  const endDayBtn = (!isAdmin() && !unclosedAbPrev.length && total>0 && (!todayAb || !todayAb.jam_keluar))
-    ? (todayOpenCount > 0
-        ? `<button class="btnPrimary" style="opacity:.5;cursor:not-allowed" disabled title="Selesaikan/closing semua pekerjaan hari ini terlebih dahulu">🏁 Closing Akhir Hari (${todayOpenCount} belum selesai)</button>`
-        : `<button class="btnPrimary" title="Akhiri pekerjaan hari ini &amp; catat jam keluar" onclick="closingAkhirHari()">🏁 Closing Akhir Hari</button>`)
-    : (todayAb && todayAb.jam_keluar ? `<span class="badge b-done">🏁 Selesai Hari Ini (${todayAb.jam_keluar} WITA)</span>` : '');
+  const targetTgl = fltTgl || today;
+  const isFuture = targetTgl > today;
+  const targetAb = !isAdmin() ? CACHE.absensi.find(a=>a.user_id===currentUser.id && a.tanggal===targetTgl) : null;
+  const targetOpenCount = !isAdmin() ? CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja===targetTgl && (t.status==='rencana'||t.status==='dikerjakan')).length : 0;
+  const targetUserActions = !isAdmin() ? CACHE.tindakan.filter(t=>t.user_id===currentUser.id && t.tanggal_kerja===targetTgl).length : total;
 
-  const addBtn = unclosedAbPrev.length
+  let endDayBtn = '';
+  if(!isAdmin() && !isFuture){
+    if(targetAb && targetAb.jam_keluar){
+      endDayBtn = `<span class="badge b-done" style="font-size:.82rem;padding:7px 12px">🏁 Selesai (${targetAb.jam_keluar} WITA)</span>`;
+    } else if(targetUserActions > 0){
+      if(targetOpenCount > 0){
+        endDayBtn = `<button class="btnPrimary" style="opacity:.5;cursor:not-allowed" disabled title="Selesaikan/closing semua pekerjaan pada tanggal ${fmtDate(targetTgl)} terlebih dahulu">🏁 Closing Akhir Hari (${targetOpenCount} belum selesai)</button>`;
+      } else {
+        const btnLabel = targetTgl === today ? '🏁 Closing Akhir Hari' : `🏁 Closing Akhir Hari (${fmtDate(targetTgl)})`;
+        endDayBtn = `<button class="btnPrimary" title="Akhiri pekerjaan tanggal ${fmtDate(targetTgl)} &amp; catat jam keluar" onclick="closingAkhirHari(false,'${targetTgl}')">${btnLabel}</button>`;
+      }
+    }
+  }
+
+  const addBtn = unclosedAbPrev.length && targetTgl === today
     ? `<button class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem;opacity:.5;cursor:not-allowed" disabled title="Lakukan Closing Akhir Hari sebelumnya terlebih dahulu">+ Tambah Tindakan (Closing Akhir Hari kemarin dulu)</button>`
     : `<div class="flex">${endDayBtn}<button class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem" title="Tambah rencana tindakan harian baru" onclick="modalTambahRencana()">+ Tambah Tindakan Harian</button></div>`;
 
@@ -3172,6 +3184,18 @@ async function closingAkhirHari(fromOverlay=false, targetTanggal=null){
       // fallback jika kolom jam_keluar belum dimigrasi
       toast('ℹ️ Jam keluar dicatat di sesi. Jalankan migration_v2_kpi_tindakan.sql untuk menyimpan jam_keluar.');
     }
+  } else {
+    await sb.from('absensi').insert({
+      user_id: currentUser.id,
+      nama: currentUser.nama,
+      tanggal: tgl,
+      jam: '08:00',
+      jam_keluar: jamKeluar,
+      closing_hari_at: nowIso,
+      tipe: 'Masuk',
+      terlambat: false,
+      menit_terlambat: 0
+    });
   }
   await loadAll();
   if(fromOverlay) document.getElementById('rencanaForceOverlay')?.remove();
