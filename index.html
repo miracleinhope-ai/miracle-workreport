@@ -2352,7 +2352,11 @@ function renderAbsensi(){
     const tDay  = CACHE.tindakan.filter(t=>t.tanggal_kerja===ds);
     const uids  = [...new Set([...abDay.map(a=>a.user_id), ...tDay.map(t=>t.user_id)])].filter(Boolean);
 
-    const userPills = uids.map(uid=>{
+    const hasMore = uids.length > 4;
+    const visibleUids = hasMore ? uids.slice(0, 3) : uids;
+    const remainingCount = uids.length - 3;
+
+    const userPills = visibleUids.map(uid=>{
       const u = CACHE.users.find(x=>x.id===uid);
       const ab = abDay.find(a=>a.user_id===uid);
       const cnt = tDay.filter(t=>t.user_id===uid).length;
@@ -2367,9 +2371,14 @@ function renderAbsensi(){
       </div>`;
     }).join('');
 
-    cells += `<div class="calCell${ds===today?' today':''}" style="min-height:90px;height:auto;cursor:default">
+    const moreBtn = hasMore
+      ? `<div class="calMoreBtn" style="background:var(--gray2,#e2e8f0);color:var(--text);font-size:.62rem;font-weight:700;border-radius:3px;padding:2px 5px;margin-top:2px;text-align:center;cursor:pointer;border:1px dashed #94a3b8;line-height:1.35" onclick="event.stopPropagation();showAbsensiDateSummaryModal('${ds}')" title="Klik untuk melihat seluruh ${uids.length} karyawan">+${remainingCount} lainnya...</div>`
+      : '';
+
+    cells += `<div class="calCell${ds===today?' today':''}" style="min-height:90px;height:auto;cursor:${uids.length?'pointer':'default'}" ${uids.length?`onclick="showAbsensiDateSummaryModal('${ds}')" title="Klik tanggal untuk ringkasan ${uids.length} karyawan"`:''}>
       <div class="calDate" style="display:flex;justify-content:space-between"><span>${d}</span>${uids.length?`<span style="font-size:.65rem;color:var(--sub)">${tDay.length}x</span>`:''}</div>
       ${userPills}
+      ${moreBtn}
     </div>`;
   }
 
@@ -2401,7 +2410,51 @@ function prevAbMonth(){ abCalMonth--; if(abCalMonth<0){abCalMonth=11;abCalYear--
 function nextAbMonth(){ abCalMonth++; if(abCalMonth>11){abCalMonth=0;abCalYear++;} showPage('absensi'); }
 function backToCurAbMonth(){ const my=witaMonthYear(); abCalYear=my.tahun; abCalMonth=my.bulan-1; showPage('absensi'); }
 
-function showAbsensiDayDetailModal(uid, ds){
+function showAbsensiDateSummaryModal(ds){
+  const abDay = CACHE.absensi.filter(a=>a.tanggal===ds);
+  const tDay  = CACHE.tindakan.filter(t=>t.tanggal_kerja===ds);
+  const uids  = [...new Set([...abDay.map(a=>a.user_id), ...tDay.map(t=>t.user_id)])].filter(Boolean);
+  const isRowLate = a => a && (a.terlambat===true || a.tipe==='Terlambat' || (a.jam && a.jam>'08:00'));
+
+  const rows = uids.length ? uids.map(uid=>{
+    const u = CACHE.users.find(x=>x.id===uid);
+    const ab = abDay.find(a=>a.user_id===uid);
+    const items = tDay.filter(t=>t.user_id===uid);
+    const late = isRowLate(ab);
+    const totalDur = items.reduce((s,t)=>s+(t.durasi_detik||0),0);
+    const jamIn = ab?.jam || '-';
+    const jamOut = ab?.jam_keluar || '-';
+    const stBadge = late
+      ? `<span class="badge b-late">Terlambat</span>`
+      : (ab?.jam_keluar
+          ? `<span class="badge b-done">Selesai</span>`
+          : (ab ? `<span class="badge b-progress">Bekerja</span>` : `<span class="badge b-plan">Tanpa Absen</span>`));
+
+    return `<tr>
+      <td><b>${esc(u?u.nama:(ab?.nama||'?'))}</b></td>
+      <td>${jamIn !== '-' ? jamIn + ' WITA' : '-'} ${stBadge}</td>
+      <td>${jamOut !== '-' ? jamOut + ' WITA' : '-'}</td>
+      <td style="text-align:center"><b>${items.length}</b></td>
+      <td><b>${totalDur ? fmtDurHM(totalDur) : '-'}</b></td>
+      <td><button class="btnSm btnPrimary" style="padding:4px 9px;font-size:.74rem" onclick="showAbsensiDayDetailModal('${uid}','${ds}',true)">🔍 Rincian Tugas</button></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--sub);padding:16px">Belum ada aktivitas pada tanggal ini.</td></tr>`;
+
+  document.getElementById('modalBox').style.width = '760px';
+  document.getElementById('modalBox').innerHTML = `
+    <h4>📅 Ringkasan Aktivitas Seluruh Karyawan — ${fmtDateL(ds)}</h4>
+    <p style="font-size:.82rem;color:var(--sub);margin-bottom:12px">Total <b>${uids.length} karyawan</b> tercatat hadir/bekerja dengan <b>${tDay.length} total tindakan</b>.</p>
+    <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+      <table>
+        <thead><tr><th>Nama Karyawan</th><th>Jam Masuk</th><th>Jam Keluar</th><th style="text-align:center">Tindakan</th><th>Total Jam Kerja</th><th>Aksi</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div class="flex mt10"><button onclick="document.getElementById('modalBox').style.width='';closeModal()" class="btnPrimary">Tutup</button></div>`;
+  document.getElementById('modalWrap').classList.remove('hidden');
+}
+
+function showAbsensiDayDetailModal(uid, ds, fromSummary=false){
   const u = CACHE.users.find(x=>x.id===uid);
   const ab = CACHE.absensi.find(a=>a.user_id===uid && a.tanggal===ds);
   const items = CACHE.tindakan.filter(t=>t.user_id===uid && t.tanggal_kerja===ds).sort((a,b)=>(a.created_at||'').localeCompare(b.created_at||''));
@@ -2426,6 +2479,8 @@ function showAbsensiDayDetailModal(uid, ds){
     </tr>`;
   }).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--sub);padding:16px">Belum ada catatan tindakan pada tanggal ini.</td></tr>`;
 
+  const backBtn = fromSummary ? `<button onclick="showAbsensiDateSummaryModal('${ds}')" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">‹ Kembali ke Daftar Tim</button>` : '';
+
   document.getElementById('modalBox').style.width = '840px';
   document.getElementById('modalBox').innerHTML = `
     <h4>📅 Detail Absensi &amp; Kegiatan — ${esc(u?u.nama:(ab?.nama||'-'))} (${fmtDateL(ds)})</h4>
@@ -2439,7 +2494,10 @@ function showAbsensiDayDetailModal(uid, ds){
       <table><thead><tr><th>#</th><th>Klien &amp; Periode</th><th>Sistem</th><th>Jenis Tindakan</th><th>Uraian</th><th>Waktu (WITA)</th><th>Durasi</th><th>Status</th><th>Diskusi</th></tr></thead>
       <tbody>${rowsHtml}</tbody></table>
     </div>
-    <div class="flex mt10"><button onclick="document.getElementById('modalBox').style.width='';closeModal()" class="btnPrimary">Tutup</button></div>`;
+    <div class="flex mt10" style="gap:8px">
+      ${backBtn}
+      <button onclick="document.getElementById('modalBox').style.width='';closeModal()" class="btnPrimary">Tutup</button>
+    </div>`;
   document.getElementById('modalWrap').classList.remove('hidden');
 }
 
