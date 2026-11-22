@@ -2344,7 +2344,7 @@ function renderAbsensi(){
 
   let cells = '';
   for(let i=0; i<firstDow; i++){
-    cells += `<div class="calCell empty" style="min-height:115px;height:auto"></div>`;
+    cells += `<div class="calCell empty" style="min-height:90px;height:auto"></div>`;
   }
   for(let d=1; d<=daysInMonth; d++){
     const ds = `${abCalYear}-${String(abCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -2357,16 +2357,17 @@ function renderAbsensi(){
       const ab = abDay.find(a=>a.user_id===uid);
       const cnt = tDay.filter(t=>t.user_id===uid).length;
       const late = ab && isRowLate(ab);
-      const jamIn = ab?.jam || '-';
+      const jamIn = ab?.jam || '';
       const jamOut = ab?.jam_keluar || '';
       const bg = late ? '#dc2626' : (jamOut ? '#059669' : '#2563eb');
-      return `<div class="calUserBadge" style="background:${bg};cursor:pointer;padding:3px 5px;margin-bottom:2px" onclick="event.stopPropagation();showAbsensiDayDetailModal('${uid}','${ds}')" title="Klik untuk detail kegiatan">
-        <b>${esc(u?u.nama:(ab?.nama||'?'))}</b> · ${cnt} tind.<br>
-        <span style="font-size:.6rem;opacity:.92">${jamIn}${jamOut?'–'+jamOut:''} WITA</span>
+      const timeStr = jamIn ? ` · ${jamIn}${jamOut ? '–' + jamOut : ''}` : '';
+      const uName = esc(u ? u.nama : (ab?.nama || '?'));
+      return `<div class="calUserBadge" style="background:${bg};cursor:pointer;padding:2px 5px;margin-bottom:2px;line-height:1.35" onclick="event.stopPropagation();showAbsensiDayDetailModal('${uid}','${ds}')" title="${uName} (${cnt} tind.) ${jamIn ? jamIn + (jamOut ? '–' + jamOut : '') + ' WITA' : ''} — Klik untuk detail">
+        <b>${uName}</b> (${cnt})${timeStr}
       </div>`;
     }).join('');
 
-    cells += `<div class="calCell${ds===today?' today':''}" style="min-height:115px;height:auto;cursor:default">
+    cells += `<div class="calCell${ds===today?' today':''}" style="min-height:90px;height:auto;cursor:default">
       <div class="calDate" style="display:flex;justify-content:space-between"><span>${d}</span>${uids.length?`<span style="font-size:.65rem;color:var(--sub)">${tDay.length}x</span>`:''}</div>
       ${userPills}
     </div>`;
