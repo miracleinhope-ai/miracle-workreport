@@ -316,6 +316,9 @@ table thead th:last-child,.tblNeonBlue thead th:last-child{border-radius:0 8px 8
       <input type="password" id="loginPin" placeholder="PIN (kosongkan jika tidak ada)"/>
       <button class="btnLogin" onclick="doLogin()">Masuk →</button>
       <p id="loginErr" style="color:#dc2626;font-size:.82rem;margin-top:10px;min-height:18px"></p>
+      <button onclick="openLoginManual()" style="width:100%;padding:10px;background:transparent;color:#3B1B4F;border:1.5px solid #D6598F;border-radius:10px;font-size:.86rem;font-weight:600;cursor:pointer;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s">
+        📖 Lihat Manual Pengguna
+      </button>
       <div class="loginRightFoot">
         Miracle Work Report · Powered by nextBO
       </div>
@@ -945,7 +948,7 @@ function renderSidebarLateAlert(kpi){
   if(lateUsers.length){
     box.innerHTML = `<div class="sideLateBox late"><b>⏰ Terlambat (&gt;08:00 WITA)</b><div style="margin-top:4px">${lateUsers.map(u=>`<div>• <b>${esc(u.nama)}</b>: ${u.lateMonth}x bln ini (tot ${u.lateTotal}x)</div>`).join('')}</div></div>`;
   } else {
-    box.innerHTML = `<div class="sideLateBox"><b>✅ Kedisiplinan Masuk</b><br>Semua karyawan tepat waktu bulan ini.</div>`;
+    box.innerHTML = `<div class="sideLateBox"><b>✅ Kedisiplinan Masuk</b><br>Semua user tepat waktu bulan ini.</div>`;
   }
   renderSidebarKpiRef(k);
 }
@@ -971,7 +974,7 @@ function modalKpiRef(){
     <td style="text-align:center">${u.ulang}</td>
     <td style="text-align:center">${u.lateMonth}x</td>
     <td style="text-align:center"><span class="badge ${u.sku>=85?'b-done':u.sku>=70?'b-warn':'b-urgent'}">${u.sku}</span></td>
-  </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--sub)">Belum ada data karyawan</td></tr>';
+  </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--sub)">Belum ada data user</td></tr>';
 
   document.getElementById('modalBox').style.width = '680px';
   document.getElementById('modalBox').innerHTML = `<h4>📘 Referensi KPI Superadmin — ${BULAN_NAMA[dashFilter.bulan-1]} ${dashFilter.tahun}</h4>
@@ -990,7 +993,7 @@ function modalKpiRef(){
         <b>3. SKU — Skor Kualitas User (Skala 0–100)</b><br>
         <b>Formula:</b> <code>100 − 100 × (40% Ulang + 30% Kendala Internal + 20% Telat Closing + 10% Telat Masuk)</code>
         <table style="margin-top:8px">
-          <thead><tr><th>Karyawan</th><th style="text-align:center">Tindakan</th><th style="text-align:center">Ulang</th><th style="text-align:center">Telat Bln</th><th style="text-align:center">SKU</th></tr></thead>
+          <thead><tr><th>User</th><th style="text-align:center">Tindakan</th><th style="text-align:center">Ulang</th><th style="text-align:center">Telat Bln</th><th style="text-align:center">SKU</th></tr></thead>
           <tbody>${staffRows}</tbody>
         </table>
       </div>
@@ -1220,7 +1223,7 @@ function renderDashboard(){
     <b style="font-size:.82rem;color:var(--text)">📅 Periode KPI:</b>
     <select onchange="dashFilter.bulan=+this.value;k3Page=1;showPage('dashboard')">${bulanOpts}</select>
     <select onchange="dashFilter.tahun=+this.value;k3Page=1;showPage('dashboard')">${tahunOpts}</select>
-    <select onchange="dashFilter.userId=this.value;k3Page=1;showPage('dashboard')"><option value="">Semua Karyawan</option>${userOpts}</select>
+    <select onchange="dashFilter.userId=this.value;k3Page=1;showPage('dashboard')"><option value="">Semua User</option>${userOpts}</select>
     <select onchange="dashFilter.klienId=this.value;k3Page=1;showPage('dashboard')"><option value="">Semua Klien</option>${klienOpts}</select>
     <button class="btnPrimary" style="margin-left:auto;font-size:.78rem;padding:7px 14px" onclick="showPage('rencana')">Lihat Pekerjaan Harian →</button>
   </div>
@@ -1257,11 +1260,11 @@ function renderDashboard(){
       <div class="chartWrap tall"><canvas id="chSistemDonut"></canvas></div>
     </div>
     <div class="chartCard span-6">
-      <div class="secHead"><h4>📊 Kinerja &amp; Masalah per Karyawan</h4></div>
+      <div class="secHead"><h4>📊 Kinerja &amp; Masalah per User</h4></div>
       <div class="chartWrap"><canvas id="chUserBar"></canvas></div>
     </div>
     <div class="chartCard span-6">
-      <div class="secHead"><h4>📈 Jam Login Karyawan vs Batas 08:00 WITA</h4></div>
+      <div class="secHead"><h4>📈 Jam Login User vs Batas 08:00 WITA</h4></div>
       <div class="chartWrap"><canvas id="chLoginLine"></canvas></div>
     </div>
   </div>
@@ -1438,7 +1441,7 @@ function initDashboardCharts(){
     });
   }
 
-  // 5. Grouped Bar: Kinerja per Karyawan
+  // 5. Grouped Bar: Kinerja per User
   const elUB = document.getElementById('chUserBar');
   if(elUB){
     const uList = kpi.userRows.filter(u=>u.role!=='superadmin' || u.total>0);
@@ -2372,10 +2375,10 @@ function renderAbsensi(){
     }).join('');
 
     const moreBtn = hasMore
-      ? `<div class="calMoreBtn" style="background:var(--gray2,#e2e8f0);color:var(--text);font-size:.62rem;font-weight:700;border-radius:3px;padding:2px 5px;margin-top:2px;text-align:center;cursor:pointer;border:1px dashed #94a3b8;line-height:1.35" onclick="event.stopPropagation();showAbsensiDateSummaryModal('${ds}')" title="Klik untuk melihat seluruh ${uids.length} karyawan">+${remainingCount} lainnya...</div>`
+      ? `<div class="calMoreBtn" style="background:var(--gray2,#e2e8f0);color:var(--text);font-size:.62rem;font-weight:700;border-radius:3px;padding:2px 5px;margin-top:2px;text-align:center;cursor:pointer;border:1px dashed #94a3b8;line-height:1.35" onclick="event.stopPropagation();showAbsensiDateSummaryModal('${ds}')" title="Klik untuk melihat seluruh ${uids.length} user">+${remainingCount} lainnya...</div>`
       : '';
 
-    cells += `<div class="calCell${ds===today?' today':''}" style="min-height:90px;height:auto;cursor:${uids.length?'pointer':'default'}" ${uids.length?`onclick="showAbsensiDateSummaryModal('${ds}')" title="Klik tanggal untuk ringkasan ${uids.length} karyawan"`:''}>
+    cells += `<div class="calCell${ds===today?' today':''}" style="min-height:90px;height:auto;cursor:${uids.length?'pointer':'default'}" ${uids.length?`onclick="showAbsensiDateSummaryModal('${ds}')" title="Klik tanggal untuk ringkasan ${uids.length} user"`:''}>
       <div class="calDate" style="display:flex;justify-content:space-between"><span>${d}</span>${uids.length?`<span style="font-size:.65rem;color:var(--sub)">${tDay.length}x</span>`:''}</div>
       ${userPills}
       ${moreBtn}
@@ -2442,11 +2445,11 @@ function showAbsensiDateSummaryModal(ds){
 
   document.getElementById('modalBox').style.width = '760px';
   document.getElementById('modalBox').innerHTML = `
-    <h4>📅 Ringkasan Aktivitas Seluruh Karyawan — ${fmtDateL(ds)}</h4>
-    <p style="font-size:.82rem;color:var(--sub);margin-bottom:12px">Total <b>${uids.length} karyawan</b> tercatat hadir/bekerja dengan <b>${tDay.length} total tindakan</b>.</p>
+    <h4>📅 Ringkasan Aktivitas Seluruh User — ${fmtDateL(ds)}</h4>
+    <p style="font-size:.82rem;color:var(--sub);margin-bottom:12px">Total <b>${uids.length} user</b> tercatat hadir/bekerja dengan <b>${tDay.length} total tindakan</b>.</p>
     <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
       <table>
-        <thead><tr><th>Nama Karyawan</th><th>Jam Masuk</th><th>Jam Keluar</th><th style="text-align:center">Tindakan</th><th>Total Jam Kerja</th><th>Aksi</th></tr></thead>
+        <thead><tr><th>Nama User</th><th>Jam Masuk</th><th>Jam Keluar</th><th style="text-align:center">Tindakan</th><th>Total Jam Kerja</th><th>Aksi</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
@@ -2823,7 +2826,7 @@ function renderRencana(){
       <div class="filterBar">
         <input type="date" value="${fltTgl}" onchange="tindakanFilter.tanggal=this.value;rencanaPage=1;showPage('rencana')"/>
         <select onchange="tindakanFilter.klienId=this.value;rencanaPage=1;showPage('rencana')"><option value="">Semua Klien</option>${klienOpts}</select>
-        ${isAdmin()?`<select onchange="tindakanFilter.userId=this.value;rencanaPage=1;showPage('rencana')"><option value="">Semua Karyawan</option>${userOpts}</select>`:''}
+        ${isAdmin()?`<select onchange="tindakanFilter.userId=this.value;rencanaPage=1;showPage('rencana')"><option value="">Semua User</option>${userOpts}</select>`:''}
       </div>
       <div class="kpiRow">
         <div class="kpiBox"><span class="kv">${total}</span><span class="kl">Total Tindakan</span></div>
@@ -3459,6 +3462,27 @@ async function sendTindakanComment(tId){
 
 // ===== MANUAL =====
 function openManualZoom(src, caption){
+  const isLogin = !document.getElementById('loginScreen').style.display || document.getElementById('loginScreen').style.display !== 'none';
+  if(isLogin){
+    // saat login screen aktif, zoom gambar langsung di overlay manual
+    const ov = document.getElementById('loginManualOv');
+    if(!ov) return;
+    const zBox = document.createElement('div');
+    zBox.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1600;display:flex;align-items:center;justify-content:center;padding:16px';
+    zBox.innerHTML = `<div style="background:#fff;border-radius:14px;padding:18px;max-width:960px;width:100%;max-height:90vh;overflow-y:auto;position:relative">
+      <h4 style="font-size:.9rem;font-weight:700;color:#fff;background:#3B1B4F;padding:9px 14px;border-radius:8px;margin-bottom:12px">🖼️ ${esc(caption||'Pratinjau Halaman')}</h4>
+      <div style="text-align:center;background:#fdf7f6;padding:10px;border-radius:10px;border:1px solid #F4D7D4">
+        <img src="${src}" alt="${esc(caption||'')}" style="max-width:100%;max-height:72vh;border-radius:8px;box-shadow:0 4px 18px rgba(26,15,46,.18)"/>
+      </div>
+      <div style="text-align:right;margin-top:10px">
+        <button onclick="this.closest('.loginZoomBox').remove()" class="btnSm btnGray" style="padding:8px 16px">Tutup</button>
+      </div>
+    </div>`;
+    zBox.classList.add('loginZoomBox');
+    zBox.addEventListener('click', e=>{ if(e.target===zBox) zBox.remove(); });
+    document.body.appendChild(zBox);
+    return;
+  }
   document.getElementById('modalBox').style.width = '960px';
   document.getElementById('modalBox').innerHTML = `<h4>🖼️ ${esc(caption||'Pratinjau Halaman')}</h4>
     <div style="text-align:center;background:#fdf7f6;padding:10px;border-radius:10px;border:1px solid #F4D7D4">
@@ -3468,6 +3492,20 @@ function openManualZoom(src, caption){
       <button onclick="document.getElementById('modalBox').style.width='580px';closeModal()" class="btnSm btnGray" style="padding:8px 16px">Tutup</button>
     </div>`;
   document.getElementById('modalWrap').classList.remove('hidden');
+}
+
+function openLoginManual(){
+  let ov = document.getElementById('loginManualOv');
+  if(ov){ ov.style.display='flex'; return; }
+  ov = document.createElement('div');
+  ov.id = 'loginManualOv';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:1500;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto';
+  ov.innerHTML = `<div style="background:#fff;border-radius:16px;width:100%;max-width:980px;padding:24px 28px;position:relative;margin:auto">
+    <button onclick="document.getElementById('loginManualOv').style.display='none'" style="position:absolute;top:14px;right:16px;background:#FF6B6B;color:#fff;border:none;border-radius:8px;padding:6px 16px;font-size:.84rem;font-weight:700;cursor:pointer;z-index:1">✕ Tutup</button>
+    ${renderManual()}
+  </div>`;
+  ov.addEventListener('click', e=>{ if(e.target===ov) ov.style.display='none'; });
+  document.body.appendChild(ov);
 }
 
 function manualShotHtml(file, caption){
@@ -3529,10 +3567,10 @@ function renderManual(){
     <table>
       <thead><tr><th>Komponen / Kolom</th><th>Keterangan</th></tr></thead>
       <tbody>
-        <tr><td><b>Filter Periode KPI (Superadmin)</b></td><td>Filter berdasarkan <b>Bulan</b>, <b>Tahun</b>, <b>Karyawan</b>, dan <b>Klien</b> untuk memperbarui seluruh kartu KPI, grafik, dan tabel SRK.</td></tr>
+        <tr><td><b>Filter Periode KPI (Superadmin)</b></td><td>Filter berdasarkan <b>Bulan</b>, <b>Tahun</b>, <b>User</b>, dan <b>Klien</b> untuk memperbarui seluruh kartu KPI, grafik, dan tabel SRK.</td></tr>
         <tr><td><b>6 Kartu KPI (Superadmin)</b></td><td>Hadir Hari Ini, Kepatuhan Login ≤08:00, Tindakan Hari Ini, Klien Dikerjakan (K4), First-Time-Right (tanpa ulang), dan Rasio Pengulangan.</td></tr>
         <tr><td><b>Peringatan Klien (SRK / IKU)</b></td><td>Menampilkan klien dengan skor risiko kelalaian tinggi (pengulangan &amp; kendala terbanyak). Klik <b>Detail</b> untuk rincian klien.</td></tr>
-        <tr><td><b>6 Grafik Analitik (Donat, Garis, Bar)</b></td><td>Tren Tindakan 30 Hari (Garis), Komposisi Jenis Tindakan (Donat), Top 10 Klien (Bar), Sistem Kerja Digunakan (Donat), Kinerja Karyawan (Bar), dan Jam Login vs 08:00 WITA (Garis).</td></tr>
+        <tr><td><b>6 Grafik Analitik (Donat, Garis, Bar)</b></td><td>Tren Tindakan 30 Hari (Garis), Komposisi Jenis Tindakan (Donat), Top 10 Klien (Bar), Sistem Kerja Digunakan (Donat), Kinerja User (Bar), dan Jam Login vs 08:00 WITA (Garis).</td></tr>
         <tr><td><b>Datatable Rincian Klien (K3 &amp; SRK)</b></td><td>Kolom: <b>#</b>, <b>Klien / Rekanan</b>, <b>Frekuensi</b>, <b>Tanggal Dikerjakan</b>, <b>Total Waktu</b>, <b>SRK</b>, <b>Analisis Penyebab</b> — dilengkapi data selector &amp; paginasi <b>5 / 10 / 25 / 50 baris</b>.</td></tr>
         <tr><td><b>Dashboard User / Asisten</b></td><td>Menampilkan 4 Kartu KPI pribadi, <b>Grafik Tren Tindakan</b> (dengan filter <i>1 Bulan Berjalan</i>, <i>1 Minggu Terakhir</i>, &amp; <i>Filter Bulan Sebelumnya</i>), kotak <b>Pekerjaan Belum Selesai Lintas Hari</b>, dan datatable <b>Pekerjaan Harian Anda</b> lengkap dengan paginasi.</td></tr>
       </tbody>
@@ -3576,7 +3614,7 @@ function renderManual(){
       <thead><tr><th>Kolom Datatable / Filter</th><th>Keterangan</th></tr></thead>
       <tbody>
         <tr><td><b>Filter Bar</b></td><td>Filter berdasarkan tanggal <b>Dari – Sampai</b>, <b>User</b>, <b>Klien / Rekanan</b>, <b>Status</b>, dan kotak pencarian uraian/sistem.</td></tr>
-        <tr><td><b>Tanggal &amp; Nama User</b></td><td>Tanggal pelaksanaan pekerjaan dan nama karyawan yang mengerjakan.</td></tr>
+        <tr><td><b>Tanggal &amp; Nama User</b></td><td>Tanggal pelaksanaan pekerjaan dan nama user yang mengerjakan.</td></tr>
         <tr><td><b>Rekanan / Klien, Sistem &amp; Tindakan</b></td><td>Nama perusahaan klien beserta periode buku, sistem kerja, jenis tindakan, dan badge <i>Ulang</i> jika berulang.</td></tr>
         <tr><td><b>Mulai, Selesai &amp; Lama Pekerjaan</b></td><td>Rekaman waktu WITA mulai hingga selesai serta total akumulasi durasi kerja.</td></tr>
         <tr><td><b>Status &amp; Kendala / Diskusi</b></td><td>Status akhir tindakan, catatan kendala, dan tombol <b>💬</b> untuk membuka percakapan terkait.</td></tr>
@@ -3593,8 +3631,8 @@ function renderManual(){
     <table>
       <thead><tr><th>Bagian / Elemen</th><th>Keterangan</th></tr></thead>
       <tbody>
-        <tr><td><b>Rekap Keterlambatan Bulanan</b></td><td>Menampilkan jumlah keterlambatan masuk kerja (&gt; 08:00 WITA) per karyawan pada bulan yang dipilih.</td></tr>
-        <tr><td><b>Kalender Absensi &amp; Aktivitas</b></td><td>Menampilkan tanggal hadir setiap karyawan. Klik tanggal pada kalender untuk melihat detail jam masuk, jam keluar, dan daftar tindakan pada hari tersebut.</td></tr>
+        <tr><td><b>Rekap Keterlambatan Bulanan</b></td><td>Menampilkan jumlah keterlambatan masuk kerja (&gt; 08:00 WITA) per user pada bulan yang dipilih.</td></tr>
+        <tr><td><b>Kalender Absensi &amp; Aktivitas</b></td><td>Menampilkan tanggal hadir setiap user. Klik tanggal pada kalender untuk melihat detail jam masuk, jam keluar, dan daftar tindakan pada hari tersebut.</td></tr>
       </tbody>
     </table>
   </div>
@@ -3685,7 +3723,7 @@ function renderManual(){
       <thead><tr><th>Menu / Fitur</th><th style="text-align:center">Superadmin</th><th style="text-align:center">Asisten</th></tr></thead>
       <tbody>
         <tr><td>🏠 Dashboard &amp; KPI</td><td style="text-align:center">✅ Penuh (Tim &amp; Klien)</td><td style="text-align:center">✅ Pribadi &amp; Tren</td></tr>
-        <tr><td>🗓️ Pekerjaan Harian (+ Tambah, Mulai, Closing, Edit Keterangan)</td><td style="text-align:center">✅ Semua Karyawan</td><td style="text-align:center">✅ Milik Sendiri</td></tr>
+        <tr><td>🗓️ Pekerjaan Harian (+ Tambah, Mulai, Closing, Edit Keterangan)</td><td style="text-align:center">✅ Semua User</td><td style="text-align:center">✅ Milik Sendiri</td></tr>
         <tr><td>📋 Rekap Pekerjaan &amp; Export CSV</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
         <tr><td>🕐 Absensi (Otomatis Login &amp; Closing Akhir Hari)</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
         <tr><td>📝 Docs</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td></tr>
