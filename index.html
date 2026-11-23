@@ -84,8 +84,8 @@ nav{flex:0 0 auto;padding:6px 10px}
 nav a{display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:9px;color:rgba(255,255,255,.8);text-decoration:none;font-size:.85rem;margin-bottom:1px;cursor:pointer;transition:.15s}
 nav a:hover,nav a.active{background:rgba(255,255,255,.2);color:#fff}
 nav a .ico{font-size:1rem;width:20px;text-align:center}
-.sideBottom{padding:10px 16px;border-top:1px solid rgba(255,255,255,.15)}
-.btnLogout{width:100%;padding:8px;background:#FF6B6B;border:none;border-radius:8px;color:#fff;font-size:.82rem;font-weight:600;cursor:pointer}
+.sideBottom{padding:10px 16px;border-top:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center}
+.btnLogout{width:100%;padding:9px 12px;background:#FF6B6B;border:none;border-radius:8px;color:#fff;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;gap:7px;box-sizing:border-box}
 .btnLogout:hover{filter:brightness(.92)}
 #main{flex:1;overflow-y:auto;position:relative;display:flex;flex-direction:column}
 .topbar{background:#fff;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--gray2);position:sticky;top:0;z-index:5}
@@ -362,7 +362,7 @@ table thead th:last-child,.tblNeonBlue thead th:last-child{border-radius:0 8px 8
     <div class="userAvatar" id="sideAvatar">?</div>
     <div class="userInfo"><p id="sideName">-</p><span id="sideRole">-</span></div>
   </div>
-  <div class="sideBottom"><button class="btnLogout" onclick="doLogout()">🚪 Keluar / Exit</button></div>
+  <div class="sideBottom"><button type="button" class="btnLogout" onclick="doLogout()"><span>🚪</span> <span>Keluar / Exit</span></button></div>
 </div>
 
 <div id="floatingMenu">
