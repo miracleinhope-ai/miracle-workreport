@@ -250,10 +250,11 @@ textarea{resize:vertical;min-height:60px}
 .donut3dWrap{position:relative;perspective:850px;perspective-origin:50% 36%}
 .donut3dWrap canvas{transform:rotateX(20deg) translateY(-6px);transition:transform .4s cubic-bezier(0.34,1.56,0.64,1),filter .4s ease;filter:drop-shadow(0 14px 18px rgba(15,23,42,.18))}
 .donut3dWrap:hover canvas{transform:rotateX(12deg) translateY(-10px) scale(1.02);filter:drop-shadow(0 20px 26px rgba(15,23,42,.25))}
-.notifTabWrap{display:flex;gap:10px;margin-bottom:16px;border-bottom:2px solid #e2e8f0;padding-bottom:10px}
-.notifTabBtn{background:#ffffff;border:1.5px solid #e2e8f0;padding:9px 18px;font-size:.86rem;font-weight:600;color:#64748b;cursor:pointer;border-radius:8px;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
-.notifTabBtn:hover{background:#fdf7f6;color:#1A0F2E;border-color:#cbd5e1}
-.notifTabBtn.active{background:#F4D7D4;color:#1A0F2E;font-weight:800;border:2px solid #7A2E6F;box-shadow:0 2px 8px rgba(122,46,111,.16)}
+.notifTabWrap{display:flex;gap:8px;margin-bottom:14px}
+.notifTabBtn{background:#fdfaf6;color:#78665c;border:1px solid #e8ded2;border-radius:5px;padding:6px 14px;font-size:.8rem;font-weight:normal;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:filter .15s}
+.notifTabBtn:hover{filter:brightness(.94)}
+.notifTabBtn.active{background:#EADCC8;color:#1A0F2E;border:1px solid #d5c2a8;font-weight:normal;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.notifDataTable td, .notifDataTable td *{font-weight:normal !important}
 .b-gray{background:#e2e8f0;color:#475569}
 .alertBanner{border-radius:11px;padding:12px 16px;margin-bottom:14px;font-size:.83rem;display:flex;align-items:flex-start;gap:10px;position:relative;z-index:1}
 .alertBanner.warn{background:#fef3c7;border-left:4px solid #f59e0b;color:#92400e}
@@ -4533,7 +4534,7 @@ function renderTabPemberitahuanManual(allItems, unreadCount){
     const dt = it.createdAt ? `${fmtDate(it.createdAt.slice(0,10))} ${fmtTimeWita(it.createdAt)}` : '-';
     const toTxt = it.toNames.length ? it.toNames.join(', ') : (it.targetId ? 'Pemilik Pekerjaan' : '-');
     const stHtml = it.isAck
-      ? `<span class="badge b-done">✅ Diketahui</span>${it.ackNames.length?`<div style="font-size:.71rem;color:var(--sub);margin-top:3px">Oleh: <b>${esc(it.ackNames.join(', '))}</b></div>`:`<div style="font-size:.7rem;color:var(--sub);margin-top:2px">${it.isOwn?'Belum ada yang baca':'Anda'}</div>`}`
+      ? `<span class="badge b-done">✅ Diketahui</span>${it.ackNames.length?`<div style="font-size:.71rem;color:var(--sub);margin-top:3px">Oleh: ${esc(it.ackNames.join(', '))}</div>`:`<div style="font-size:.7rem;color:var(--sub);margin-top:2px">${it.isOwn?'Belum ada yang baca':'Anda'}</div>`}`
       : `<span class="badge b-urgent">🔴 Belum Diketahui</span>${it.ackNames.length?`<div style="font-size:.71rem;color:var(--sub);margin-top:3px">Sudah: ${esc(it.ackNames.join(', '))}</div>`:''}`;
     const btnAck = (!it.isOwn && !it.isAck)
       ? `<button class="btnSm btnEdit" title="Tandai sudah diketahui / dibaca agar pengirim mengetahui" onclick="markNotifAck('${it.kind}','${it.rawId}')">✓ Diketahui</button>`
@@ -4544,10 +4545,10 @@ function renderTabPemberitahuanManual(allItems, unreadCount){
     return `<tr>
       <td>${start+idx+1}</td>
       <td style="white-space:nowrap;font-size:.75rem">${dt}</td>
-      <td><b>${esc(it.senderName)}</b>${it.isOwn?' <span class="badge b-info">Saya</span>':''}</td>
+      <td>${esc(it.senderName)}${it.isOwn?' <span class="badge b-info">Saya</span>':''}</td>
       <td>${esc(toTxt)}</td>
       <td style="white-space:nowrap">${it.jenisLabel}</td>
-      <td><b>${esc(it.objLabel)}</b></td>
+      <td>${esc(it.objLabel)}</td>
       <td style="max-width:250px">${esc(it.isi)}</td>
       <td>${stHtml}</td>
       <td><div class="flex">${btnAck}${btnOpen||'-'}</div></td>
@@ -4573,7 +4574,7 @@ function renderTabPemberitahuanManual(allItems, unreadCount){
       <input placeholder="Cari pengirim, tujuan, isi..." value="${esc(notifFilter.q)}" oninput="notifFilter.q=this.value;notifPage=1;showPage('notifikasi')" style="width:220px"/>
     </div>
     <div style="overflow-x:auto">
-      <table><thead><tr><th>#</th><th>Waktu</th><th>Pengirim</th><th>Kepada</th><th>Jenis</th><th>Pekerjaan / Topik</th><th>Isi Pemberitahuan</th><th>Diketahui Oleh</th><th>Aksi</th></tr></thead>
+      <table class="notifDataTable"><thead><tr><th>#</th><th>Waktu</th><th>Pengirim</th><th>Kepada</th><th>Jenis</th><th>Pekerjaan / Topik</th><th>Isi Pemberitahuan</th><th>Diketahui Oleh</th><th>Aksi</th></tr></thead>
       <tbody>${rows}</tbody></table>
     </div>
     ${renderPgBar(total, notifPage, notifPerPage, 'pemberitahuan', 'notifPerPage=+this.value;notifPage=1;showPage(\'notifikasi\')', 'notifPage=__P__;showPage(\'notifikasi\')')}
@@ -4643,13 +4644,13 @@ function renderTabPeringatanKlien(){
           : `<span class="badge b-gray" style="font-size:.68rem">🕒 Tersimpan (${Math.floor(r.diffHours/24)}h lalu)</span>`);
 
     const tindakanTxt = r.resolusi && r.resolusi.tindakan
-      ? `<div style="font-size:.78rem;color:var(--text);white-space:pre-wrap"><b>📝</b> ${esc(r.resolusi.tindakan)}</div>`
+      ? `<div style="font-size:.78rem;color:var(--text);white-space:pre-wrap">📝 ${esc(r.resolusi.tindakan)}</div>`
       : `<span style="font-size:.74rem;color:var(--sub)"><i>Belum dicatat</i></span>`;
 
     const penyelesaianTxt = r.isResolved
       ? `<span class="badge b-done">✅ Selesai / Normal</span>
          ${r.resolusi.penyelesaian ? `<div style="font-size:.75rem;color:var(--text);margin-top:3px">${esc(r.resolusi.penyelesaian)}</div>` : ''}
-         <div style="font-size:.68rem;color:var(--sub);margin-top:2px">Oleh: <b>${esc(r.resolusi.resolved_by_nama || 'Admin')}</b> ${r.resolusi.resolved_at ? '· ' + fmtDate(r.resolusi.resolved_at.slice(0,10)) : ''}</div>`
+         <div style="font-size:.68rem;color:var(--sub);margin-top:2px">Oleh: ${esc(r.resolusi.resolved_by_nama || 'Admin')} ${r.resolusi.resolved_at ? '· ' + fmtDate(r.resolusi.resolved_at.slice(0,10)) : ''}</div>`
       : `<span class="badge b-urgent">🔴 Belum Selesai</span>
          <div style="font-size:.71rem;color:var(--sub);margin-top:2px">Perlu tindakan penanganan</div>`;
 
@@ -4664,22 +4665,22 @@ function renderTabPeringatanKlien(){
     return `<tr>
       <td>${start + idx + 1}</td>
       <td style="white-space:nowrap;font-size:.75rem">
-        <b>${lastDateStr}</b>
+        <div>${lastDateStr}</div>
         <div style="margin-top:3px">${timeBadge}</div>
         <div style="font-size:.68rem;color:var(--sub);margin-top:3px">Periode: ${fmtBulanThn(r.periode_bulan, r.periode_tahun)}</div>
       </td>
       <td>
-        <b>${esc(r.nama)}</b>
-        <div style="font-size:.72rem;color:var(--sub);margin-top:2px">${r.count} tindakan · <b>${r.ulang}x</b> ulang · <b>${r.kendala}x</b> kendala</div>
+        <div>${esc(r.nama)}</div>
+        <div style="font-size:.72rem;color:var(--sub);margin-top:2px">${r.count} tindakan · ${r.ulang}x ulang · ${r.kendala}x kendala</div>
       </td>
       <td style="white-space:nowrap">
-        <span style="font-size:1.05rem;font-weight:800;color:${r.riskLevel==='kritis'?'var(--red)':'var(--orange)'}">${r.srk}</span> <span style="font-size:.7rem;color:var(--sub);font-weight:700">SRK</span>
+        <span style="font-size:.88rem;color:${r.riskLevel==='kritis'?'var(--red)':'var(--orange)'}">${r.srk}</span> <span style="font-size:.7rem;color:var(--sub)">SRK</span>
         <div><span class="badge ${r.riskLevel==='kritis'?'b-urgent':'b-warn'}">${r.riskLevel==='kritis'?'KRITIS':'PERHATIAN'}</span></div>
-        ${r.maxIku > 0 ? `<div style="font-size:.71rem;color:var(--sub);margin-top:2px">IKU: <b>${r.maxIku}</b></div>` : ''}
+        ${r.maxIku > 0 ? `<div style="font-size:.71rem;color:var(--sub);margin-top:2px">IKU: ${r.maxIku}</div>` : ''}
       </td>
       <td style="max-width:220px">
         <div style="font-size:.8rem">${esc(r.diagnosis)}</div>
-        ${r.suspectUser && r.suspectUser !== '-' ? `<div style="font-size:.72rem;color:var(--sub);margin-top:2px">👤 Staf: <b>${esc(r.suspectUser)}</b></div>` : ''}
+        ${r.suspectUser && r.suspectUser !== '-' ? `<div style="font-size:.72rem;color:var(--sub);margin-top:2px">👤 Staf: ${esc(r.suspectUser)}</div>` : ''}
       </td>
       <td style="min-width:180px;max-width:260px">${tindakanTxt}</td>
       <td style="min-width:180px;max-width:260px">${penyelesaianTxt}</td>
@@ -4722,7 +4723,7 @@ function renderTabPeringatanKlien(){
       <input placeholder="Cari klien, staf, tindakan, penyelesaian..." value="${esc(peringatanFilter.q)}" oninput="peringatanFilter.q=this.value;peringatanPage=1;showPage('notifikasi')" style="width:260px"/>
     </div>
     <div style="overflow-x:auto">
-      <table>
+      <table class="notifDataTable">
         <thead>
           <tr>
             <th>#</th>
