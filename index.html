@@ -1116,7 +1116,7 @@ function renderDashboard(){
         const k = CACHE.klien.find(x=>x.id===t.klien_id);
         const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
         const b = t.status==='rencana'
-          ? `<button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button>`
+          ? `<button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button> <button class="btnTiny btnEdit" title="Ubah tanggal/rincian rencana" onclick="modalEditRencana('${t.id}')">✏️ Ubah</button> <button class="btnTiny btnDanger" title="Hapus rencana ini" style="color:#b91c1c" onclick="hapusRencana('${t.id}')">🗑️</button>`
           : `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`;
         return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;padding:6px 10px;border-radius:6px;margin-top:5px;color:var(--text)">
           <span><b>${fmtDate(t.tanggal_kerja)}</b> · ${esc(k?k.nama:'-')} · ${esc(j?j.nama:'-')} (${t.status})</span>
@@ -1141,7 +1141,11 @@ function renderDashboard(){
       const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
       const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
       const btnAct = t.status==='rencana'
-        ? `<button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button>`
+        ? `<div style="display:flex;gap:3px;align-items:center">
+            <button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button>
+            <button class="btnTiny btnEdit" title="Ubah tanggal pelaksanaan atau rincian" onclick="modalEditRencana('${t.id}')">✏️</button>
+            <button class="btnTiny btnDanger" title="Hapus rencana pekerjaan ini" style="color:#b91c1c" onclick="hapusRencana('${t.id}')">🗑️</button>
+          </div>`
         : t.status==='dikerjakan'
         ? `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`
         : `<span class="badge ${t.status==='selesai'?'b-done':t.status==='bermasalah'?'b-urgent':'b-warn'}">${t.status}</span>`;
@@ -2987,7 +2991,11 @@ function renderRencana(){
           ${upcomingPlans.map(t=>{
             const k=CACHE.klien.find(x=>x.id===t.klien_id);
             const j=CACHE.jenis.find(x=>x.id===t.jenis_id);
-            return `<button type="button" class="btnSm btnGray" style="font-size:.74rem" title="Lihat jadwal tanggal ${fmtDate(t.tanggal_kerja)}" onclick="tindakanFilter.tanggal='${t.tanggal_kerja}';rencanaPage=1;showPage('rencana')">${fmtDate(t.tanggal_kerja)} · ${esc(k?k.nama:'-')} (${esc(j?j.nama:'-')})</button>`;
+            const canActRen = isAdmin() || t.user_id === currentUser.id;
+            return `<div style="display:inline-flex;align-items:center;background:#fff;border:1px solid #d5c2a8;border-radius:6px;padding:2px 8px;gap:6px">
+              <span style="font-size:.74rem;cursor:pointer" title="Klik untuk filter data ke tanggal ini" onclick="tindakanFilter.tanggal='${t.tanggal_kerja}';rencanaPage=1;showPage('rencana')">📅 <b>${fmtDate(t.tanggal_kerja)}</b> · ${esc(k?k.nama:'-')} (${esc(j?j.nama:'-')})</span>
+              ${canActRen ? `<button type="button" class="btnTiny btnEdit" style="padding:1px 5px;font-size:.68rem" title="Ubah tanggal/rincian rencana" onclick="modalEditRencana('${t.id}')">✏️</button><button type="button" class="btnTiny btnDanger" style="padding:1px 5px;font-size:.68rem;color:#b91c1c" title="Hapus rencana ini" onclick="hapusRencana('${t.id}')">🗑️</button>` : ''}
+            </div>`;
           }).join('')}
         </div>
       </div>
@@ -3005,7 +3013,7 @@ function renderRencana(){
             const k=CACHE.klien.find(x=>x.id===t.klien_id);
             const j=CACHE.jenis.find(x=>x.id===t.jenis_id);
             const act = t.status==='rencana'
-              ? `<button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button> <button class="btnTiny" title="Closing tindakan ini sekarang" onclick="selesaiTindakan('${t.id}')">⏹ Closing</button>`
+              ? `<button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button> <button class="btnTiny" title="Closing tindakan ini sekarang" onclick="selesaiTindakan('${t.id}')">⏹ Closing</button> <button class="btnTiny btnEdit" title="Ubah tanggal/rincian rencana" onclick="modalEditRencana('${t.id}')">✏️ Ubah</button> <button class="btnTiny btnDanger" title="Hapus rencana ini" style="color:#b91c1c" onclick="hapusRencana('${t.id}')">🗑️</button>`
               : `<button class="btnTiny" title="Closing tindakan ini sekarang" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`;
             return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;padding:6px 10px;border-radius:6px;margin-bottom:4px;color:var(--text)">
               <span><b>${fmtDate(t.tanggal_kerja)}</b> · ${esc(k?k.nama:'-')} · ${esc(j?j.nama:'-')} (${t.status})</span>
@@ -3038,8 +3046,16 @@ function renderRencana(){
     let actBtns = '';
     if(canAct){
       if(t.status==='rencana'){
-        actBtns = `<button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button>
-          <button class="btnTiny" title="Closing tindakan ini" style="margin-top:3px" onclick="selesaiTindakan('${t.id}')">⏹ Closing</button>`;
+        actBtns = `<div style="display:flex;flex-direction:column;gap:3px">
+          <div style="display:flex;gap:3px">
+            <button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button>
+            <button class="btnTiny" title="Closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹ Closing</button>
+          </div>
+          <div style="display:flex;gap:3px">
+            <button class="btnTiny btnEdit" title="Ubah tanggal pelaksanaan atau rincian rencana" onclick="modalEditRencana('${t.id}')">✏️ Ubah</button>
+            <button class="btnTiny btnDanger" title="Hapus rencana pekerjaan ini" style="color:#b91c1c" onclick="hapusRencana('${t.id}')">🗑️ Hapus</button>
+          </div>
+        </div>`;
       } else if(t.status==='dikerjakan'){
         actBtns = `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`;
       } else {
@@ -3178,7 +3194,7 @@ function buildTindakanFormHtml(prefix){
   </div>`;
 }
 
-function cekRiwayatTindakan(prefix){
+function cekRiwayatTindakan(prefix, excludeId=null){
   const klienId = document.getElementById(prefix+'Klien')?.value;
   const bulan   = +document.getElementById(prefix+'Bulan')?.value;
   const tahun   = +document.getElementById(prefix+'Tahun')?.value;
@@ -3192,7 +3208,7 @@ function cekRiwayatTindakan(prefix){
   warnBox.style.display='none'; alWrap.style.display='none'; btnSave.disabled=false; btnSave.style.opacity='1';
   if(!klienId || !sisId || !jenId) return;
 
-  const prev = CACHE.tindakan.filter(t=>t.klien_id===klienId && t.sistem_id===sisId && t.periode_bulan===bulan && t.periode_tahun===tahun && t.jenis_id===jenId);
+  const prev = CACHE.tindakan.filter(t=> (!excludeId || t.id !== excludeId) && t.klien_id===klienId && t.sistem_id===sisId && t.periode_bulan===bulan && t.periode_tahun===tahun && t.jenis_id===jenId);
   if(!prev.length) return;
 
   const jen = CACHE.jenis.find(j=>j.id===jenId);
@@ -3457,6 +3473,157 @@ async function saveEditKeteranganTindakan(id){
   await loadAll();
   showPage(currentPage);
   toast('✅ Keterangan pekerjaan diperbarui!');
+}
+
+function modalEditRencana(id){
+  const t = CACHE.tindakan.find(x=>x.id===id);
+  if(!t) return;
+  if(t.status !== 'rencana'){
+    return alert('Hanya pekerjaan berstatus Rencana yang dapat diubah jadwal atau rinciannya.');
+  }
+  const curMY = witaMonthYear();
+  const klienOpts = CACHE.klien.map(k=>`<option value="${k.id}" ${t.klien_id===k.id?'selected':''}>${esc(k.nama)}</option>`).join('');
+  const userOpts = CACHE.users.map(u=>`<option value="${u.id}" ${t.user_id===u.id?'selected':''}>${esc(u.nama)}${currentUser&&u.id===currentUser.id?' (Saya)':''}</option>`).join('');
+  const sisOpts = CACHE.sistem.filter(s=>s.aktif || s.id===t.sistem_id).map(s=>`<option value="${s.id}" ${t.sistem_id===s.id?'selected':''}>${esc(s.nama)}</option>`).join('');
+  const jenOpts = CACHE.jenis.filter(j=>j.aktif || j.id===t.jenis_id).map(j=>`<option value="${j.id}" ${t.jenis_id===j.id?'selected':''}>${esc(j.nama)}${!j.boleh_diulang?' (1x saja)':''}</option>`).join('');
+  const blnOpts = BULAN_NAMA.map((b,i)=>`<option value="${i+1}" ${t.periode_bulan===i+1?'selected':''}>${b}${i===11?' (atau Tahunan / Jan–Des)':''}</option>`).join('');
+  const formYears = [];
+  for(let y = curMY.tahun + 2; y >= Math.min(2020, curMY.tahun - 6); y--) formYears.push(y);
+  const thnOpts = formYears.map(y=>`<option value="${y}" ${t.periode_tahun===y?'selected':''}>${y}</option>`).join('');
+  const alasanOpts = ALASAN_ULANG.map(a=>`<option value="${esc(a)}" ${t.alasan_ulang===a?'selected':''}>${esc(a)}</option>`).join('');
+
+  document.getElementById('modalBox').style.width = '740px';
+  document.getElementById('modalBox').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#3B1B4F;color:#fff;padding:12px 18px;border-radius:10px;margin-bottom:14px">
+      <h4 style="margin:0;font-size:1.02rem;font-weight:700;color:#fff;background:none;padding:0">✏️ Ubah Jadwal &amp; Rincian Rencana Pekerjaan</h4>
+      <button type="button" onclick="document.getElementById('modalBox').style.width='';closeModal()" class="modalCloseBtn" title="Tutup">✕</button>
+    </div>
+    <div style="background:var(--gray);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.82rem;line-height:1.5">
+      💡 <b>Petunjuk:</b> Tanggal pelaksanaan rencana dapat dimajukan (lebih awal) atau dimundurkan (tanggal berikutnya). Status masih <b>Rencana</b> sehingga aman dan belum memengaruhi durasi kerja atau KPI. Jika pekerjaan tidak jadi dilakukan, Anda dapat langsung menghapusnya melalui tombol <b>Hapus Rencana Ini</b>.
+    </div>
+    <div class="formGrid">
+      <div class="formGroup"><label>Klien / Rekanan *</label>
+        <select id="erKlien" onchange="cekRiwayatTindakan('er','${id}')"><option value="">-- Pilih Klien --</option>${klienOpts}</select>
+      </div>
+      <div class="formGroup"><label>Tanggal Pelaksanaan (Bisa Maju / Mundur) *</label>
+        <input type="date" id="erTglKerja" value="${t.tanggal_kerja}"/>
+      </div>
+      <div class="formGroup">
+        <label>Ditugaskan Kepada (Pelaksana) *</label>
+        <select id="erPelaksana" ${!isAdmin()?'disabled':''}>${userOpts}</select>
+      </div>
+      <div class="formGroup"><label>Sistem Kerja *</label>
+        <select id="erSistem" onchange="cekRiwayatTindakan('er','${id}')"><option value="">-- Pilih Sistem --</option>${sisOpts}</select>
+      </div>
+      <div class="formGroup"><label>Periode Buku (Bulan) *</label>
+        <select id="erBulan" onchange="cekRiwayatTindakan('er','${id}')">${blnOpts}</select>
+      </div>
+      <div class="formGroup"><label>Periode Buku (Tahun) *</label>
+        <select id="erTahun" onchange="cekRiwayatTindakan('er','${id}')">${thnOpts}</select>
+      </div>
+      <div class="formGroup full"><label>Jenis Tindakan *</label>
+        <select id="erJenis" onchange="cekRiwayatTindakan('er','${id}')"><option value="">-- Pilih Tindakan --</option>${jenOpts}</select>
+      </div>
+      <div class="formGroup full" id="erWarnBox" style="display:none"></div>
+      <div class="formGroup full" id="erAlasanWrap" style="display:${t.is_ulang?'flex':'none'}">
+        <label>Alasan Pengulangan (Wajib jika pengulangan tindakan) *</label>
+        <select id="erAlasan">${alasanOpts}</select>
+      </div>
+      <div class="formGroup full"><label>Uraian / Keterangan Tindakan</label>
+        <textarea id="erUraian" style="min-height:65px" placeholder="Contoh: Laporan Keuangan Jan–Des 2022, cek mutasi bank, input faktur...">${esc(t.uraian||'')}</textarea>
+      </div>
+    </div>
+    <div class="flex mt10" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div class="flex" style="gap:8px">
+        <button class="btnPrimary" id="erBtnSave" onclick="saveEditRencana('${id}')">💾 Simpan Perubahan</button>
+        <button type="button" onclick="document.getElementById('modalBox').style.width='';closeModal()" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">Batal</button>
+      </div>
+      <button type="button" class="btnSm btnDanger" style="padding:9px 16px;font-size:.84rem;color:#b91c1c" onclick="hapusRencana('${id}')">🗑️ Hapus Rencana Ini</button>
+    </div>
+  `;
+  document.getElementById('modalWrap').classList.remove('hidden');
+  cekRiwayatTindakan('er', id);
+}
+
+async function saveEditRencana(id){
+  const t = CACHE.tindakan.find(x=>x.id===id);
+  if(!t) return;
+  if(t.status !== 'rencana') return alert('Hanya rencana pekerjaan yang dapat diubah.');
+
+  const klien_id = document.getElementById('erKlien').value;
+  const tanggal_kerja = document.getElementById('erTglKerja').value;
+  const user_id = isAdmin() ? (document.getElementById('erPelaksana')?.value || t.user_id) : t.user_id;
+  const sistem_id = document.getElementById('erSistem').value;
+  const periode_bulan = +document.getElementById('erBulan').value;
+  const periode_tahun = +document.getElementById('erTahun').value;
+  const jenis_id = document.getElementById('erJenis').value;
+  const uraian = document.getElementById('erUraian').value.trim();
+
+  if(!klien_id || !sistem_id || !jenis_id || !tanggal_kerja){
+    return alert('Klien, Tanggal Pelaksanaan, Sistem Kerja, dan Jenis Tindakan wajib diisi!');
+  }
+
+  const prev = CACHE.tindakan.filter(x=>x.id !== id && x.klien_id===klien_id && x.sistem_id===sistem_id && x.periode_bulan===periode_bulan && x.periode_tahun===periode_tahun && x.jenis_id===jenis_id);
+  const jen = CACHE.jenis.find(j=>j.id===jenis_id);
+  if(prev.length && jen && !jen.boleh_diulang){
+    return alert('⛔ Tindakan ini tidak boleh diulang untuk periode yang sama!');
+  }
+
+  const is_ulang = prev.length > 0;
+  const ulang_ke = prev.length;
+  const ulang_dari_id = is_ulang ? prev[prev.length-1].id : null;
+  const alasan_ulang = is_ulang ? (document.getElementById('erAlasan')?.value || null) : null;
+
+  const payload = {
+    klien_id,
+    tanggal_kerja,
+    user_id,
+    sistem_id,
+    periode_bulan,
+    periode_tahun,
+    jenis_id,
+    uraian,
+    is_ulang,
+    ulang_ke,
+    ulang_dari_id,
+    alasan_ulang
+  };
+
+  const { error } = await sb.from('tindakan_harian').update(payload).eq('id', id);
+  if(error) return alert('Gagal menyimpan perubahan rencana: ' + error.message);
+
+  document.getElementById('modalBox').style.width = '';
+  closeModal();
+  await loadAll();
+  showPage(currentPage);
+  toast(`✅ Rencana berhasil diperbarui (Tanggal: ${fmtDate(tanggal_kerja)})!`);
+}
+
+async function hapusRencana(id){
+  const t = CACHE.tindakan.find(x=>x.id===id);
+  if(!t) return;
+  if(t.status !== 'rencana'){
+    return alert('⛔ Hanya rencana pekerjaan (yang belum dikerjakan) yang dapat dihapus.');
+  }
+
+  const k = CACHE.klien.find(x=>x.id===t.klien_id);
+  const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
+  const kNm = k ? k.nama : 'Klien';
+  const jNm = j ? j.nama : 'Tindakan';
+
+  const ok = confirm(`Hapus rencana pekerjaan ini?\n\n• Klien: ${kNm}\n• Tindakan: ${jNm}\n• Tanggal: ${fmtDate(t.tanggal_kerja)}\n\nRencana yang dihapus tidak akan dihitung dan dibatalkan secara permanen.`);
+  if(!ok) return;
+
+  await sb.from('tindakan_comments').delete().eq('tindakan_id', id);
+
+  const { error } = await sb.from('tindakan_harian').delete().eq('id', id);
+  if(error) return alert('Gagal menghapus rencana: ' + error.message);
+
+  document.getElementById('modalBox').style.width = '';
+  closeModal();
+  await loadAll();
+  showPage(currentPage);
+  toast('🗑️ Rencana pekerjaan berhasil dihapus!');
 }
 
 async function closingAkhirHari(fromOverlay=false, targetTanggal=null){
@@ -3999,6 +4166,8 @@ function renderManual(){
       <li>Klik <b>▶ Mulai</b> saat mulai mengerjakan tindakan agar jam mulai (WITA) tercatat.</li>
       <li>Klik <b>⏹ Selesai &amp; Closing</b> saat tindakan selesai. Pekerjaan yang belum tuntas boleh dibiarkan <b>tetap open lintas hari</b> tanpa pop-up paksa saat login, dan tampil di kotak <b>📌 Pekerjaan Belum Selesai Lintas Hari</b>.</li>
       <li>Tindakan yang sudah closing tetap dapat diubah keterangannya melalui tombol aksi <b>✏️ Keterangan</b> (jam mulai, jam selesai, dan durasi tetap terkunci).</li>
+      <li>Rencana pekerjaan yang belum mulai dikerjakan (status <b>Rencana</b>) dapat diubah tanggal pelaksanaannya (bisa dimajukan ke tanggal lebih awal atau dimundurkan ke tanggal berikutnya) serta rincian klien/sistem/tindakan melalui tombol aksi <b>✏️ Ubah</b>.</li>
+      <li>Jika rencana pekerjaan tersebut batal atau tidak jadi dilaksanakan, dapat langsung dibatalkan dan dihapus permanen melalui tombol aksi <b>🗑️ Hapus</b> (hanya berlaku untuk pekerjaan yang belum dikerjakan, tidak memengaruhi rekap durasi maupun KPI).</li>
       <li>Tombol <b>🏁 Closing Akhir Hari</b> hanya aktif jika seluruh pekerjaan pada hari tersebut sudah di-closing. Jika setelah Closing Akhir Hari user masih menambah tindakan baru di hari yang sama, status Closing Akhir Hari otomatis terbuka kembali.</li>
     </ol>
     <table>
