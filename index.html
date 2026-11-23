@@ -250,6 +250,10 @@ textarea{resize:vertical;min-height:60px}
 .donut3dWrap{position:relative;perspective:850px;perspective-origin:50% 36%}
 .donut3dWrap canvas{transform:rotateX(20deg) translateY(-6px);transition:transform .4s cubic-bezier(0.34,1.56,0.64,1),filter .4s ease;filter:drop-shadow(0 14px 18px rgba(15,23,42,.18))}
 .donut3dWrap:hover canvas{transform:rotateX(12deg) translateY(-10px) scale(1.02);filter:drop-shadow(0 20px 26px rgba(15,23,42,.25))}
+.notifTabWrap{display:flex;gap:8px;margin-bottom:14px;border-bottom:2px solid #e2e8f0;padding-bottom:10px}
+.notifTabBtn{background:#f1f5f9;border:1px solid #cbd5e1;padding:8px 16px;font-size:.86rem;font-weight:700;color:var(--sub);cursor:pointer;border-radius:8px;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+.notifTabBtn:hover{background:#e2e8f0;color:var(--text)}
+.notifTabBtn.active{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 2px 8px rgba(59,27,79,.25)}
 .alertBanner{border-radius:11px;padding:12px 16px;margin-bottom:14px;font-size:.83rem;display:flex;align-items:flex-start;gap:10px;position:relative;z-index:1}
 .alertBanner.warn{background:#fef3c7;border-left:4px solid #f59e0b;color:#92400e}
 .alertBanner.danger{background:#fee2e2;border-left:4px solid #ef4444;color:#991b1b}
@@ -423,11 +427,13 @@ let k3Page = 1, k3PerPage = 5;
 let rencanaPage = 1, rencanaPerPage = 10;
 let dashUserPage = 1, dashUserPerPage = 5;
 let notifPage = 1, notifPerPage = 10, notifFilter = { jenis:'', status:'', q:'' };
+let notifActiveTab = 'pesan'; // 'pesan' | 'peringatan'
+let peringatanPage = 1, peringatanPerPage = 10, peringatanFilter = { status: '', q: '', bulan: '', tahun: '' };
 let timerInterval = null, timerStart = null, timerPekId = null, timerElapsed = 0;
 let dragId = null;
 let realtimeChannel = null;
 let realtimeDebounce = null;
-let CACHE = {users:[],klien:[],pekerjaan:[],absensi:[],docs:[],comments:[],timelogs:[],rencana:[],sistem:[],jenis:[],tindakan:[],tcomments:[]};
+let CACHE = {users:[],klien:[],pekerjaan:[],absensi:[],docs:[],comments:[],timelogs:[],rencana:[],sistem:[],jenis:[],tindakan:[],tcomments:[],resolusi:[]};
 let rowsPerPageKlien = 10, rowsPerPagePek = 10;
 let pageKlien = 1, pagePek = 1;
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
@@ -489,6 +495,12 @@ const fmtPeriode = (b, y, uraian='') => {
   if(!b || !y) return '-';
   const isJanDes = b === 12 && uraian && /(jan[\s\-_–]*des|tahunan|annual)/i.test(uraian);
   return `${isJanDes ? 'Jan–Des' : (BULAN_SINGKAT[b-1] || b)} ${y}`;
+};
+const fmtBulanThn = (b, y) => (!b || !y) ? '-' : `${BULAN_NAMA[+b-1]||b} ${y}`;
+const getAlertResolusiKey = (klienId, b, y) => `${klienId}_${y}_${b}`;
+const getAlertResolusi = (klienId, b, y) => {
+  const k = getAlertResolusiKey(klienId, b, y);
+  return (CACHE.resolusi || []).find(r => r.key === k || (r.klien_id === klienId && +r.periode_tahun === +y && +r.periode_bulan === +b));
 };
 const badgeSt    = s => s==='Selesai'?'b-done':s==='Dalam Proses'?'b-progress':'b-plan';
 const esc        = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -585,6 +597,24 @@ async function loadAll(){
   CACHE.tindakan  = th.data||[];
   CACHE.tcomments = tc.data||[];
   migrationReady  = !sk.error && !jt.error && !th.error && !tc.error;
+
+  // Load resolusi peringatan (Supabase dengan fallback localStorage)
+  try {
+    const { data: resData, error: resErr } = await sb.from('peringatan_resolusi').select('*');
+    if(!resErr && Array.isArray(resData)){
+      CACHE.resolusi = resData.map(r=>({
+        ...r,
+        key: getAlertResolusiKey(r.klien_id, r.periode_bulan, r.periode_tahun)
+      }));
+      try { localStorage.setItem('SIKERJA_ALERT_RESOLUSI', JSON.stringify(CACHE.resolusi)); } catch(_){}
+    } else {
+      const local = localStorage.getItem('SIKERJA_ALERT_RESOLUSI');
+      CACHE.resolusi = local ? JSON.parse(local) : [];
+    }
+  } catch(_) {
+    const local = localStorage.getItem('SIKERJA_ALERT_RESOLUSI');
+    CACHE.resolusi = local ? JSON.parse(local) : [];
+  }
 }
 
 // ===== LOGIN =====
@@ -906,6 +936,33 @@ function computeKPIs(bulan, tahun, filterUserId='', filterKlienId=''){
     } else {
       r.diagnosis = `✅ Normal`;
     }
+
+    // Pelacakan waktu masalah terakhir & resolusi penyelesaian
+    const probItems = (r.items || []).filter(t => t.is_ulang || (t.kendala && t.kendala.trim() !== '') || t.sifat_kendala === 'internal');
+    let lastTime = null;
+    if(probItems.length){
+      const sorted = [...probItems].sort((a,b)=>(b.closing_at || b.created_at || b.tanggal_kerja).localeCompare(a.closing_at || a.created_at || a.tanggal_kerja));
+      lastTime = sorted[0].closing_at || sorted[0].created_at || sorted[0].tanggal_kerja;
+    } else if(r.dates && r.dates.length){
+      lastTime = r.dates[r.dates.length - 1];
+    }
+    r.lastIncidentTime = lastTime;
+
+    if(lastTime){
+      const incidentDate = new Date(lastTime.includes('T') ? lastTime : lastTime + 'T23:59:59+08:00');
+      const diffMs = Date.now() - incidentDate.getTime();
+      r.diffHours = Math.max(0, Math.round(diffMs / (1000 * 60 * 60)));
+      r.isWithin72h = r.diffHours <= 72; // Tampil sementara 3x24 jam
+    } else {
+      r.diffHours = 999;
+      r.isWithin72h = false;
+    }
+
+    r.periode_bulan = bulan;
+    r.periode_tahun = tahun;
+    r.resolusi = getAlertResolusi(r.klien_id, bulan, tahun);
+    r.isResolved = !!(r.resolusi && (r.resolusi.status === 'selesai' || r.resolusi.status === 'normal'));
+    r.isActiveInDashboard = !r.isResolved && r.isWithin72h;
   });
   clientRows.sort((a,b)=>b.count - a.count || b.srk - a.srk);
 
@@ -1179,20 +1236,49 @@ function renderDashboard(){
     </div>`;
   }).join('');
 
-  // Panel Peringatan Klien Bermasalah / Indikasi Kelalaian
-  const alertHtml = kpi.alertClients.length ? kpi.alertClients.map(r=>`
-    <div class="riskItem ${r.riskLevel==='kritis'?'kritis':''}">
-      <div class="riskScore" style="color:${r.riskLevel==='kritis'?'var(--red)':'var(--orange)'}">${r.srk}<div style="font-size:.62rem;font-weight:600;color:var(--sub)">SRK</div></div>
-      <div style="flex:1">
-        <b>${esc(r.nama)}</b> <span class="badge ${r.riskLevel==='kritis'?'b-urgent':'b-warn'}">${r.riskLevel==='kritis'?'KRITIS':'PERHATIAN'}</span>
-        ${!r.srkValid?'<span style="font-size:.7rem;color:var(--sub)">(sampel &lt; 5)</span>':''}
-        <div style="font-size:.77rem;color:var(--sub);margin-top:2px">
-          ${r.count} tindakan · <b>${r.ulang}x</b> ulang · <b>${r.kendala}x</b> kendala · ${r.diagnosis}
+  // Panel Peringatan Klien Bermasalah / Indikasi Kelalaian (Tampil Sementara 3x24 Jam & Belum Selesai)
+  const activeAlerts = kpi.alertClients.filter(r => r.isActiveInDashboard);
+  let alertHtml = '';
+  if(activeAlerts.length){
+    alertHtml = activeAlerts.map(r=>`
+      <div class="riskItem ${r.riskLevel==='kritis'?'kritis':''}">
+        <div class="riskScore" style="color:${r.riskLevel==='kritis'?'var(--red)':'var(--orange)'}">${r.srk}<div style="font-size:.62rem;font-weight:600;color:var(--sub)">SRK</div></div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <b>${esc(r.nama)}</b>
+            <span class="badge ${r.riskLevel==='kritis'?'b-urgent':'b-warn'}">${r.riskLevel==='kritis'?'KRITIS':'PERHATIAN'}</span>
+            <span class="badge b-urgent" style="font-size:.68rem">⚡ Aktif (${r.diffHours}j lalu)</span>
+            ${!r.srkValid?'<span style="font-size:.7rem;color:var(--sub)">(sampel &lt; 5)</span>':''}
+          </div>
+          <div style="font-size:.77rem;color:var(--sub);margin-top:3px">
+            ${r.count} tindakan · <b>${r.ulang}x</b> ulang · <b>${r.kendala}x</b> kendala · ${r.diagnosis}
+          </div>
+          ${r.resolusi && r.resolusi.tindakan ? `<div style="font-size:.73rem;color:var(--text);margin-top:2px"><b>📝 Tindakan:</b> ${esc(r.resolusi.tindakan)}</div>` : ''}
         </div>
-      </div>
-      <button class="btnSm btnEdit" title="Lihat detail KPI klien" onclick="showClientKpiModal('${r.klien_id}')">Detail</button>
-    </div>`).join('')
-    : `<div style="color:var(--sub);font-size:.82rem;padding:8px 0">✅ Tidak ada klien dengan indikasi masalah atau kelalaian pada periode ini.</div>`;
+        <div class="flex" style="gap:5px">
+          <button class="btnSm btnPrimary" title="Tandai kondisi telah selesai &amp; status kembali normal" onclick="openResolusiModal('${r.klien_id}', ${dashFilter.bulan}, ${dashFilter.tahun}, true)">✅ Selesai</button>
+          <button class="btnSm btnEdit" title="Catat tindakan penanganan" onclick="openResolusiModal('${r.klien_id}', ${dashFilter.bulan}, ${dashFilter.tahun}, false)">📝 Tindakan</button>
+          <button class="btnSm btnGray" title="Lihat detail KPI klien" onclick="showClientKpiModal('${r.klien_id}')">Detail</button>
+        </div>
+      </div>`).join('');
+    
+    alertHtml += `
+      <div style="margin-top:8px;padding:9px 14px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:9px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.78rem;color:var(--sub);flex-wrap:wrap">
+        <div><b>🕒 Tampil Sementara 3x24 Jam:</b> Peringatan baru tampil di Dashboard selama 72 jam atau sampai diselesaikan. Riwayat &amp; arsip lengkap disimpan di modul Pemberitahuan.</div>
+        <button class="btnSm btnGray" onclick="navToNotifTab('peringatan')">📋 Buka Tab Peringatan (${kpi.alertClients.length})</button>
+      </div>`;
+  } else {
+    alertHtml = `
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#166534;flex-wrap:wrap">
+        <div>
+          <b>✅ Tidak ada peringatan aktif baru (dalam batas 3x24 jam).</b>
+          <div style="font-size:.78rem;opacity:.9;margin-top:2px">
+            ${kpi.alertClients.length ? `Terdapat <b>${kpi.alertClients.length}</b> peringatan periode ini yang telah lewat 3x24 jam atau telah diselesaikan dan tersimpan dalam modul Pemberitahuan.` : `Semua kinerja klien dan staf pada periode ini berjalan normal.`}
+          </div>
+        </div>
+        ${kpi.alertClients.length ? `<button class="btnSm btnGray" onclick="navToNotifTab('peringatan')">📋 Buka Tab Peringatan (${kpi.alertClients.length})</button>` : ''}
+      </div>`;
+  }
 
   // Tabel K3: Klien per periode + daftar tanggal (dengan paginasi 5/10/25/50)
   const totalK3 = kpi.clientRows.length;
@@ -1260,7 +1346,10 @@ function renderDashboard(){
   </div>
 
   <div class="section">
-    <div class="secHead"><h4>🚨 Peringatan Klien &amp; Indikasi Kelalaian (SRK / IKU)</h4></div>
+    <div class="secHead">
+      <h4>🚨 Peringatan Klien &amp; Indikasi Kelalaian (SRK / IKU)</h4>
+      <button class="btnSm btnGray" onclick="navToNotifTab('peringatan')" title="Buka modul arsip &amp; penyelesaian peringatan">📋 Modul Pemberitahuan</button>
+    </div>
     ${alertHtml}
   </div>
 
@@ -4276,8 +4365,152 @@ async function markNotifAck(kind, id){
   toast('✅ Ditandai sudah diketahui!');
 }
 
+function setNotifTab(tab){
+  notifActiveTab = tab;
+  showPage('notifikasi');
+}
+function navToNotifTab(tab='peringatan'){
+  notifActiveTab = tab;
+  showPage('notifikasi');
+}
+
+function openResolusiModal(klienId, bulan, tahun, defaultCheckSelesai=false){
+  const k = (CACHE.klien||[]).find(x=>x.id===klienId);
+  const kName = k ? k.nama : 'Klien';
+  const resolusi = getAlertResolusi(klienId, bulan, tahun) || {};
+  const isSelesai = defaultCheckSelesai || resolusi.status === 'selesai' || resolusi.status === 'normal';
+
+  const kpi = computeKPIs(bulan, tahun);
+  const r = (kpi.alertClients||[]).find(x=>x.klien_id===klienId) || {};
+
+  document.getElementById('modalBox').style.width = '660px';
+  document.getElementById('modalBox').innerHTML = `
+    <div style="background:#3B1B4F;margin:-22px -24px 16px -24px;padding:14px 20px;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center;color:#fff">
+      <div>
+        <h4 style="margin:0;font-size:1.02rem;color:#fff;font-weight:700">🚨 Tindakan &amp; Penyelesaian Peringatan Klien</h4>
+        <div style="font-size:.76rem;color:#e9d5ff;margin-top:2px">${esc(kName)} · Periode: ${fmtBulanThn(bulan, tahun)}</div>
+      </div>
+      <button class="modalCloseBtn" onclick="closeModal()">✕</button>
+    </div>
+    
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:9px;padding:10px 14px;margin-bottom:14px;font-size:.79rem;color:#991b1b">
+      <b>Status Risiko:</b> SRK <b>${r.srk||'-'}</b> (${r.riskLevel==='kritis'?'KRITIS':'PERHATIAN'}) · <b>${r.ulang||0}x</b> pengulangan · <b>${r.kendala||0}x</b> kendala<br>
+      <b>Indikasi:</b> ${esc(r.diagnosis || 'Perlu evaluasi operasional')}
+    </div>
+
+    <div class="formGrid">
+      <div class="formGroup full">
+        <label><b>📝 Tindakan yang Dilakukan (Action Plan)</b> *</label>
+        <textarea id="resTindakan" style="min-height:75px" placeholder="Tuliskan tindakan penanganan yang telah/sedang diambil (contoh: asistensi staf penanggung jawab, rekonsiliasi ulang buku bank dengan rekening koran, konfirmasi dokumen ke PIC klien)...">${esc(resolusi.tindakan || '')}</textarea>
+        <div style="font-size:.7rem;color:var(--sub);margin-top:2px">Catat langkah konkrit penanganan atau arahan yang telah/sedang diberikan.</div>
+      </div>
+      
+      <div class="formGroup full">
+        <label><b>✅ Catatan Penyelesaian (Resolution Note)</b></label>
+        <textarea id="resPenyelesaian" style="min-height:70px" placeholder="Tuliskan hasil akhir penyelesaian (contoh: selisih transaksi telah dikoreksi dan balance, checker telah menyetujui laporan akhir)...">${esc(resolusi.penyelesaian || '')}</textarea>
+        <div style="font-size:.7rem;color:var(--sub);margin-top:2px">Catat hasil akhir atau konfirmasi pemulihan ke kondisi normal.</div>
+      </div>
+
+      <div class="formGroup full" style="background:#f8fafc;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;font-weight:700;color:var(--text)">
+          <input type="checkbox" id="resStatusSelesai" ${isSelesai?'checked':''} style="width:17px;height:17px;accent-color:var(--primary)"/>
+          <span>Tandai Masalah Telah Selesai &amp; Status Kembali Normal</span>
+        </label>
+        <div style="font-size:.72rem;color:var(--sub);margin-left:25px;margin-top:2px">
+          Jika dicentang, status peringatan menjadi <b>Normal / Selesai</b> dan tidak lagi memicu alert aktif di Dashboard Superadmin.
+        </div>
+      </div>
+    </div>
+
+    <div class="flex mt14" style="justify-content:flex-end;gap:8px">
+      <button class="btnSm btnGray" onclick="closeModal()" style="padding:9px 18px">Batal</button>
+      <button class="btnPrimary" onclick="saveResolusiPeringatan('${klienId}', ${bulan}, ${tahun})" style="padding:9px 20px">💾 Simpan Tindakan &amp; Penyelesaian</button>
+    </div>
+  `;
+  document.getElementById('modalWrap').classList.remove('hidden');
+}
+
+async function saveResolusiPeringatan(klienId, bulan, tahun){
+  const tindakan = document.getElementById('resTindakan')?.value.trim() || '';
+  const penyelesaian = document.getElementById('resPenyelesaian')?.value.trim() || '';
+  const isSelesai = !!document.getElementById('resStatusSelesai')?.checked;
+  const status = isSelesai ? 'selesai' : 'aktif';
+  const key = getAlertResolusiKey(klienId, bulan, tahun);
+
+  const existingIdx = (CACHE.resolusi || []).findIndex(r => r.key === key || (r.klien_id === klienId && +r.periode_tahun === +tahun && +r.periode_bulan === +bulan));
+  const record = {
+    id: existingIdx >= 0 ? CACHE.resolusi[existingIdx].id : ('res_' + Date.now()),
+    key,
+    klien_id: klienId,
+    periode_bulan: +bulan,
+    periode_tahun: +tahun,
+    status,
+    tindakan,
+    penyelesaian,
+    resolved_at: isSelesai ? new Date().toISOString() : null,
+    resolved_by_id: currentUser ? currentUser.id : null,
+    resolved_by_nama: currentUser ? currentUser.nama : 'Admin',
+    updated_at: new Date().toISOString()
+  };
+
+  if(existingIdx >= 0){
+    CACHE.resolusi[existingIdx] = record;
+  } else {
+    if(!CACHE.resolusi) CACHE.resolusi = [];
+    CACHE.resolusi.push(record);
+  }
+
+  // Simpan ke localStorage
+  try {
+    localStorage.setItem('SIKERJA_ALERT_RESOLUSI', JSON.stringify(CACHE.resolusi));
+  } catch(e) { console.warn('LocalStorage save error', e); }
+
+  // Simpan ke Supabase jika tabel tersedia
+  try {
+    await sb.from('peringatan_resolusi').upsert({
+      klien_id: klienId,
+      periode_bulan: +bulan,
+      periode_tahun: +tahun,
+      status,
+      tindakan,
+      penyelesaian,
+      resolved_at: record.resolved_at,
+      resolved_by_id: record.resolved_by_id,
+      resolved_by_nama: record.resolved_by_nama,
+      updated_at: record.updated_at
+    }, { onConflict: 'klien_id,periode_tahun,periode_bulan' });
+  } catch(err) {
+    // Abaikan jika tabel belum ada di Supabase
+  }
+
+  closeModal();
+  toast(isSelesai ? '✅ Peringatan ditandai Selesai & status kembali normal!' : '✅ Catatan tindakan & penyelesaian tersimpan!');
+  if(currentPage === 'notifikasi') showPage('notifikasi');
+  else if(currentPage === 'dashboard') showPage('dashboard');
+}
+
 function renderNotifikasiPage(){
   const allItems = buildNotifItems();
+  const unreadCount = allItems.filter(x=>!x.isOwn && !x.isAck).length;
+
+  const my = witaMonthYear();
+  const curKpi = computeKPIs(my.bulan, my.tahun);
+  const activePeringatanCount = (curKpi.alertClients||[]).filter(r=>r.isActiveInDashboard).length;
+
+  return `
+  <div class="notifTabWrap">
+    <button class="notifTabBtn ${notifActiveTab==='pesan'?'active':''}" onclick="setNotifTab('pesan')">
+      🔔 Pemberitahuan &amp; Tanggapan <span class="badge ${unreadCount?'b-urgent':'b-gray'}">${unreadCount}</span>
+    </button>
+    <button class="notifTabBtn ${notifActiveTab==='peringatan'?'active':''}" onclick="setNotifTab('peringatan')">
+      🚨 Peringatan Klien &amp; Indikasi Kelalaian (SRK / IKU) <span class="badge ${activePeringatanCount?'b-urgent':'b-gray'}">${activePeringatanCount} aktif</span>
+    </button>
+  </div>
+  ${notifActiveTab === 'peringatan' ? renderTabPeringatanKlien() : renderTabPemberitahuanManual(allItems, unreadCount)}
+  `;
+}
+
+function renderTabPemberitahuanManual(allItems, unreadCount){
   let list = allItems;
   if(notifFilter.jenis==='inbox') list = list.filter(x=>!x.isOwn);
   else if(notifFilter.jenis==='sent') list = list.filter(x=>x.isOwn);
@@ -4289,7 +4522,6 @@ function renderNotifikasiPage(){
   }
 
   const total = list.length;
-  const unreadCount = allItems.filter(x=>!x.isOwn && !x.isAck).length;
   const totalPages = Math.max(1, Math.ceil(total / notifPerPage));
   if(notifPage > totalPages) notifPage = totalPages;
   if(notifPage < 1) notifPage = 1;
@@ -4344,6 +4576,168 @@ function renderNotifikasiPage(){
       <tbody>${rows}</tbody></table>
     </div>
     ${renderPgBar(total, notifPage, notifPerPage, 'pemberitahuan', 'notifPerPage=+this.value;notifPage=1;showPage(\'notifikasi\')', 'notifPage=__P__;showPage(\'notifikasi\')')}
+  </div>`;
+}
+
+function renderTabPeringatanKlien(){
+  const curMY = witaMonthYear();
+  if(!peringatanFilter.tahun) peringatanFilter.tahun = String(dashFilter.tahun || curMY.tahun);
+  const selTahun = +peringatanFilter.tahun;
+  const selBulan = peringatanFilter.bulan !== '' ? +peringatanFilter.bulan : 0;
+
+  // Kumpulkan semua peringatan klien
+  let allAlerts = [];
+  if(selBulan > 0){
+    const kpi = computeKPIs(selBulan, selTahun);
+    allAlerts = [...(kpi.alertClients || [])];
+  } else {
+    for(let m = 1; m <= 12; m++){
+      const k = computeKPIs(m, selTahun);
+      (k.alertClients || []).forEach(ac => allAlerts.push(ac));
+    }
+  }
+
+  const countTotal = allAlerts.length;
+  const countAktif = allAlerts.filter(r => r.isActiveInDashboard).length;
+  const countArsip = allAlerts.filter(r => !r.isWithin72h && !r.isResolved).length;
+  const countSelesai = allAlerts.filter(r => r.isResolved).length;
+
+  let list = allAlerts;
+  if(peringatanFilter.status === 'aktif') list = list.filter(r => r.isActiveInDashboard);
+  else if(peringatanFilter.status === 'arsip') list = list.filter(r => !r.isWithin72h && !r.isResolved);
+  else if(peringatanFilter.status === 'unresolved') list = list.filter(r => !r.isResolved);
+  else if(peringatanFilter.status === 'selesai') list = list.filter(r => r.isResolved);
+
+  if(peringatanFilter.q){
+    const q = peringatanFilter.q.toLowerCase();
+    list = list.filter(r => (
+      r.nama + ' ' +
+      (r.diagnosis||'') + ' ' +
+      (r.suspectUser||'') + ' ' +
+      (r.resolusi?.tindakan||'') + ' ' +
+      (r.resolusi?.penyelesaian||'')
+    ).toLowerCase().includes(q));
+  }
+
+  // Urutkan: Aktif (<72j belum selesai) -> Arsip belum selesai -> Selesai
+  list.sort((a,b) => {
+    if(a.isResolved !== b.isResolved) return a.isResolved ? 1 : -1;
+    if(a.isWithin72h !== b.isWithin72h) return a.isWithin72h ? -1 : 1;
+    return (b.lastIncidentTime||'').localeCompare(a.lastIncidentTime||'') || (b.srk - a.srk);
+  });
+
+  const total = list.length;
+  const totalPages = Math.max(1, Math.ceil(total / peringatanPerPage));
+  if(peringatanPage > totalPages) peringatanPage = totalPages;
+  if(peringatanPage < 1) peringatanPage = 1;
+  const start = (peringatanPage - 1) * peringatanPerPage;
+  const paged = list.slice(start, start + peringatanPerPage);
+
+  const rows = paged.length ? paged.map((r, idx) => {
+    const lastDateStr = r.lastIncidentTime ? fmtDate(r.lastIncidentTime.slice(0,10)) : '-';
+    const timeBadge = r.isResolved
+      ? `<span class="badge b-done" style="font-size:.68rem">✅ Normal</span>`
+      : (r.isWithin72h
+          ? `<span class="badge b-urgent" style="font-size:.68rem">⚡ Aktif (${r.diffHours}j lalu)</span>`
+          : `<span class="badge b-gray" style="font-size:.68rem">🕒 Tersimpan (${Math.floor(r.diffHours/24)}h lalu)</span>`);
+
+    const tindakanTxt = r.resolusi && r.resolusi.tindakan
+      ? `<div style="font-size:.78rem;color:var(--text);white-space:pre-wrap"><b>📝</b> ${esc(r.resolusi.tindakan)}</div>`
+      : `<span style="font-size:.74rem;color:var(--sub)"><i>Belum dicatat</i></span>`;
+
+    const penyelesaianTxt = r.isResolved
+      ? `<span class="badge b-done">✅ Selesai / Normal</span>
+         ${r.resolusi.penyelesaian ? `<div style="font-size:.75rem;color:var(--text);margin-top:3px">${esc(r.resolusi.penyelesaian)}</div>` : ''}
+         <div style="font-size:.68rem;color:var(--sub);margin-top:2px">Oleh: <b>${esc(r.resolusi.resolved_by_nama || 'Admin')}</b> ${r.resolusi.resolved_at ? '· ' + fmtDate(r.resolusi.resolved_at.slice(0,10)) : ''}</div>`
+      : `<span class="badge b-urgent">🔴 Belum Selesai</span>
+         <div style="font-size:.71rem;color:var(--sub);margin-top:2px">Perlu tindakan penanganan</div>`;
+
+    const btnSelesai = !r.isResolved
+      ? `<button class="btnSm btnPrimary" onclick="openResolusiModal('${r.klien_id}', ${r.periode_bulan}, ${r.periode_tahun}, true)" title="Tandai kondisi telah selesai &amp; pulihkan status normal">✅ Selesai</button>`
+      : '';
+
+    const btnTindakan = `<button class="btnSm btnEdit" onclick="openResolusiModal('${r.klien_id}', ${r.periode_bulan}, ${r.periode_tahun}, false)" title="${r.isResolved ? 'Perbarui Catatan Tindakan / Penyelesaian' : 'Catat Tindakan Penanganan'}">✏️ ${r.resolusi && (r.resolusi.tindakan || r.resolusi.penyelesaian) ? 'Edit' : 'Tindakan'}</button>`;
+
+    const btnDetail = `<button class="btnSm btnGray" onclick="showClientKpiModal('${r.klien_id}')" title="Lihat detail KPI klien">🔍 Detail</button>`;
+
+    return `<tr>
+      <td>${start + idx + 1}</td>
+      <td style="white-space:nowrap;font-size:.75rem">
+        <b>${lastDateStr}</b>
+        <div style="margin-top:3px">${timeBadge}</div>
+        <div style="font-size:.68rem;color:var(--sub);margin-top:3px">Periode: ${fmtBulanThn(r.periode_bulan, r.periode_tahun)}</div>
+      </td>
+      <td>
+        <b>${esc(r.nama)}</b>
+        <div style="font-size:.72rem;color:var(--sub);margin-top:2px">${r.count} tindakan · <b>${r.ulang}x</b> ulang · <b>${r.kendala}x</b> kendala</div>
+      </td>
+      <td style="white-space:nowrap">
+        <span style="font-size:1.05rem;font-weight:800;color:${r.riskLevel==='kritis'?'var(--red)':'var(--orange)'}">${r.srk}</span> <span style="font-size:.7rem;color:var(--sub);font-weight:700">SRK</span>
+        <div><span class="badge ${r.riskLevel==='kritis'?'b-urgent':'b-warn'}">${r.riskLevel==='kritis'?'KRITIS':'PERHATIAN'}</span></div>
+        ${r.maxIku > 0 ? `<div style="font-size:.71rem;color:var(--sub);margin-top:2px">IKU: <b>${r.maxIku}</b></div>` : ''}
+      </td>
+      <td style="max-width:220px">
+        <div style="font-size:.8rem">${esc(r.diagnosis)}</div>
+        ${r.suspectUser && r.suspectUser !== '-' ? `<div style="font-size:.72rem;color:var(--sub);margin-top:2px">👤 Staf: <b>${esc(r.suspectUser)}</b></div>` : ''}
+      </td>
+      <td style="min-width:180px;max-width:260px">${tindakanTxt}</td>
+      <td style="min-width:180px;max-width:260px">${penyelesaianTxt}</td>
+      <td><div class="flex" style="gap:4px">${btnSelesai}${btnTindakan}${btnDetail}</div></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--sub);padding:24px">Tidak ada data peringatan pada filter ini.</td></tr>`;
+
+  const dashYears = [];
+  for(let y = curMY.tahun + 1; y >= Math.min(2020, curMY.tahun - 5); y--) dashYears.push(y);
+
+  return `<div class="section" style="position:relative;z-index:1">
+    <div class="secHead">
+      <div>
+        <h4 style="margin:0">🚨 Peringatan Klien &amp; Indikasi Kelalaian (SRK / IKU)</h4>
+        <div style="font-size:.76rem;color:var(--sub);margin-top:3px">
+          Peringatan baru tampil sementara di Dashboard selama 3x24 jam. Riwayat lengkap tersimpan di sini beserta pencatatan tindakan dan penyelesaian hingga kembali normal.
+        </div>
+      </div>
+      <div class="flex" style="gap:6px;flex-wrap:wrap">
+        <span class="badge ${countAktif ? 'b-urgent' : 'b-gray'}" style="font-size:.76rem">⚡ ${countAktif} Aktif (&lt;3x24j)</span>
+        <span class="badge b-gray" style="font-size:.76rem">🕒 ${countArsip} Arsip Tersimpan</span>
+        <span class="badge b-done" style="font-size:.76rem">✅ ${countSelesai} Selesai/Normal</span>
+      </div>
+    </div>
+    <div class="filterBar" style="flex-wrap:wrap;gap:8px">
+      <select onchange="peringatanFilter.status=this.value;peringatanPage=1;showPage('notifikasi')">
+        <option value="" ${peringatanFilter.status===''?'selected':''}>Semua Status (${countTotal})</option>
+        <option value="aktif" ${peringatanFilter.status==='aktif'?'selected':''}>⚡ Aktif &lt;3x24 Jam (${countAktif})</option>
+        <option value="arsip" ${peringatanFilter.status==='arsip'?'selected':''}>🕒 Arsip Tersimpan &gt;3x24 Jam (${countArsip})</option>
+        <option value="unresolved" ${peringatanFilter.status==='unresolved'?'selected':''}>🔴 Belum Selesai (${countAktif+countArsip})</option>
+        <option value="selesai" ${peringatanFilter.status==='selesai'?'selected':''}>✅ Selesai / Normal (${countSelesai})</option>
+      </select>
+      <select onchange="peringatanFilter.bulan=this.value;peringatanPage=1;showPage('notifikasi')">
+        <option value="" ${peringatanFilter.bulan===''?'selected':''}>📅 Semua Bulan</option>
+        ${BULAN_NAMA.map((b,i)=>`<option value="${i+1}" ${peringatanFilter.bulan===String(i+1)?'selected':''}>${b}</option>`).join('')}
+      </select>
+      <select onchange="peringatanFilter.tahun=this.value;peringatanPage=1;showPage('notifikasi')">
+        ${dashYears.map(y=>`<option value="${y}" ${String(selTahun)===String(y)?'selected':''}>Tahun ${y}</option>`).join('')}
+      </select>
+      <input placeholder="Cari klien, staf, tindakan, penyelesaian..." value="${esc(peringatanFilter.q)}" oninput="peringatanFilter.q=this.value;peringatanPage=1;showPage('notifikasi')" style="width:260px"/>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Waktu &amp; Kejadian</th>
+            <th>Klien / Rekanan</th>
+            <th>Risiko (SRK / IKU)</th>
+            <th>Indikasi Masalah / Staf Terkait</th>
+            <th>Tindakan Penanganan</th>
+            <th>Penyelesaian &amp; Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${renderPgBar(total, peringatanPage, peringatanPerPage, 'peringatan', 'peringatanPerPage=+this.value;peringatanPage=1;showPage(\'notifikasi\')', 'peringatanPage=__P__;showPage(\'notifikasi\')')}
   </div>`;
 }
 
