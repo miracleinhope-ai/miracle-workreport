@@ -47,7 +47,7 @@
   .loginRight{padding:28px 24px}
 }
 body{display:flex;height:100vh;height:100dvh;overflow:hidden;background:var(--gray)}
-#sidebar{width:240px;min-width:240px;height:100%;max-height:100dvh;background:#3B1B4F;display:flex;flex-direction:column;z-index:10;overflow-y:scroll;overflow-x:hidden;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(244,215,212,.65) rgba(26,15,46,.25);transition:width .22s ease,min-width .22s ease}
+#sidebar{width:240px;min-width:240px;height:100%;max-height:100dvh;background:#3B1B4F;display:flex;flex-direction:column;z-index:10;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(244,215,212,.65) rgba(26,15,46,.25);transition:width .22s ease,min-width .22s ease}
 #sidebar::-webkit-scrollbar{width:7px}
 #sidebar::-webkit-scrollbar-track{background:rgba(26,15,46,.25)}
 #sidebar::-webkit-scrollbar-thumb{background:rgba(244,215,212,.62);border-radius:999px}
@@ -84,8 +84,9 @@ nav{flex:0 0 auto;padding:6px 10px}
 nav a{display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:9px;color:rgba(255,255,255,.8);text-decoration:none;font-size:.85rem;margin-bottom:1px;cursor:pointer;transition:.15s}
 nav a:hover,nav a.active{background:rgba(255,255,255,.2);color:#fff}
 nav a .ico{font-size:1rem;width:20px;text-align:center}
-.sideBottom{padding:10px 16px;border-top:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center}
-.btnLogout{width:100%;padding:9px 12px;background:#FF6B6B;border:none;border-radius:8px;color:#fff;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;gap:7px;box-sizing:border-box}
+.sideBottom{padding:10px 12px;border-top:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center}
+.btnLogout{position:relative;width:100%;padding:10px 16px;background:#FF6B6B;border:none;border-radius:8px;color:#fff;font-size:.84rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box}
+.btnLogout .icoLogout{position:absolute;left:16px;font-size:1rem;line-height:1}
 .btnLogout:hover{filter:brightness(.92)}
 #main{flex:1;overflow-y:auto;position:relative;display:flex;flex-direction:column}
 .topbar{background:#fff;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--gray2);position:sticky;top:0;z-index:5}
@@ -362,7 +363,7 @@ table thead th:last-child,.tblNeonBlue thead th:last-child{border-radius:0 8px 8
     <div class="userAvatar" id="sideAvatar">?</div>
     <div class="userInfo"><p id="sideName">-</p><span id="sideRole">-</span></div>
   </div>
-  <div class="sideBottom"><button type="button" class="btnLogout" onclick="doLogout()"><span>🚪</span> <span>Keluar / Exit</span></button></div>
+  <div class="sideBottom"><button type="button" class="btnLogout" onclick="doLogout()"><span class="icoLogout">🚪</span><span>Keluar / Exit</span></button></div>
 </div>
 
 <div id="floatingMenu">
