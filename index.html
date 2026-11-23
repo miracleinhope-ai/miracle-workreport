@@ -121,7 +121,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--blue)}
 textarea{resize:vertical;min-height:60px}
 .btnPrimary{padding:9px 18px;background:#FF6B6B;color:#fff;border:none;border-radius:7px;font-size:.84rem;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(255,107,107,.28)}
 .btnPrimary:hover{filter:brightness(.94)}
-.btnSm{padding:5px 10px;border:1px solid #d5c2a8;border-radius:5px;font-size:.74rem;cursor:pointer;margin-right:3px;font-weight:600;background:#EADCC8;color:#1A0F2E}
+.btnSm{padding:4px 8px;border:1px solid #d5c2a8;border-radius:5px;font-size:.74rem;cursor:pointer;margin-right:3px;font-weight:600;background:#EADCC8;color:#1A0F2E;display:inline-flex;align-items:center;justify-content:center;line-height:1.2;min-height:26px}
 .btnSm:hover,.btnTiny:hover,.btnChat:hover{filter:brightness(.94)}
 .btnEdit,.btnDanger,.btnGray{background:#EADCC8;color:#1A0F2E;border:1px solid #d5c2a8}
 .filterBar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
@@ -269,7 +269,7 @@ textarea{resize:vertical;min-height:60px}
 .rtDot{width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block;flex-shrink:0}
 .rtPill.online .rtDot{background:#10b981;animation:rtBlink 1.3s ease-in-out infinite}
 @keyframes rtBlink{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 0 0 rgba(16,185,129,.65)}50%{opacity:.38;transform:scale(.85);box-shadow:0 0 0 5px rgba(16,185,129,0)}}
-.btnTiny{padding:4px 9px;border:1px solid #d5c2a8;border-radius:5px;font-size:.73rem;font-weight:600;cursor:pointer;background:#EADCC8;color:#1A0F2E}
+.btnTiny{padding:3px 7px;border:1px solid #d5c2a8;border-radius:5px;font-size:.73rem;font-weight:600;cursor:pointer;background:#EADCC8;color:#1A0F2E;display:inline-flex;align-items:center;justify-content:center;line-height:1.2;min-height:24px}
 .btnChat{background:#EADCC8;color:#1A0F2E;padding:4px 8px;border:1px solid #d5c2a8;border-radius:5px;font-size:.73rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
 .btnChat.hasUnread{background:#EADCC8;color:#1A0F2E;border:1.5px solid #FF6B6B}
 .mentionGrid{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
@@ -1116,8 +1116,8 @@ function renderDashboard(){
         const k = CACHE.klien.find(x=>x.id===t.klien_id);
         const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
         const b = t.status==='rencana'
-          ? `<button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button> <button class="btnTiny btnEdit" title="Ubah tanggal/rincian rencana" onclick="modalEditRencana('${t.id}')">✏️ Ubah</button> <button class="btnTiny btnDanger" title="Hapus rencana ini" style="color:#b91c1c" onclick="hapusRencana('${t.id}')">🗑️</button>`
-          : `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`;
+          ? `<div style="display:flex;gap:3px;align-items:center"><button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶</button><button class="btnTiny btnEdit" title="Ubah tanggal/rincian rencana" onclick="modalEditRencana('${t.id}')">✏️</button><button class="btnTiny btnDanger" title="Hapus rencana ini" style="color:#b91c1c" onclick="hapusRencana('${t.id}')">🗑️</button></div>`
+          : `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹</button>`;
         return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;padding:6px 10px;border-radius:6px;margin-top:5px;color:var(--text)">
           <span><b>${fmtDate(t.tanggal_kerja)}</b> · ${esc(k?k.nama:'-')} · ${esc(j?j.nama:'-')} (${t.status})</span>
           ${b}
@@ -1142,13 +1142,13 @@ function renderDashboard(){
       const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
       const btnAct = t.status==='rencana'
         ? `<div style="display:flex;gap:3px;align-items:center">
-            <button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button>
-            <button class="btnTiny btnEdit" title="Ubah tanggal pelaksanaan atau rincian" onclick="modalEditRencana('${t.id}')">✏️</button>
+            <button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶</button>
+            <button class="btnTiny btnEdit" title="Ubah tanggal pelaksanaan atau rincian rencana" onclick="modalEditRencana('${t.id}')">✏️</button>
             <button class="btnTiny btnDanger" title="Hapus rencana pekerjaan ini" style="color:#b91c1c" onclick="hapusRencana('${t.id}')">🗑️</button>
           </div>`
         : t.status==='dikerjakan'
-        ? `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`
-        : `<span class="badge ${t.status==='selesai'?'b-done':t.status==='bermasalah'?'b-urgent':'b-warn'}">${t.status}</span>`;
+        ? `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹</button>`
+        : `<div style="display:flex;gap:3px;align-items:center"><span class="badge ${t.status==='selesai'?'b-done':t.status==='bermasalah'?'b-urgent':'b-warn'}">${t.status}</span><button class="btnTiny btnEdit" title="Ubah keterangan pekerjaan (jam mulai &amp; selesai tidak dapat diubah)" onclick="modalEditKeteranganTindakan('${t.id}')">✏️</button></div>`;
       return `<tr>
         <td>${startDU+i+1}</td>
         <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.72rem;color:var(--sub)">${fmtPeriode(t.periode_bulan, t.periode_tahun, t.uraian)}</span></td>
@@ -1262,9 +1262,9 @@ function renderDashboard(){
           ${r.resolusi && r.resolusi.tindakan ? `<div style="font-size:.73rem;color:var(--text);margin-top:2px"><b>📝 Tindakan:</b> ${esc(r.resolusi.tindakan)}</div>` : ''}
         </div>
         <div class="flex" style="gap:5px">
-          <button class="btnSm btnPrimary" title="Tandai kondisi telah selesai &amp; status kembali normal" onclick="openResolusiModal('${r.klien_id}', ${dashFilter.bulan}, ${dashFilter.tahun}, true)">✅ Selesai</button>
-          <button class="btnSm btnEdit" title="Catat tindakan penanganan" onclick="openResolusiModal('${r.klien_id}', ${dashFilter.bulan}, ${dashFilter.tahun}, false)">📝 Tindakan</button>
-          <button class="btnSm btnGray" title="Lihat detail KPI klien" onclick="showClientKpiModal('${r.klien_id}')">Detail</button>
+          <button class="btnSm btnPrimary" title="Tandai kondisi telah selesai &amp; status kembali normal" onclick="openResolusiModal('${r.klien_id}', ${dashFilter.bulan}, ${dashFilter.tahun}, true)">✅</button>
+          <button class="btnSm btnEdit" title="Catat tindakan penanganan" onclick="openResolusiModal('${r.klien_id}', ${dashFilter.bulan}, ${dashFilter.tahun}, false)">✏️</button>
+          <button class="btnSm btnGray" title="Lihat detail KPI klien" onclick="showClientKpiModal('${r.klien_id}')">🔍</button>
         </div>
       </div>`).join('');
     
@@ -2694,7 +2694,7 @@ function showAbsensiDateSummaryModal(ds){
       <td>${jamOut ? jamOut + ' WITA' : '-'}</td>
       <td style="text-align:center"><b>${items.length}</b></td>
       <td><b>${totalDur ? fmtDurHM(totalDur) : '-'}</b></td>
-      <td><button class="btnSm btnPrimary" style="padding:4px 9px;font-size:.74rem" onclick="showAbsensiDayDetailModal('${uid}','${ds}',true)">🔍 Rincian Tugas</button></td>
+      <td><button class="btnSm btnPrimary" style="padding:4px 8px;font-size:.74rem" title="Lihat rincian tugas user" onclick="showAbsensiDayDetailModal('${uid}','${ds}',true)">🔍</button></td>
     </tr>`;
   }).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--sub);padding:16px">Belum ada aktivitas pada tanggal ini.</td></tr>`;
 
@@ -2833,7 +2833,7 @@ function renderMaster(){
     <td><span class="badge ${s.aktif?'b-done':'b-urgent'}">${s.aktif?'Aktif':'Nonaktif'}</span></td>
     <td>
       <button class="btnSm btnEdit" title="Edit sistem" onclick="modalSistem('${s.id}')">✏️</button>
-      <button class="btnSm btnGray" title="${s.aktif?'Nonaktifkan sistem ini':'Aktifkan sistem ini'}" onclick="toggleSistemAktif('${s.id}',${!s.aktif})">${s.aktif?'Nonaktifkan':'Aktifkan'}</button>
+      <button class="btnSm btnGray" title="${s.aktif?'Nonaktifkan sistem':'Aktifkan sistem'}" onclick="toggleSistemAktif('${s.id}',${!s.aktif})">${s.aktif?'⏸️':'▶️'}</button>
     </td>
   </tr>`).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--sub)">Belum ada data (jalankan migrasi SQL v2)</td></tr>`;
 
@@ -2845,7 +2845,7 @@ function renderMaster(){
     <td><span class="badge ${j.aktif?'b-done':'b-urgent'}">${j.aktif?'Aktif':'Nonaktif'}</span></td>
     <td>
       <button class="btnSm btnEdit" title="Edit jenis tindakan" onclick="modalJenis('${j.id}')">✏️</button>
-      <button class="btnSm btnGray" title="${j.aktif?'Nonaktifkan jenis tindakan ini':'Aktifkan jenis tindakan ini'}" onclick="toggleJenisAktif('${j.id}',${!j.aktif})">${j.aktif?'Nonaktifkan':'Aktifkan'}</button>
+      <button class="btnSm btnGray" title="${j.aktif?'Nonaktifkan jenis tindakan':'Aktifkan jenis tindakan'}" onclick="toggleJenisAktif('${j.id}',${!j.aktif})">${j.aktif?'⏸️':'▶️'}</button>
     </td>
   </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--sub)">Belum ada data (jalankan migrasi SQL v2)</td></tr>`;
 
@@ -3013,8 +3013,8 @@ function renderRencana(){
             const k=CACHE.klien.find(x=>x.id===t.klien_id);
             const j=CACHE.jenis.find(x=>x.id===t.jenis_id);
             const act = t.status==='rencana'
-              ? `<button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button> <button class="btnTiny" title="Closing tindakan ini sekarang" onclick="selesaiTindakan('${t.id}')">⏹ Closing</button> <button class="btnTiny btnEdit" title="Ubah tanggal/rincian rencana" onclick="modalEditRencana('${t.id}')">✏️ Ubah</button> <button class="btnTiny btnDanger" title="Hapus rencana ini" style="color:#b91c1c" onclick="hapusRencana('${t.id}')">🗑️</button>`
-              : `<button class="btnTiny" title="Closing tindakan ini sekarang" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`;
+              ? `<div style="display:flex;gap:3px;align-items:center"><button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶</button><button class="btnTiny" title="Closing tindakan ini sekarang" onclick="selesaiTindakan('${t.id}')">⏹</button><button class="btnTiny btnEdit" title="Ubah tanggal pelaksanaan atau rincian rencana" onclick="modalEditRencana('${t.id}')">✏️</button><button class="btnTiny btnDanger" title="Hapus rencana pekerjaan ini" style="color:#b91c1c" onclick="hapusRencana('${t.id}')">🗑️</button></div>`
+              : `<div style="display:flex;gap:3px;align-items:center"><button class="btnTiny" title="Selesaikan &amp; closing tindakan ini sekarang" onclick="selesaiTindakan('${t.id}')">⏹</button></div>`;
             return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;padding:6px 10px;border-radius:6px;margin-bottom:4px;color:var(--text)">
               <span><b>${fmtDate(t.tanggal_kerja)}</b> · ${esc(k?k.nama:'-')} · ${esc(j?j.nama:'-')} (${t.status})</span>
               <div>${act}</div>
@@ -3046,21 +3046,20 @@ function renderRencana(){
     let actBtns = '';
     if(canAct){
       if(t.status==='rencana'){
-        actBtns = `<div style="display:flex;flex-direction:column;gap:3px">
-          <div style="display:flex;gap:3px">
-            <button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶ Mulai</button>
-            <button class="btnTiny" title="Closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹ Closing</button>
-          </div>
-          <div style="display:flex;gap:3px">
-            <button class="btnTiny btnEdit" title="Ubah tanggal pelaksanaan atau rincian rencana" onclick="modalEditRencana('${t.id}')">✏️ Ubah</button>
-            <button class="btnTiny btnDanger" title="Hapus rencana pekerjaan ini" style="color:#b91c1c" onclick="hapusRencana('${t.id}')">🗑️ Hapus</button>
-          </div>
+        actBtns = `<div style="display:flex;gap:3px;align-items:center">
+          <button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶</button>
+          <button class="btnTiny" title="Closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹</button>
+          <button class="btnTiny btnEdit" title="Ubah tanggal pelaksanaan atau rincian rencana" onclick="modalEditRencana('${t.id}')">✏️</button>
+          <button class="btnTiny btnDanger" title="Hapus rencana pekerjaan ini" style="color:#b91c1c" onclick="hapusRencana('${t.id}')">🗑️</button>
         </div>`;
       } else if(t.status==='dikerjakan'){
-        actBtns = `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹ Selesai &amp; Closing</button>`;
+        actBtns = `<div style="display:flex;gap:3px;align-items:center">
+          <button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹</button>
+        </div>`;
       } else {
-        actBtns = `<span style="font-size:.72rem;color:var(--sub)">Tutup ${t.closing_at?fmtTimeWita(t.closing_at):''}</span>
-          <button class="btnSm btnEdit" title="Ubah keterangan pekerjaan (jam mulai &amp; selesai tidak dapat diubah)" onclick="modalEditKeteranganTindakan('${t.id}')">✏️ Keterangan</button>`;
+        actBtns = `<div style="display:flex;gap:3px;align-items:center">
+          <button class="btnTiny btnEdit" title="Ubah keterangan pekerjaan (jam mulai &amp; selesai tidak dapat diubah)" onclick="modalEditKeteranganTindakan('${t.id}')">✏️</button>
+        </div>`;
       }
     }
 
@@ -3085,7 +3084,7 @@ function renderRencana(){
       <td style="white-space:nowrap">${t.selesai_at?fmtTimeWita(t.selesai_at):'-'}</td>
       <td style="white-space:nowrap"><b>${t.durasi_detik?fmtDurHM(t.durasi_detik):'-'}</b>${isSeries && seriesDur ? `<br><span style="font-size:.68rem;color:var(--blue);white-space:nowrap" title="Akumulasi seluruh ${relatedTasks.length} sesi pekerjaan">∑ Total: ${fmtDurHM(seriesDur)}</span>` : ''}</td>
       <td>${stBadge}${t.kendala?`<div style="font-size:.72rem;color:#dc2626;margin-top:3px">⚠️ ${esc(t.kendala)}</div>`:''}</td>
-      <td><div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">${actBtns}${chatBtnHtml(t.id)}</div></td>
+      <td><div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${actBtns}${chatBtnHtml(t.id)}</div></td>
     </tr>`;
   }).join('') : `<tr><td colspan="${isAdmin()?11:10}" style="text-align:center;color:var(--sub);padding:24px">Belum ada tindakan pada tanggal ini.</td></tr>`;
 
@@ -4706,10 +4705,10 @@ function renderTabPemberitahuanManual(allItems, unreadCount){
       ? `<span class="badge b-done">✅ Diketahui</span>${it.ackNames.length?`<div style="font-size:.71rem;color:var(--sub);margin-top:3px">Oleh: ${esc(it.ackNames.join(', '))}</div>`:`<div style="font-size:.7rem;color:var(--sub);margin-top:2px">${it.isOwn?'Belum ada yang baca':'Anda'}</div>`}`
       : `<span class="badge b-urgent">🔴 Belum Diketahui</span>${it.ackNames.length?`<div style="font-size:.71rem;color:var(--sub);margin-top:3px">Sudah: ${esc(it.ackNames.join(', '))}</div>`:''}`;
     const btnAck = (!it.isOwn && !it.isAck)
-      ? `<button class="btnSm btnEdit" title="Tandai sudah diketahui / dibaca agar pengirim mengetahui" onclick="markNotifAck('${it.kind}','${it.rawId}')">✓ Diketahui</button>`
+      ? `<button class="btnSm btnEdit" title="Tandai sudah diketahui / dibaca agar pengirim mengetahui" onclick="markNotifAck('${it.kind}','${it.rawId}')">✓</button>`
       : '';
     const btnOpen = it.openJs
-      ? `<button class="btnSm btnGray" title="Buka detail &amp; diskusi pekerjaan" onclick="${it.openJs}">👁️ Buka</button>`
+      ? `<button class="btnSm btnGray" title="Buka detail &amp; diskusi pekerjaan" onclick="${it.openJs}">👁️</button>`
       : '';
     return `<tr>
       <td>${start+idx+1}</td>
@@ -4720,7 +4719,7 @@ function renderTabPemberitahuanManual(allItems, unreadCount){
       <td>${esc(it.objLabel)}</td>
       <td style="max-width:250px">${esc(it.isi)}</td>
       <td>${stHtml}</td>
-      <td><div class="flex">${btnAck}${btnOpen||'-'}</div></td>
+      <td><div class="flex" style="gap:4px">${btnAck}${btnOpen||'-'}</div></td>
     </tr>`;
   }).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--sub);padding:24px">Belum ada pemberitahuan pada filter ini.</td></tr>`;
 
@@ -4824,12 +4823,12 @@ function renderTabPeringatanKlien(){
          <div style="font-size:.71rem;color:var(--sub);margin-top:2px">Perlu tindakan penanganan</div>`;
 
     const btnSelesai = !r.isResolved
-      ? `<button class="btnSm btnPrimary" onclick="openResolusiModal('${r.klien_id}', ${r.periode_bulan}, ${r.periode_tahun}, true)" title="Tandai kondisi telah selesai &amp; pulihkan status normal">✅ Selesai</button>`
+      ? `<button class="btnSm btnPrimary" onclick="openResolusiModal('${r.klien_id}', ${r.periode_bulan}, ${r.periode_tahun}, true)" title="Tandai kondisi telah selesai &amp; pulihkan status normal">✅</button>`
       : '';
 
-    const btnTindakan = `<button class="btnSm btnEdit" onclick="openResolusiModal('${r.klien_id}', ${r.periode_bulan}, ${r.periode_tahun}, false)" title="${r.isResolved ? 'Perbarui Catatan Tindakan / Penyelesaian' : 'Catat Tindakan Penanganan'}">✏️ ${r.resolusi && (r.resolusi.tindakan || r.resolusi.penyelesaian) ? 'Edit' : 'Tindakan'}</button>`;
+    const btnTindakan = `<button class="btnSm btnEdit" onclick="openResolusiModal('${r.klien_id}', ${r.periode_bulan}, ${r.periode_tahun}, false)" title="${r.isResolved ? 'Perbarui Catatan Tindakan / Penyelesaian' : 'Catat Tindakan Penanganan'}">✏️</button>`;
 
-    const btnDetail = `<button class="btnSm btnGray" onclick="showClientKpiModal('${r.klien_id}')" title="Lihat detail KPI klien">🔍 Detail</button>`;
+    const btnDetail = `<button class="btnSm btnGray" onclick="showClientKpiModal('${r.klien_id}')" title="Lihat detail KPI klien">🔍</button>`;
 
     return `<tr>
       <td>${start + idx + 1}</td>
