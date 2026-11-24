@@ -631,7 +631,15 @@ async function initLogin(){
     const users=data||[];
     sel.innerHTML='<option value="">-- Pilih User --</option>';
     if(!users.length){ err.textContent='⚠️ Belum ada user. Jalankan SQL insert user di Supabase.'; return; }
-    users.forEach(u=>{ const o=document.createElement('option'); o.value=u.id; const lbl=u.role==='superadmin'?' (Superadmin)':u.role==='admin'?' (Admin)':' (Asisten)'; o.textContent=u.nama+lbl; sel.appendChild(o); });
+    users.forEach(u=>{
+      const o=document.createElement('option');
+      o.value=u.id;
+      const isSuspended = u.aktif === false;
+      const lbl=u.role==='superadmin'?' (Superadmin)':u.role==='admin'?' (Admin)':' (Asisten)';
+      o.textContent=u.nama+lbl+(isSuspended ? ' [Non-aktif]' : '');
+      if(isSuspended) o.style.color = '#dc2626';
+      sel.appendChild(o);
+    });
     err.textContent='';
   }catch(e){
     sel.innerHTML='<option value="">-- Gagal memuat --</option>';
@@ -648,6 +656,10 @@ async function doLogin(){
   const {data:users}=await sb.from('users').select('*').eq('id',uid);
   const user=users&&users[0];
   if(!user){ err.textContent='User tidak ditemukan!'; return; }
+  if(user.aktif === false){
+    err.textContent='⛔ Akun Anda sedang dinonaktifkan (suspend) sementara oleh Superadmin. Silakan hubungi Superadmin.';
+    return;
+  }
   if(user.pin&&user.pin!==pin){ err.textContent='PIN salah!'; return; }
 
   await syncServerTime();
@@ -1149,7 +1161,7 @@ function renderDashboard(){
           </div>`
         : t.status==='dikerjakan'
         ? `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹</button>`
-        : `<div style="display:flex;gap:3px;align-items:center"><span class="badge ${t.status==='selesai'?'b-done':t.status==='bermasalah'?'b-urgent':'b-warn'}">${t.status}</span><button class="btnTiny btnEdit" title="Ubah keterangan pekerjaan (jam mulai &amp; selesai tidak dapat diubah)" onclick="modalEditKeteranganTindakan('${t.id}')">✏️</button></div>`;
+        : `<div style="display:flex;gap:3px;align-items:center"><span class="badge ${t.status==='selesai'?'b-done':t.status==='bermasalah'?'b-urgent':'b-warn'}">${t.status}</span><button class="btnTiny btnEdit" title="Ubah keterangan &amp; periode buku (jam mulai &amp; selesai tidak dapat diubah)" onclick="modalEditKeteranganTindakan('${t.id}')">✏️</button></div>`;
       return `<tr>
         <td>${startDU+i+1}</td>
         <td><b>${esc(k?k.nama:'-')}</b><br><span style="font-size:.72rem;color:var(--sub)">${fmtPeriode(t.periode_bulan, t.periode_tahun, t.uraian)}</span></td>
@@ -2777,16 +2789,32 @@ function renderUsers(){
   const rows=CACHE.users.map(u=>{
     const jml=CACHE.pekerjaan.filter(p=>p.user_id===u.id||p.asisten_id===u.id).length;
     const totalT=CACHE.timelogs.filter(t=>t.user_id===u.id).reduce((s,t)=>s+(t.durasi||0),0);
-    return`<tr><td><b>${esc(u.nama)}</b></td><td>${u.role==='superadmin'?'Superadmin':u.role==='admin'?'Admin / Akuntan':'Asisten'}</td><td>${jml}</td><td>${fmtDur(totalT)}</td>
+    const isAktif = u.aktif !== false;
+    const stBadge = isAktif ? `<span class="badge b-done">✅ Aktif</span>` : `<span class="badge b-urgent">⏸️ Non-aktif</span>`;
+    const toggleBtn = u.role !== 'superadmin' ? (
+      isAktif
+        ? `<button class="btnSm btnGray" title="Non-aktifkan (suspend) user sementara" onclick="toggleUserAktif('${u.id}',false)">⏸️</button>`
+        : `<button class="btnSm btnPrimary" style="padding:4px 8px" title="Aktifkan kembali user ini" onclick="toggleUserAktif('${u.id}',true)">▶️</button>`
+    ) : '';
+    return`<tr>
+      <td><b>${esc(u.nama)}</b>${u.role==='superadmin'?' <span class="badge b-warn">Superadmin</span>':''}</td>
+      <td>${u.role==='superadmin'?'Superadmin':u.role==='admin'?'Admin / Akuntan':'Asisten'}</td>
+      <td>${stBadge}</td>
+      <td>${jml}</td>
+      <td>${fmtDur(totalT)}</td>
       <td>
-        <button class="btnSm btnEdit" title="Edit data pengguna" onclick="modalUser('${u.id}')">✏️</button>
-        ${CACHE.users.length>1?`<button class="btnSm btnDanger" title="Hapus pengguna" onclick="delUser('${u.id}')">🗑️</button>`:''}
-      </td></tr>`;
+        <div class="flex" style="gap:4px">
+          <button class="btnSm btnEdit" title="Edit data pengguna" onclick="modalUser('${u.id}')">✏️</button>
+          ${toggleBtn}
+          ${CACHE.users.length>1 && u.role!=='superadmin'?`<button class="btnSm btnDanger" title="Hapus pengguna permanen" onclick="delUser('${u.id}')">🗑️</button>`:''}
+        </div>
+      </td>
+    </tr>`;
   }).join('');
   const addBtn=isAdmin()?`<button class="btnPrimary" onclick="modalUser()">+ Tambah User</button>`:`<span style="font-size:.8rem;color:var(--sub)">🔒 Hanya Admin yang dapat menambah user</span>`;
   return`<div class="section" style="position:relative;z-index:1">
-    <div class="secHead"><h4>Daftar User</h4>${addBtn}</div>
-    <table><thead><tr><th>Nama</th><th>Role</th><th>Pekerjaan</th><th>Total Waktu</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="secHead"><h4>Daftar User &amp; Status Akun</h4>${addBtn}</div>
+    <table><thead><tr><th>Nama</th><th>Role</th><th>Status Akun</th><th>Pekerjaan</th><th>Total Waktu</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table>
   </div>`;
 }
 function modalUser(id=''){
@@ -2799,7 +2827,10 @@ function modalUser(id=''){
         ${u&&u.role==='superadmin'?`<option value="superadmin" selected disabled>Superadmin</option>`:''}
         <option value="admin" ${u&&u.role==='admin'?'selected':''}>Admin / Akuntan</option>
         <option value="asisten" ${(!u||u.role==='asisten')?'selected':''}>Asisten</option></select></div>
-      <div class="formGroup"><label>PIN (opsional)</label><input type="password" id="fuP" placeholder="Kosongkan = tanpa PIN"/></div>
+      <div class="formGroup"><label>Status Akun</label><select id="fuA" ${u&&u.role==='superadmin'?'disabled':''}>
+        <option value="true" ${(!u||u.aktif!==false)?'selected':''}>Aktif</option>
+        <option value="false" ${u&&u.aktif===false?'selected':''}>Non-aktif (Suspend)</option></select></div>
+      <div class="formGroup full"><label>PIN (opsional)</label><input type="password" id="fuP" placeholder="Kosongkan = tanpa PIN"/></div>
     </div>
     <div class="flex mt10"><button class="btnPrimary" onclick="saveUser('${id}')">💾 Simpan</button>
     <button onclick="closeModal()" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">Batal</button></div>`;
@@ -2812,11 +2843,54 @@ async function saveUser(id){
   const target=id?CACHE.users.find(x=>x.id===id):null;
   let role=isAdmin()?document.getElementById('fuR').value:'asisten';
   if(target&&target.role==='superadmin') role='superadmin';
-  const data={nama,role};
+  const aktif = document.getElementById('fuA') ? (document.getElementById('fuA').value === 'true') : true;
+  const data={nama,role,aktif};
   if(pin)data.pin=pin;
-  if(id) await sb.from('users').update(data).eq('id',id);
-  else   await sb.from('users').insert(data);
+  if(id){
+    const { error } = await sb.from('users').update(data).eq('id',id);
+    if(error){
+      if(error.message && error.message.includes('aktif')){
+        delete data.aktif;
+        await sb.from('users').update(data).eq('id',id);
+        toast('ℹ️ Jalankan migration_v4_user_suspend.sql di Supabase SQL Editor untuk mengaktifkan kolom status.');
+      } else {
+        return alert('Gagal menyimpan user: ' + error.message);
+      }
+    }
+  } else {
+    const { error } = await sb.from('users').insert(data);
+    if(error){
+      if(error.message && error.message.includes('aktif')){
+        delete data.aktif;
+        await sb.from('users').insert(data);
+        toast('ℹ️ Jalankan migration_v4_user_suspend.sql di Supabase SQL Editor untuk mengaktifkan kolom status.');
+      } else {
+        return alert('Gagal menambah user: ' + error.message);
+      }
+    }
+  }
   await loadAll(); closeModal(); showPage('users'); toast('✅ User tersimpan!');
+}
+async function toggleUserAktif(id, newStatus){
+  if(!isAdmin()){ toast('⛔ Hanya Admin yang berhak mengubah status user'); return; }
+  const u = CACHE.users.find(x=>x.id===id);
+  if(!u) return;
+  if(u.role === 'superadmin'){ toast('⛔ Akun Superadmin tidak dapat dinonaktifkan'); return; }
+
+  const aksi = newStatus ? 'mengaktifkan kembali' : 'menonaktifkan (suspend) sementara';
+  if(!confirm(`Apakah Anda yakin ingin ${aksi} user "${u.nama}"?\n\n${newStatus ? 'User dapat login kembali dan ditugaskan pekerjaan.' : 'User tidak akan dapat login, tetapi riwayat pekerjaan dan data historisnya tetap aman.'}`)) return;
+
+  const { error } = await sb.from('users').update({ aktif: newStatus }).eq('id', id);
+  if(error){
+    if(error.message && error.message.includes('aktif')){
+      alert('Kolom "aktif" belum ada di database Supabase.\nSilakan jalankan file "migration_v4_user_suspend.sql" di Supabase SQL Editor terlebih dahulu.');
+      return;
+    }
+    return alert('Gagal mengubah status: ' + error.message);
+  }
+  await loadAll();
+  showPage('users');
+  toast(newStatus ? `✅ User ${u.nama} aktif kembali!` : `⏸️ User ${u.nama} berhasil disuspend.`);
 }
 async function delUser(id){
   if(!isAdmin()){ toast('⛔ Hanya Admin'); return; }
@@ -3059,7 +3133,7 @@ function renderRencana(){
         </div>`;
       } else {
         actBtns = `<div style="display:flex;gap:3px;align-items:center">
-          <button class="btnTiny btnEdit" title="Ubah keterangan pekerjaan (jam mulai &amp; selesai tidak dapat diubah)" onclick="modalEditKeteranganTindakan('${t.id}')">✏️</button>
+          <button class="btnTiny btnEdit" title="Ubah keterangan &amp; periode buku (jam mulai &amp; selesai tidak dapat diubah)" onclick="modalEditKeteranganTindakan('${t.id}')">✏️</button>
         </div>`;
       }
     }
@@ -3160,11 +3234,15 @@ function buildTindakanFormHtml(prefix){
   const thnOpts = formYears.map(y=>`<option value="${y}" ${curMY.tahun===y?'selected':''}>${y}</option>`).join('');
   const alasanOpts = ALASAN_ULANG.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
 
+  const isSuper = currentUser && (currentUser.role === 'superadmin' || isAdmin());
+  const minAttr = isSuper ? '' : `min="${todayStr()}"`;
+  const backDateHint = isSuper ? `<span style="font-size:.72rem;color:#059669;font-weight:normal"> (Superadmin: Bebas tanggal mundur)</span>` : '';
+
   return `<div class="formGrid">
     <div class="formGroup"><label>Klien / Rekanan *</label>
       <select id="${prefix}Klien" onchange="cekRiwayatTindakan('${prefix}')"><option value="">-- Pilih Klien --</option>${klienOpts}</select></div>
-    <div class="formGroup"><label>Tanggal Pelaksanaan / Rencana *</label>
-      <input type="date" id="${prefix}TglKerja" value="${todayStr()}" min="${todayStr()}"/></div>
+    <div class="formGroup"><label>Tanggal Pelaksanaan / Rencana *${backDateHint}</label>
+      <input type="date" id="${prefix}TglKerja" value="${todayStr()}" ${minAttr}/></div>
     <div class="formGroup">
       <label style="display:flex;justify-content:space-between;align-items:center">
         <span>Ditugaskan Kepada (Pelaksana) *</span>
@@ -3256,13 +3334,16 @@ function modalTambahRencana(){
   if(!isAdmin() && getUnclosedAbsensiPrev(currentUser.id).length){
     toast('⛔ Lakukan Closing Akhir Hari sebelumnya terlebih dahulu!'); return;
   }
+  const subNote = isAdmin()
+    ? 'Rencanakan pekerjaan harian untuk hari ini, tanggal mendatang, atau tanggal lampau (back-dated) (WITA).'
+    : 'Rencanakan pekerjaan harian Anda untuk hari ini atau tanggal mendatang (WITA).';
   document.getElementById('modalBox').style.width = '740px';
   document.getElementById('modalBox').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;background:#3B1B4F;color:#fff;padding:12px 18px;border-radius:10px;margin-bottom:14px">
       <h4 style="margin:0;font-size:1.02rem;font-weight:700;color:#fff;background:none;padding:0">➕ Tambah Tindakan Harian</h4>
       <button type="button" onclick="document.getElementById('modalBox').style.width='';closeModal()" class="modalCloseBtn" title="Tutup">✕</button>
     </div>
-    <p style="font-size:.84rem;color:var(--sub);margin-bottom:14px">Rencanakan pekerjaan harian Anda untuk hari ini atau tanggal mendatang (WITA).</p>
+    <p style="font-size:.84rem;color:var(--sub);margin-bottom:14px">${subNote}</p>
     ${buildTindakanFormHtml('mr')}
     <div class="flex mt10" style="gap:10px">
       <button class="btnPrimary" id="mrBtnSave" onclick="submitTindakan('mr', false)">💾 Simpan Rencana</button>
@@ -3298,8 +3379,9 @@ async function submitTindakan(prefix, isForced){
   const targetUserId = document.getElementById(prefix+'Pelaksana')?.value || currentUser.id;
   const isOtherUser = targetUserId !== currentUser.id;
   const kirimNotif = isOtherUser && !!document.getElementById(prefix+'KirimNotif')?.checked;
+  const isBackDate = tanggal_kerja < today;
   const isFuturePlan = tanggal_kerja > today || isOtherUser;
-  const startNow = isForced && !isFuturePlan;
+  const startNow = isForced && !isFuturePlan && !isBackDate;
   const payload = {
     user_id: targetUserId,
     tanggal_kerja,
@@ -3325,7 +3407,7 @@ async function submitTindakan(prefix, isForced){
     });
   }
 
-  if(!isFuturePlan){
+  if(!isFuturePlan && !isBackDate){
     const todayAb = CACHE.absensi.find(a=>a.user_id===currentUser.id && a.tanggal===today);
     if(todayAb && (todayAb.jam_keluar || todayAb.closing_hari_at)){
       await sb.from('absensi').update({ jam_keluar: null, closing_hari_at: null }).eq('id', todayAb.id);
@@ -3333,14 +3415,23 @@ async function submitTindakan(prefix, isForced){
   }
 
   await loadAll();
+  if(isBackDate){
+    tindakanFilter.tanggal = tanggal_kerja;
+  }
+  const toastMsg = isBackDate 
+    ? `📅 Rencana tanggal ${fmtDate(tanggal_kerja)} (Back-dated) berhasil dicatat!`
+    : isFuturePlan 
+      ? `📅 Rencana dijadwalkan untuk ${fmtDate(tanggal_kerja)}!` 
+      : (isForced ? `✅ Rencana dimulai pukul ${fmtTimeWita(nowIso)}!` : '✅ Tindakan ditambahkan!');
+
   if(isForced){
     document.getElementById('rencanaForceOverlay')?.remove();
     showPage('rencana');
-    toast(isFuturePlan ? `📅 Rencana dijadwalkan untuk ${fmtDate(tanggal_kerja)}!` : `✅ Rencana dimulai pukul ${fmtTimeWita(nowIso)}!`);
+    toast(toastMsg);
   } else {
     closeModal();
     showPage('rencana');
-    toast(isFuturePlan ? `📅 Rencana dijadwalkan untuk ${fmtDate(tanggal_kerja)}!` : '✅ Tindakan ditambahkan!');
+    toast(toastMsg);
   }
 }
 
@@ -3443,9 +3534,15 @@ function modalEditKeteranganTindakan(id){
   const k = CACHE.klien.find(x=>x.id===t.klien_id);
   const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
   const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
+  const curMY = witaMonthYear();
+  const blnOpts = BULAN_NAMA.map((b,i)=>`<option value="${i+1}" ${(t.periode_bulan||curMY.bulan)===(i+1)?'selected':''}>${b}${i===11?' (atau Tahunan / Jan–Des)':''}</option>`).join('');
+  const formYears = [];
+  for(let y = curMY.tahun + 2; y >= Math.min(2020, curMY.tahun - 6); y--) formYears.push(y);
+  const thnOpts = formYears.map(y=>`<option value="${y}" ${(t.periode_tahun||curMY.tahun)===y?'selected':''}>${y}</option>`).join('');
+
   document.getElementById('modalBox').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;background:#3B1B4F;color:#fff;padding:12px 18px;border-radius:10px;margin-bottom:14px">
-      <h4 style="margin:0;font-size:1.02rem;font-weight:700;color:#fff;background:none;padding:0">✏️ Ubah Keterangan Pekerjaan</h4>
+      <h4 style="margin:0;font-size:1.02rem;font-weight:700;color:#fff;background:none;padding:0">✏️ Ubah Keterangan &amp; Periode Buku</h4>
       <button type="button" onclick="closeModal()" class="modalCloseBtn" title="Tutup">✕</button>
     </div>
     <div style="background:var(--gray);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:.82rem">
@@ -3454,12 +3551,18 @@ function modalEditKeteranganTindakan(id){
       <span style="font-size:.73rem;color:var(--sub)">Jam mulai, jam selesai, dan durasi terkunci dan tidak dapat diubah.</span>
     </div>
     <div class="formGrid">
+      <div class="formGroup"><label>Periode Buku (Bulan) *</label>
+        <select id="ekBulan">${blnOpts}</select>
+      </div>
+      <div class="formGroup"><label>Periode Buku (Tahun) *</label>
+        <select id="ekTahun">${thnOpts}</select>
+      </div>
       <div class="formGroup full"><label>Keterangan / Uraian Pekerjaan</label>
         <textarea id="ekUraian" style="min-height:90px" placeholder="Tulis keterangan pekerjaan...">${esc(t.uraian||'')}</textarea>
       </div>
     </div>
     <div class="flex mt10">
-      <button class="btnPrimary" onclick="saveEditKeteranganTindakan('${id}')">💾 Simpan Keterangan</button>
+      <button class="btnPrimary" onclick="saveEditKeteranganTindakan('${id}')">💾 Simpan Perubahan</button>
       <button onclick="closeModal()" class="btnSm btnGray" style="padding:9px 16px;font-size:.84rem">Batal</button>
     </div>`;
   document.getElementById('modalWrap').classList.remove('hidden');
@@ -3467,12 +3570,19 @@ function modalEditKeteranganTindakan(id){
 
 async function saveEditKeteranganTindakan(id){
   const uraian = document.getElementById('ekUraian').value.trim();
-  const { error } = await sb.from('tindakan_harian').update({ uraian }).eq('id', id);
-  if(error) return alert('Gagal mengubah keterangan: '+error.message);
+  const periode_bulan = parseInt(document.getElementById('ekBulan').value) || null;
+  const periode_tahun = parseInt(document.getElementById('ekTahun').value) || null;
+
+  const payload = { uraian };
+  if(periode_bulan) payload.periode_bulan = periode_bulan;
+  if(periode_tahun) payload.periode_tahun = periode_tahun;
+
+  const { error } = await sb.from('tindakan_harian').update(payload).eq('id', id);
+  if(error) return alert('Gagal memperbarui data: '+error.message);
   closeModal();
   await loadAll();
   showPage(currentPage);
-  toast('✅ Keterangan pekerjaan diperbarui!');
+  toast('✅ Keterangan & Periode Buku berhasil diperbarui!');
 }
 
 function modalEditRencana(id){
