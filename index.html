@@ -3111,6 +3111,7 @@ function renderRencana(){
     const s = CACHE.sistem.find(x=>x.id===t.sistem_id);
     const j = CACHE.jenis.find(x=>x.id===t.jenis_id);
     const canAct = isAdmin() || t.user_id === currentUser.id;
+    const isOwner = currentUser && t.user_id === currentUser.id;
     let stBadge = '';
     if(t.status==='selesai') stBadge = `<span class="badge b-done">✅ Selesai</span>`;
     else if(t.status==='dikerjakan') stBadge = `<span class="badge b-progress">🔄 Dikerjakan</span>`;
@@ -3122,14 +3123,14 @@ function renderRencana(){
     if(canAct){
       if(t.status==='rencana'){
         actBtns = `<div style="display:flex;gap:3px;align-items:center">
-          <button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶</button>
-          <button class="btnTiny" title="Closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹</button>
+          ${isOwner ? `<button class="btnTiny" title="Mulai kerjakan tindakan ini" onclick="mulaiTindakan('${t.id}')">▶</button>
+          <button class="btnTiny" title="Closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹</button>` : ''}
           <button class="btnTiny btnEdit" title="Ubah tanggal pelaksanaan atau rincian rencana" onclick="modalEditRencana('${t.id}')">✏️</button>
           <button class="btnTiny btnDanger" title="Hapus rencana pekerjaan ini" style="color:#b91c1c" onclick="hapusRencana('${t.id}')">🗑️</button>
         </div>`;
       } else if(t.status==='dikerjakan'){
         actBtns = `<div style="display:flex;gap:3px;align-items:center">
-          <button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹</button>
+          ${isOwner ? `<button class="btnTiny" title="Selesaikan &amp; closing tindakan ini" onclick="selesaiTindakan('${t.id}')">⏹</button>` : ''}
         </div>`;
       } else {
         actBtns = `<div style="display:flex;gap:3px;align-items:center">
@@ -3245,14 +3246,15 @@ function buildTindakanFormHtml(prefix){
       <input type="date" id="${prefix}TglKerja" value="${todayStr()}" ${minAttr}/></div>
     <div class="formGroup">
       <label style="display:flex;justify-content:space-between;align-items:center">
-        <span>Ditugaskan Kepada (Pelaksana) *</span>
+        <span>Ditugaskan Kepada (Pelaksana) *${!isAdmin() ? ' <span style="font-size:.7rem;color:var(--sub);font-weight:normal">(Hanya akun sendiri)</span>' : ''}</span>
+        ${isAdmin() ? `
         <span id="${prefix}NotifWrap" style="display:none;font-weight:normal;color:#3B1B4F;font-size:.73rem">
           <label style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;color:#3B1B4F;font-weight:600">
             <input type="checkbox" id="${prefix}KirimNotif" checked style="width:13px;height:13px;cursor:pointer"/> 🔔 Kirim notifikasi
           </label>
-        </span>
+        </span>` : ''}
       </label>
-      <select id="${prefix}Pelaksana" onchange="const w=document.getElementById('${prefix}NotifWrap');if(w)w.style.display=(this.value&&this.value!=='${currentUser?currentUser.id:''}')?'inline-flex':'none'">${userOpts}</select>
+      <select id="${prefix}Pelaksana" ${!isAdmin() ? 'disabled' : ''} onchange="const w=document.getElementById('${prefix}NotifWrap');if(w)w.style.display=(this.value&&this.value!=='${currentUser?currentUser.id:''}')?'inline-flex':'none'">${userOpts}</select>
     </div>
     <div class="formGroup"><label>Sistem Kerja *</label>
       <select id="${prefix}Sistem" onchange="cekRiwayatTindakan('${prefix}')"><option value="">-- Pilih Sistem --</option>${sisOpts}</select></div>
@@ -3376,7 +3378,7 @@ async function submitTindakan(prefix, isForced){
   const nowIso = nowWitaDate().toISOString();
   const today = todayStr();
   const tanggal_kerja = document.getElementById(prefix+'TglKerja')?.value || today;
-  const targetUserId = document.getElementById(prefix+'Pelaksana')?.value || currentUser.id;
+  const targetUserId = isAdmin() ? (document.getElementById(prefix+'Pelaksana')?.value || currentUser.id) : currentUser.id;
   const isOtherUser = targetUserId !== currentUser.id;
   const kirimNotif = isOtherUser && !!document.getElementById(prefix+'KirimNotif')?.checked;
   const isBackDate = tanggal_kerja < today;
@@ -3483,6 +3485,10 @@ async function showForcedClosingModal(id){
 }
 
 async function saveForcedClosing(id, mulaiIso, selesaiIso, durasi){
+  const t = CACHE.tindakan.find(x=>x.id===id);
+  if(t && t.user_id !== currentUser.id){
+    return alert('⛔ Tindakan ini hanya dapat di-closing oleh user pelaksana yang bersangkutan!');
+  }
   const status = document.getElementById('fcStatus').value;
   const katRaw = document.getElementById('fcKat').value;
   const kendala = document.getElementById('fcKendala').value.trim();
@@ -3775,6 +3781,11 @@ async function closingAkhirHari(fromOverlay=false, targetTanggal=null){
 }
 
 async function mulaiTindakan(id){
+  const t = CACHE.tindakan.find(x=>x.id===id);
+  if(!t) return;
+  if(t.user_id !== currentUser.id){
+    return alert('⛔ Tindakan ini hanya dapat dimulai oleh user pelaksana yang bersangkutan!');
+  }
   await syncServerTime();
   const mulaiIso = nowWitaDate().toISOString();
   const { error } = await sb.from('tindakan_harian').update({ mulai_at: mulaiIso, status: 'dikerjakan' }).eq('id', id);
@@ -3785,8 +3796,11 @@ async function mulaiTindakan(id){
 }
 
 async function selesaiTindakan(id){
-  await syncServerTime();
   const t = CACHE.tindakan.find(x=>x.id===id); if(!t) return;
+  if(t.user_id !== currentUser.id){
+    return alert('⛔ Tindakan ini hanya dapat di-closing/diselesaikan oleh user pelaksana yang bersangkutan!');
+  }
+  await syncServerTime();
   const selesaiDate = nowWitaDate();
   const selesaiIso = selesaiDate.toISOString();
   const mulaiIso = t.mulai_at || selesaiIso;
@@ -3827,6 +3841,10 @@ async function selesaiTindakan(id){
 }
 
 async function saveClosingTindakan(id, mulaiIso, selesaiIso, durasi){
+  const t = CACHE.tindakan.find(x=>x.id===id);
+  if(t && t.user_id !== currentUser.id){
+    return alert('⛔ Tindakan ini hanya dapat di-closing oleh user pelaksana yang bersangkutan!');
+  }
   const status = document.getElementById('clStatus').value;
   const hasil = (document.getElementById('clHasil')?.value || '').trim();
   const katRaw = document.getElementById('clKat').value;
