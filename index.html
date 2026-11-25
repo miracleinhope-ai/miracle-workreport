@@ -4002,10 +4002,15 @@ async function openTindakanDiskusi(tId){
   }).join('') : `<div style="color:var(--sub);font-size:.82rem;padding:12px 0">Belum ada tanggapan atau catatan kolaborasi.</div>`;
 
   const otherUsers = CACHE.users.filter(x=>currentUser && x.id!==currentUser.id);
-  const mentionChecks = otherUsers.map(x=>`
+  const mentionChecks = otherUsers.map(x=>{
+    let isDefaultChecked = false;
+    if(isAdmin() && t && x.id === t.user_id) isDefaultChecked = true;
+    else if(!isAdmin() && (x.role === 'superadmin' || x.role === 'admin')) isDefaultChecked = true;
+    return `
     <label class="mentionOpt">
-      <input type="checkbox" class="tcMention" value="${x.id}"/> @${esc(x.nama)}
-    </label>`).join('');
+      <input type="checkbox" class="tcMention" value="${x.id}" ${isDefaultChecked ? 'checked' : ''}/> @${esc(x.nama)}
+    </label>`;
+  }).join('');
 
   document.getElementById('modalBox').style.width = '680px';
   document.getElementById('modalBox').innerHTML = `
@@ -4548,6 +4553,15 @@ function buildNotifItems(){
       const j = CACHE.jenis.find(x=>x.id===t.jenis_id)?.nama || '-';
       objLabel = `${k} · ${j}`;
     }
+    let toNames = mentions.map(uName);
+    if(!toNames.length && t){
+      if(c.user_id === t.user_id){
+        const superUsers = CACHE.users.filter(u=>u.role==='superadmin').map(u=>u.nama);
+        toNames = superUsers.length ? superUsers : ['Superadmin'];
+      } else {
+        toNames = [uName(t.user_id)];
+      }
+    }
     items.push({
       uid: 'cmt_' + c.id,
       kind: 'tanggapan',
@@ -4556,7 +4570,7 @@ function buildNotifItems(){
       createdAt: c.created_at || (t ? t.created_at : '') || '',
       senderId: c.user_id,
       senderName: uName(c.user_id),
-      toNames: mentions.map(uName),
+      toNames,
       jenisLabel: c.is_instruksi ? '📌 Arahan' : (t ? '💬 Tanggapan' : '✉️ Pemberitahuan'),
       objLabel,
       isi: c.pesan || '',
@@ -4811,7 +4825,7 @@ function renderTabPemberitahuanManual(allItems, unreadCount){
 
   const rows = paged.length ? paged.map((it,idx)=>{
     const dt = it.createdAt ? `${fmtDate(it.createdAt.slice(0,10))} ${fmtTimeWita(it.createdAt)}` : '-';
-    const toTxt = it.toNames.length ? it.toNames.join(', ') : (it.targetId ? 'Pemilik Pekerjaan' : '-');
+    const toTxt = it.toNames.length ? it.toNames.join(', ') : '-';
     const stHtml = it.isAck
       ? `<span class="badge b-done">✅ Diketahui</span>${it.ackNames.length?`<div style="font-size:.71rem;color:var(--sub);margin-top:3px">Oleh: ${esc(it.ackNames.join(', '))}</div>`:`<div style="font-size:.7rem;color:var(--sub);margin-top:2px">${it.isOwn?'Belum ada yang baca':'Anda'}</div>`}`
       : `<span class="badge b-urgent">🔴 Belum Diketahui</span>${it.ackNames.length?`<div style="font-size:.71rem;color:var(--sub);margin-top:3px">Sudah: ${esc(it.ackNames.join(', '))}</div>`:''}`;
